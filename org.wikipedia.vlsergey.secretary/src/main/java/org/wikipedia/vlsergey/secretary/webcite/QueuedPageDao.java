@@ -1,0 +1,79 @@
+package org.wikipedia.vlsergey.secretary.webcite;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import org.hibernate.HibernateException;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.springframework.orm.hibernate3.HibernateCallback;
+import org.springframework.orm.hibernate3.HibernateTemplate;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository
+@Transactional(readOnly = false)
+public class QueuedPageDao {
+	protected HibernateTemplate template = null;
+
+	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = false, propagation = Propagation.REQUIRED)
+	public void addPageToQueue(Long pageId, long lastCheckTimestamp) {
+
+		@SuppressWarnings("unchecked")
+		List<QueuedPage> previous = template.find(
+				"SELECT page FROM QueuedPage page WHERE id=?", pageId);
+
+		if (previous.size() > 1)
+			throw new IllegalStateException(
+					"Too many queued pages in DB with id #" + pageId);
+
+		if (previous.isEmpty()) {
+			QueuedPage queuedPage = new QueuedPage();
+			queuedPage.setId(pageId);
+			queuedPage.setLastCheckTimestamp(lastCheckTimestamp);
+			template.save(queuedPage);
+			return;
+		}
+
+		QueuedPage prev = previous.get(0);
+
+		if (prev.getLastCheckTimestamp() < lastCheckTimestamp) {
+			prev.setLastCheckTimestamp(lastCheckTimestamp);
+			template.flush();
+		}
+	}
+
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public QueuedPage getPageFromQueue() {
+		return template.execute(new HibernateCallback<QueuedPage>() {
+			public QueuedPage doInHibernate(Session session)
+					throws HibernateException, SQLException {
+
+				Query query = session.createQuery("SELECT pages "
+						+ "FROM QueuedPage pages "
+						+ "ORDER BY lastCheckTimestamp");
+				query.setMaxResults(1);
+
+				@SuppressWarnings("unchecked")
+				List<QueuedPage> result = query.list();
+				if (result == null || result.isEmpty())
+					return null;
+
+				return result.get(0);
+			}
+		});
+	}
+
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+	public void removePageFromQueue(QueuedPage queuedPage) {
+		template.update(queuedPage);
+		template.delete(queuedPage);
+	}
+
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		template = new HibernateTemplate(sessionFactory);
+	}
+}

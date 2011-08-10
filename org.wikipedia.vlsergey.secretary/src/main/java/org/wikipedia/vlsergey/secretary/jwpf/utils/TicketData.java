@@ -19,47 +19,32 @@
 package org.wikipedia.vlsergey.secretary.jwpf.utils;
 
 /**
- * @author Thomas Stock
- * 
+ * <code>
+ * <?xml version="1.0" encoding="utf-8"?>
+ * <api>
+ *   <login
+ *     result="NeedToken"
+ *     token="b5780b6e2f27e20b450921d9461010b4"
+ *     sessionid="17ab96bd8ffbe8ca58a78657a918558e"
+ *   />
+ * </api>
+ * </code>
  */
-public class JwbfException extends RuntimeException {
+public class TicketData {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -2456904376052276104L;
+	private final String token;
+	private final String sessionId;
 
-	/**
-	 * 
-	 */
-	public JwbfException() {
-		super();
+	public TicketData(String token, String sessionId) {
+		this.token = token;
+		this.sessionId = sessionId;
 	}
 
-	/**
-	 * @param arg0
-	 *            a
-	 */
-	public JwbfException(String arg0) {
-		super(arg0);
+	public String getSessionId() {
+		return sessionId;
 	}
 
-	/**
-	 * @param arg0
-	 *            a
-	 */
-	public JwbfException(Throwable arg0) {
-		super(arg0);
+	public String getToken() {
+		return token;
 	}
-
-	/**
-	 * @param arg0
-	 *            a
-	 * @param arg1
-	 *            a
-	 */
-	public JwbfException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
-	}
-
 }

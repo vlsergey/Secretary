@@ -3,6 +3,8 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans 
 	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+	<bean id="httpManager" class="org.wikipedia.vlsergey.secretary.http.HttpManager" />
+
 	<bean id="mediaWikiBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot" />
 
 </beans>

@@ -4,9 +4,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
-public class QueryRevisionsByPage extends AbstractQueryRevisionsAction {
+public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByPage(Iterable<String> pageTitles,
+	public QueryRevisionsByRevisionIds(Iterable<Long> revids,
 			RevisionPropery[] properties) {
 		super(properties);
 
@@ -16,7 +16,7 @@ public class QueryRevisionsByPage extends AbstractQueryRevisionsAction {
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
 
-		setParameter(multipartEntity, "titles", toStringParameters(pageTitles));
+		setParameter(multipartEntity, "revids", toStringParameters(revids));
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
 		setParameter(multipartEntity, "format", "xml");
 

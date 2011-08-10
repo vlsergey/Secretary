@@ -18,53 +18,75 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.util.Iterator;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
-import org.apache.http.conn.scheme.PlainSocketFactory;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.scheme.SchemeRegistry;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.impl.client.AbstractHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.commons.lang.StringUtils;
+import org.apache.http.Header;
+import org.apache.http.HeaderElement;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.ContentProcessable;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ActionException;
+import org.wikipedia.vlsergey.secretary.jwpf.utils.CookieException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
+import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 
 /**
  * 
  * @author Thomas Stock
- * 
  */
 public abstract class HttpBot {
+	private static final String GZIP_CONTENT_ENCODING = "gzip";
 
-	private final HttpActionClient cc;
-
-	private final AbstractHttpClient client;
-
-	protected HttpBot(final URI uri) {
-		SchemeRegistry registry = new SchemeRegistry();
-		registry.register(new Scheme("http", 80, PlainSocketFactory
-				.getSocketFactory()));
-		registry.register(new Scheme("https", 443, SSLSocketFactory
-				.getSocketFactory()));
-
-		ThreadSafeClientConnManager threadSafeClientConnManager = new ThreadSafeClientConnManager(
-				registry);
-		threadSafeClientConnManager.setDefaultMaxPerRoute(2);
-		threadSafeClientConnManager.setMaxTotal(10);
-		client = new DefaultHttpClient(threadSafeClientConnManager);
-
-		client.getParams().setParameter("http.useragent", "Secretary/JWBF");
-		cc = new HttpActionClient(client, uri);
-	}
+	private static final Logger logger = LoggerFactory.getLogger(HttpBot.class);
 
 	/**
+	 * Returns the character set from the <tt>Content-Type</tt> header.
 	 * 
-	 * @return a
+	 * @param contentheader
+	 *            The content header.
+	 * @return String The character set.
 	 */
-	public final AbstractHttpClient getClient() {
-		return client;
+	protected static String getContentCharSet(Header contentheader) {
+		logger.trace("enter getContentCharSet( Header contentheader )");
+
+		String encoding = null;
+		if (contentheader != null) {
+			HeaderElement values[] = contentheader.getElements();
+			// I expect only one header element to be there
+			// No more. no less
+			if (values.length == 1) {
+				NameValuePair param = values[0].getParameterByName("charset");
+				if (param != null) {
+					// If I get anything "funny"
+					// UnsupportedEncondingException will result
+					encoding = param.getValue();
+				}
+			}
+		}
+		if (encoding == null) {
+			encoding = MediaWikiBot.ENCODING;
+			if (logger.isDebugEnabled()) {
+				logger.debug("Default charset used: " + encoding);
+			}
+		}
+		return encoding;
 	}
 
 	// /**
@@ -91,19 +113,220 @@ public abstract class HttpBot {
 	// return gp.getText();
 	// }
 
-	/**
-	 * 
-	 * @param a
-	 *            a
-	 * @throws ActionException
-	 *             on problems with http, cookies and io
-	 * @return text
-	 * @throws ProcessException
-	 *             on problems in the subst of ContentProcessable
-	 */
-	public final String performAction(final ContentProcessable a)
-			throws ActionException, ProcessException {
-		return cc.performAction(a);
+	private URI baseURL;
+
+	@Autowired
+	private HttpManager httpManager;
+
+	protected HttpBot(final URI uri) {
+		this.baseURL = uri;
 	}
 
+	protected void get(final HttpGet getMethod, final ContentProcessable action)
+			throws IOException, CookieException, ProcessException {
+		getMethod.getParams().setParameter("http.protocol.content-charset",
+				MediaWikiBot.ENCODING);
+
+		getMethod.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
+
+		httpManager.execute(getMethod, new ResponseHandler<Object>() {
+			public Object handleResponse(HttpResponse httpResponse)
+					throws ClientProtocolException, IOException {
+
+				try {
+					action.validateReturningCookies(httpManager
+							.getCookieStore().getCookies(), getMethod);
+
+					logger.debug("" + getMethod.getURI());
+					logger.debug("GET: "
+							+ httpResponse.getStatusLine().toString());
+
+					InputStream inputStream = httpResponse.getEntity()
+							.getContent();
+					String contentEncoding = httpResponse.getEntity()
+							.getContentEncoding() != null ? httpResponse
+							.getEntity().getContentEncoding().getValue() : "";
+					if ("gzip".equalsIgnoreCase(contentEncoding))
+						inputStream = new GZIPInputStream(inputStream);
+
+					String encoding = StringUtils.substringAfter(httpResponse
+							.getEntity().getContentType().getValue(),
+							"charset=");
+					String out = IoUtils.readToString(inputStream, encoding);
+					action.processReturningText(getMethod, out);
+
+					int statuscode = httpResponse.getStatusLine()
+							.getStatusCode();
+
+					if (statuscode == HttpStatus.SC_NOT_FOUND) {
+						logger.warn("Not Found: "
+								+ getMethod.getRequestLine().getUri());
+
+						throw new FileNotFoundException(getMethod
+								.getRequestLine().getUri());
+					}
+				} catch (CookieException exc) {
+					throw new ClientProtocolException(exc);
+				} catch (ProcessException exc) {
+					throw new ClientProtocolException(exc);
+				}
+				return null;
+			}
+		});
+
+	}
+
+	protected final String performAction(
+			final ContentProcessable contentProcessable)
+			throws ActionException, ProcessException {
+		List<HttpRequestBase> msgs = contentProcessable.getMessages();
+		String out = "";
+		Iterator<HttpRequestBase> it = msgs.iterator();
+		while (it.hasNext()) {
+			HttpRequestBase httpMethod = it.next();
+			if (baseURL != null) {
+
+				URI uri = httpMethod.getURI();
+				if (!uri.getPath().startsWith("/wiki/")) {
+					try {
+						String str = baseURL.getScheme()
+								+ "://"
+								+ baseURL.getHost()
+								+ (baseURL.getPort() == -1 ? "" : ":"
+										+ baseURL.getPort())
+								+ baseURL.getPath()
+								+ uri.getPath()
+								+ (uri.getRawQuery() != null ? ("?" + uri
+										.getRawQuery()) : "");
+						uri = new URI(str);
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+					httpMethod.setURI(uri);
+				} else {
+					try {
+						String str = baseURL.getScheme()
+								+ "://"
+								+ baseURL.getHost()
+								+ (baseURL.getPort() == -1 ? "" : ":"
+										+ baseURL.getPort())
+								+ uri.getPath()
+								+ (uri.getRawQuery() != null ? ("?" + uri
+										.getRawQuery()) : "");
+						uri = new URI(str);
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+					httpMethod.setURI(uri);
+				}
+
+				logger.debug("path is: " + httpMethod.getURI());
+			}
+
+			try {
+				if (httpMethod instanceof HttpGet) {
+					get((HttpGet) httpMethod, contentProcessable);
+				} else {
+					post((HttpPost) httpMethod, contentProcessable);
+				}
+			} catch (IOException e1) {
+				throw new ActionException(e1);
+			}
+
+		}
+		return out;
+	}
+
+	protected void post(final HttpPost postMethod,
+			final ContentProcessable action) throws IOException,
+			ProcessException, CookieException {
+		postMethod.getParams().setParameter("http.protocol.content-charset",
+				MediaWikiBot.ENCODING);
+
+		postMethod.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
+
+		httpManager.execute(postMethod, new ResponseHandler<Object>() {
+			public Object handleResponse(HttpResponse response)
+					throws ClientProtocolException, IOException {
+				onPostResponse(action, postMethod, response);
+				return null;
+			}
+		});
+
+	}
+
+	private void onPostResponse(final ContentProcessable action,
+			final HttpPost postMethod, HttpResponse response)
+			throws IOException {
+		try {
+			int statuscode = response.getStatusLine().getStatusCode();
+			if (action.followRedirects()
+					&& (statuscode == HttpStatus.SC_MOVED_TEMPORARILY
+							|| statuscode == HttpStatus.SC_MOVED_PERMANENTLY
+							|| statuscode == HttpStatus.SC_SEE_OTHER || statuscode == HttpStatus.SC_TEMPORARY_REDIRECT)) {
+				/*
+				 * Usually a successful form-based login results in a redicrect
+				 * to another url
+				 */
+				Header header = response.getFirstHeader("location");
+				if (header != null) {
+					String newuri = header.getValue();
+					if ((newuri == null) || (newuri.equals(""))) {
+						newuri = "/";
+					}
+					logger.debug("Redirect target: " + newuri);
+
+					HttpPost redirect = new HttpPost(newuri);
+					redirect.setEntity(postMethod.getEntity());
+					redirect.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
+					logger.info("GET: " + redirect.getURI());
+					httpManager.execute(redirect,
+							new ResponseHandler<Object>() {
+								public Object handleResponse(
+										HttpResponse response)
+										throws ClientProtocolException,
+										IOException {
+									// no more redirects?
+									onPostResponse(action, postMethod, response);
+									return null;
+								}
+							});
+					return;
+				}
+			}
+
+			InputStream inputStream = response.getEntity().getContent();
+			String out;
+			try {
+				String encoding = response.getFirstHeader("Content-Encoding") != null ? response
+						.getFirstHeader("Content-Encoding").getValue() : "";
+				if (GZIP_CONTENT_ENCODING.equalsIgnoreCase(encoding)) {
+					inputStream = new GZIPInputStream(inputStream);
+				}
+
+				Header charsetHeader = response.getFirstHeader("Content-Type");
+				String charset;
+				if (charsetHeader == null)
+					charset = MediaWikiBot.ENCODING;
+				else
+					charset = getContentCharSet(charsetHeader);
+
+				out = IoUtils.readToString(inputStream, charset);
+			} finally {
+				inputStream.close();
+			}
+
+			action.processReturningText(postMethod, out);
+
+			action.validateReturningCookies(httpManager.getCookieStore()
+					.getCookies(), postMethod);
+
+			logger.debug(postMethod.getURI() + " || " + "POST: "
+					+ response.getStatusLine().toString());
+		} catch (CookieException exc) {
+			throw new ClientProtocolException(exc);
+		} catch (ProcessException exc) {
+			throw new ClientProtocolException(exc);
+		}
+	}
 }

@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.webcite;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -8,28 +9,29 @@ import javax.persistence.Id;
 @Entity
 public class QueuedLink {
 
-	public static final long DATE_UNSPECIFIED = 0;
+	private String accessDate;
 
-	private long accessDate = DATE_UNSPECIFIED;
-
-	private long articleDate = DATE_UNSPECIFIED;
+	private String articleDate;
 
 	private String author;
 
 	private long id;
 
+	private long queuedTimestamp;
+
 	private String title;
 
 	private String url;
 
-	public long getAccessDate() {
+	public String getAccessDate() {
 		return accessDate;
 	}
 
-	public long getArticleDate() {
+	public String getArticleDate() {
 		return articleDate;
 	}
 
+	@Column(length = (1 << 14) - 2)
 	public String getAuthor() {
 		return author;
 	}
@@ -40,22 +42,26 @@ public class QueuedLink {
 		return id;
 	}
 
+	public long getQueuedTimestamp() {
+		return queuedTimestamp;
+	}
+
+	@Column(length = (1 << 14) - 2)
 	public String getTitle() {
 		return title;
 	}
 
+	@Column(length = (1 << 14) - 2)
 	public String getUrl() {
 		return url;
 	}
 
-	public void setAccessDate(Long accessDate) {
-		this.accessDate = accessDate == null ? DATE_UNSPECIFIED : accessDate
-				.longValue();
+	public void setAccessDate(String accessDate) {
+		this.accessDate = accessDate;
 	}
 
-	public void setArticleDate(Long articleDate) {
-		this.articleDate = articleDate == null ? DATE_UNSPECIFIED : articleDate
-				.longValue();
+	public void setArticleDate(String articleDate) {
+		this.articleDate = articleDate;
 	}
 
 	public void setAuthor(String author) {
@@ -64,6 +70,10 @@ public class QueuedLink {
 
 	public void setId(long id) {
 		this.id = id;
+	}
+
+	public void setQueuedTimestamp(long queuedTimestamp) {
+		this.queuedTimestamp = queuedTimestamp;
 	}
 
 	public void setTitle(String title) {

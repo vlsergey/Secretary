@@ -27,9 +27,9 @@
 
 		<property name="hibernateProperties">
 			<props>
-				<prop key="hibernate.dialect">org.hibernate.dialect.DerbyDialect</prop>
-				<prop key="hibernate.show_sql">true</prop>
-				<prop key="hibernate.generate_statistics">true</prop>
+				<prop key="hibernate.dialect">org.wikipedia.vlsergey.secretary.utils.ExtendedDerbyDialect</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.generate_statistics">false</prop>
 			</props>
 		</property>
 	</bean>

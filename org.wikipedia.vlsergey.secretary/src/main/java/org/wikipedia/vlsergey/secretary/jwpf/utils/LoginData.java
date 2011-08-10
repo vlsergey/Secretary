@@ -19,47 +19,27 @@
 package org.wikipedia.vlsergey.secretary.jwpf.utils;
 
 /**
+ * TODO API related, use only if posting data works.
+ * http://www.mediawiki.org/wiki
+ * /API#Posting_Data_.2F_needs_major_editPage.php_rewrite
+ * 
  * @author Thomas Stock
  * 
  */
-public class JwbfException extends RuntimeException {
+public class LoginData {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -2456904376052276104L;
+	private final String botName;
+	private final String loginToken;
+	private final int userid;
 
-	/**
-	 * 
-	 */
-	public JwbfException() {
-		super();
+	public LoginData(int userid, String botName, String loginToken) {
+		this.userid = userid;
+		this.botName = botName;
+		this.loginToken = loginToken;
 	}
 
-	/**
-	 * @param arg0
-	 *            a
-	 */
-	public JwbfException(String arg0) {
-		super(arg0);
-	}
-
-	/**
-	 * @param arg0
-	 *            a
-	 */
-	public JwbfException(Throwable arg0) {
-		super(arg0);
-	}
-
-	/**
-	 * @param arg0
-	 *            a
-	 * @param arg1
-	 *            a
-	 */
-	public JwbfException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
+	public String get() {
+		return "& lgtoken=123ABC & lgusername=" + botName + " & lguserid=23456";
 	}
 
 }

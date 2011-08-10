@@ -1,9 +1,14 @@
 package org.wikipedia.vlsergey.secretary.webcite;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
+import org.hibernate.HibernateException;
+import org.hibernate.Query;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.springframework.orm.hibernate3.HibernateCallback;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Isolation;
@@ -12,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @Transactional(readOnly = false)
-public class QueuedLinkDaoImpl {
+public class QueuedLinkDao {
 	protected HibernateTemplate template = null;
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = false, propagation = Propagation.REQUIRED)
@@ -20,7 +25,7 @@ public class QueuedLinkDaoImpl {
 
 		@SuppressWarnings("unchecked")
 		List<QueuedLink> previous = template
-				.find("SELECT link FROM WebCiteLink link WHERE url=? AND accessDate=?",
+				.find("SELECT link FROM QueuedLink link WHERE url=? AND accessDate=?",
 						link.getUrl(), link.getAccessDate());
 
 		if (previous.size() > 1)
@@ -29,6 +34,7 @@ public class QueuedLinkDaoImpl {
 					+ link.getAccessDate() + "'");
 
 		if (previous.isEmpty()) {
+			link.setQueuedTimestamp(System.currentTimeMillis());
 			template.save(link);
 			return;
 		}
@@ -51,8 +57,34 @@ public class QueuedLinkDaoImpl {
 			template.flush();
 	}
 
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public QueuedLink getLinkFromQueue() {
+		return template.execute(new HibernateCallback<QueuedLink>() {
+			public QueuedLink doInHibernate(Session session)
+					throws HibernateException, SQLException {
+
+				Query query = session
+						.createQuery("SELECT links " + "FROM QueuedLink links "
+								+ "ORDER BY queuedTimestamp");
+				query.setMaxResults(1);
+
+				@SuppressWarnings("unchecked")
+				List<QueuedLink> result = query.list();
+				if (result == null || result.isEmpty())
+					return null;
+
+				return result.get(0);
+			}
+		});
+	}
+
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+	public void removeLinkFromQueue(QueuedLink queuedLink) {
+		template.update(queuedLink);
+		template.delete(queuedLink);
+	}
+
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		template = new HibernateTemplate(sessionFactory);
 	}
-
 }

@@ -3,7 +3,7 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans 
 	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="wikiAccess" class="org.wikipedia.vlsergey.secretary.cache.WikiAccess" />
+	<bean id="wikiCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache" />
 
 	<bean id="storedPageDao" class="org.wikipedia.vlsergey.secretary.cache.StoredPageDao"
 		p:sessionFactory-ref="sessionFactory" />

@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.webcite;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -7,34 +8,39 @@ import javax.persistence.Id;
 
 @Entity
 public class ArchivedLink {
-	private long accessDate;
+	private String accessDate;
 
 	private String accessUrl;
 
-	private long archiveDate;
+	private String archiveDate;
 
-	private ArchiveResult archiveResult;
+	private String archiveResult;
 
 	private String archiveUrl;
 
 	private long id;
 
-	public long getAccessDate() {
+	@Column(length = (1 << 14) - 2)
+	public String getAccessDate() {
 		return accessDate;
 	}
 
+	@Column(length = (1 << 14) - 2)
 	public String getAccessUrl() {
 		return accessUrl;
 	}
 
-	public long getArchiveDate() {
+	@Column(length = (1 << 14) - 2)
+	public String getArchiveDate() {
 		return archiveDate;
 	}
 
-	public ArchiveResult getArchiveResult() {
+	@Column(length = (1 << 14) - 2)
+	public String getArchiveResult() {
 		return archiveResult;
 	}
 
+	@Column(length = (1 << 14) - 2)
 	public String getArchiveUrl() {
 		return archiveUrl;
 	}
@@ -45,7 +51,7 @@ public class ArchivedLink {
 		return id;
 	}
 
-	public void setAccessDate(long accessDate) {
+	public void setAccessDate(String accessDate) {
 		this.accessDate = accessDate;
 	}
 
@@ -53,11 +59,11 @@ public class ArchivedLink {
 		this.accessUrl = accessUrl;
 	}
 
-	public void setArchiveDate(long archiveDate) {
+	public void setArchiveDate(String archiveDate) {
 		this.archiveDate = archiveDate;
 	}
 
-	public void setArchiveResult(ArchiveResult archiveResult) {
+	public void setArchiveResult(String archiveResult) {
 		this.archiveResult = archiveResult;
 	}
 

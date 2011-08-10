@@ -5,5 +5,7 @@
 		<mapping class="org.wikipedia.vlsergey.secretary.cache.StoredRevision" />
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.ArchivedLink" />
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.QueuedLink" />
+		<mapping class="org.wikipedia.vlsergey.secretary.webcite.QueuedPage" />
+		<mapping class="org.wikipedia.vlsergey.secretary.webcite.WebCiteQueryEvent" />
 	</session-factory>
 </hibernate-configuration>

@@ -12,19 +12,10 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
 @Repository
 public class StoredRevisionDao {
-	protected HibernateTemplate template = null;
-
 	@Autowired
 	private StoredPageDao storedPageDao;
 
-	public void setSessionFactory(SessionFactory sessionFactory) {
-		template = new HibernateTemplate(sessionFactory);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
-	public StoredRevision getRevisionById(Long revisionId) {
-		return template.get(StoredRevision.class, revisionId);
-	}
+	protected HibernateTemplate template = null;
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public StoredRevision getOrCreate(Revision withContent) {
@@ -72,5 +63,19 @@ public class StoredRevisionDao {
 
 		template.flush();
 		return revisionImpl;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
+	public StoredRevision getRevisionById(Long revisionId) {
+		return template.get(StoredRevision.class, revisionId);
+	}
+
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		template = new HibernateTemplate(sessionFactory);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void updateCache(Revision withContent) {
+		getOrCreate(withContent);
 	}
 }
