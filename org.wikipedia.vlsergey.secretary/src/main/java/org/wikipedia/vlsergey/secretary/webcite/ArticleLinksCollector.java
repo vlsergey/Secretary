@@ -18,6 +18,66 @@ public class ArticleLinksCollector {
 	private static final Logger logger = LoggerFactory
 			.getLogger(ArticleLinksCollector.class);
 
+	static String getParameterOrEmpty(Template template, String parameterName) {
+		Parameter parameter = template.getParameter(parameterName);
+		if (parameter == null)
+			return StringUtils.EMPTY;
+
+		final Content value = parameter.getValue();
+
+		if (value == null)
+			return StringUtils.EMPTY;
+
+		return StringUtils.trimToEmpty(value.toWiki());
+	}
+
+	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url,
+			String host) {
+
+		if (WebCiteArchiver.SKIP_ERRORS.contains(host)) {
+			logger.debug("URL "
+					+ url
+					+ " skipped due to usual errors of WebCite leading to undeadable text");
+
+			if (perArticleReport != null)
+				perArticleReport.skippedIgnoreTechLimits(url);
+
+			return true;
+		}
+
+		if (WebCiteArchiver.SKIP_TECH_LIMITS.contains(host)) {
+			logger.debug("URL " + url
+					+ " skipped due to technical limitatios of WebCite");
+
+			if (perArticleReport != null)
+				perArticleReport.skippedIgnoreTechLimits(url);
+
+			return true;
+		}
+
+		if (WebCiteArchiver.SKIP_NO_CACHE.contains(host)) {
+			logger.debug("URL "
+					+ url
+					+ " skipped because pages on this site usually have 'no-cache' tag");
+
+			if (perArticleReport != null)
+				perArticleReport.skippedIgnoreNoCache(url);
+
+			return true;
+		}
+
+		if (WebCiteArchiver.SKIP_ARCHIVES.contains(host)) {
+			logger.debug("URL " + url + " skipped (are u serious?)");
+
+			if (perArticleReport != null)
+				perArticleReport.skippedIgnoreSence(url);
+
+			return true;
+		}
+
+		return false;
+	}
+
 	public List<ArticleLink> getAllLinks(AbstractContainer container) {
 		List<ArticleLink> links = new ArrayList<ArticleLink>();
 		List<Template> citeWebTemplates = container.getAllTemplates().get(
@@ -46,22 +106,22 @@ public class ArticleLinksCollector {
 			articleLink.url = getParameterOrEmpty(citeWebTemplate,
 					WikiConstants.PARAMETER_URL);
 
+			// strip local refs
+			if (StringUtils.contains(articleLink.url, "#"))
+				articleLink.url = StringUtils.substringBefore(articleLink.url,
+						"#");
+
+			try {
+				URI.create(articleLink.url);
+			} catch (IllegalArgumentException exc) {
+				logger.warn("URL " + articleLink.url
+						+ " skipped due wrong format: " + exc.getMessage());
+				continue;
+			}
+
 			links.add(articleLink);
 		}
 		return links;
-	}
-
-	static String getParameterOrEmpty(Template template, String parameterName) {
-		Parameter parameter = template.getParameter(parameterName);
-		if (parameter == null)
-			return StringUtils.EMPTY;
-
-		final Content value = parameter.getValue();
-
-		if (value == null)
-			return StringUtils.EMPTY;
-
-		return StringUtils.trimToEmpty(value.toWiki());
 	}
 
 	public boolean ignoreCite(PerArticleReport perArticleReport,
@@ -114,7 +174,7 @@ public class ArticleLinksCollector {
 		}
 
 		String host = uri.getHost().toLowerCase();
-		return WebCiteArchiver.isIgnoreHost(null, url, host);
+		return isIgnoreHost(null, url, host);
 	}
 
 }

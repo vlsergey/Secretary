@@ -140,14 +140,12 @@ public abstract class AbstractParser {
 		while (text.indexOf(leftBorder, position) != -1) {
 
 			if (text.indexOf(rightBorder, position) == -1)
-				throw new IllegalArgumentException("Unmatched " + leftBorder
-						+ " in "
+				throw new ParsingException("Unmatched " + leftBorder + " in "
 						+ StringUtils.substring(text, position, position + 100));
 
 			if (text.indexOf(rightBorder, position) < text.indexOf(leftBorder,
 					position))
-				throw new IllegalArgumentException("Unmatched " + rightBorder
-						+ " in "
+				throw new ParsingException("Unmatched " + rightBorder + " in "
 						+ StringUtils.substring(text, position, position + 100));
 
 			StringBuilder dotted = new StringBuilder(text);
@@ -221,10 +219,16 @@ public abstract class AbstractParser {
 				st = text.indexOf(beginning, st + 1);
 
 			if (end == -1)
-				throw new IllegalArgumentException("nonmatched " + beginning);
+				throw new ParsingException("nonmatched " + beginning
+						+ " after '" + StringUtils.mid(text, st, 250) + "...'");
 
 			if (end < st)
-				throw new IllegalArgumentException("nonmatched " + ending);
+				throw new ParsingException("nonmatched "
+						+ ending
+						+ " before '..."
+						+ StringUtils.left(
+								StringUtils.substring(text, 0, end + 1), 250)
+						+ "'");
 
 			String p1 = text.substring(0, st);
 			String p2 = text.substring(st, end + ending.length());
@@ -448,7 +452,7 @@ public abstract class AbstractParser {
 				processObject.workString.length());
 
 		if (!paramName.byPosition.isEmpty())
-			throw new IllegalArgumentException(
+			throw new ParsingException(
 					"Parameter name can't be complex content");
 
 		return newParameter(parseWiki(paramName), parseWiki(paramValue));

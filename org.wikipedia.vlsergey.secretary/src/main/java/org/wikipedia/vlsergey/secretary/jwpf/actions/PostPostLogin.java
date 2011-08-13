@@ -107,6 +107,7 @@ public class PostPostLogin extends MWAction {
 	 *            incomming
 	 * @return after testing
 	 */
+	@Override
 	public void processReturningText(final HttpRequestBase hm, final String s)
 			throws ProcessException {
 		SAXBuilder builder = new SAXBuilder();

@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.Edit;
-import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.MultiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.PostLogin;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinPageIds;
@@ -25,6 +24,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevisionIds;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -275,6 +275,9 @@ public class MediaWikiBot extends HttpBot {
 
 	public Iterable<Long> queryEmbeddedInPageIds(String template,
 			int... namespaces) throws ActionException {
+		logger.info("queryEmbeddedInPageIds(" + template + ", "
+				+ Arrays.toString(namespaces) + ")");
+
 		QueryEmbeddedinPageIds a = new QueryEmbeddedinPageIds(template,
 				createNsString(namespaces));
 		return performMultiAction(a);
@@ -282,6 +285,9 @@ public class MediaWikiBot extends HttpBot {
 
 	public Iterable<String> queryEmbeddedInPageTitles(String template,
 			int... namespaces) throws ActionException {
+		logger.info("queryEmbeddedInPageTitles(" + template + ", "
+				+ Arrays.toString(namespaces) + ")");
+
 		QueryEmbeddedinTitles a = new QueryEmbeddedinTitles(template,
 				createNsString(namespaces));
 		return performMultiAction(a);
@@ -290,6 +296,9 @@ public class MediaWikiBot extends HttpBot {
 	public Revision queryRevisionByPageId(Long pageId,
 			RevisionPropery[] properties) throws ActionException,
 			ProcessException {
+		logger.info("queryRevisionByPageId(" + pageId + ", "
+				+ Arrays.toString(properties) + ")");
+
 		QueryRevisionsByPageIds action = new QueryRevisionsByPageIds(
 				Collections.singleton(pageId), properties);
 		performAction(action);
@@ -300,6 +309,9 @@ public class MediaWikiBot extends HttpBot {
 	public Revision queryRevisionByRevisionId(Long revisionId,
 			RevisionPropery[] properties, boolean rvgeneratexml)
 			throws ActionException, ProcessException {
+		logger.info("queryRevisionByRevisionId(" + revisionId + ", "
+				+ Arrays.toString(properties) + ", " + rvgeneratexml + ")");
+
 		QueryRevisionsByRevision action = new QueryRevisionsByRevision(
 				revisionId, properties, rvgeneratexml);
 		performAction(action);
@@ -310,6 +322,9 @@ public class MediaWikiBot extends HttpBot {
 	public Revision queryRevisionLatest(String pageTitle,
 			RevisionPropery... properties) throws ActionException,
 			ProcessException {
+		logger.info("queryRevisionLatest('" + pageTitle + "', "
+				+ Arrays.toString(properties) + ")");
+
 		QueryRevisionsByPageTitles action = new QueryRevisionsByPageTitles(
 				Collections.singleton(pageTitle), properties);
 		performAction(action);
@@ -317,15 +332,15 @@ public class MediaWikiBot extends HttpBot {
 		return getSingleRevision(action.getResults());
 	}
 
-	public Iterable<Revision> queryRevisionsByPageId(Long pageID,
+	public Iterable<Revision> queryRevisionsByPageId(Long pageId,
 			Long rvstartid, Direction direction, RevisionPropery... properties)
 			throws ActionException {
-		logger.info("queryRevisionsByPageId: " + pageID + "; "
-				+ Arrays.asList(properties));
+		logger.info("queryRevisionsByPageId(" + pageId + ", " + rvstartid
+				+ ", " + direction + ", " + Arrays.toString(properties));
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		for (Page page : performMultiAction(new QueryRevisionsByPageId(pageID,
+		for (Page page : performMultiAction(new QueryRevisionsByPageId(pageId,
 				rvstartid, direction, properties))) {
 			addAllRevisionsToResult(page, result);
 		}

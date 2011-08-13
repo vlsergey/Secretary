@@ -12,10 +12,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 public class StoredPageDao {
 	protected HibernateTemplate template = null;
 
-	public void setSessionFactory(SessionFactory sessionFactory) {
-		template = new HibernateTemplate(sessionFactory);
-	}
-
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
 	public StoredPage getById(Long pageId) {
 		return template.get(StoredPage.class, pageId);
@@ -35,14 +31,18 @@ public class StoredPageDao {
 		}
 
 		if (StringUtils.isNotEmpty(withContent.getTitle())) {
-			((StoredPage) stored).setTitle(withContent.getTitle());
+			(stored).setTitle(withContent.getTitle());
 		}
 
 		if (withContent.getMissing() != null) {
-			((StoredPage) stored).setMissing(withContent.getMissing());
+			(stored).setMissing(withContent.getMissing());
 		}
 
 		template.flush();
 		return stored;
+	}
+
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		template = new HibernateTemplate(sessionFactory);
 	}
 }

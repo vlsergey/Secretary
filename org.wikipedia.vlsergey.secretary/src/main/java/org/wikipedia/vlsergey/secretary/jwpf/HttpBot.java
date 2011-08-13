@@ -176,6 +176,81 @@ public abstract class HttpBot {
 
 	}
 
+	private void onPostResponse(final ContentProcessable action,
+			final HttpPost postMethod, HttpResponse response)
+			throws IOException {
+		try {
+			int statuscode = response.getStatusLine().getStatusCode();
+			if (action.followRedirects()
+					&& (statuscode == HttpStatus.SC_MOVED_TEMPORARILY
+							|| statuscode == HttpStatus.SC_MOVED_PERMANENTLY
+							|| statuscode == HttpStatus.SC_SEE_OTHER || statuscode == HttpStatus.SC_TEMPORARY_REDIRECT)) {
+				/*
+				 * Usually a successful form-based login results in a redicrect
+				 * to another url
+				 */
+				Header header = response.getFirstHeader("location");
+				if (header != null) {
+					String newuri = header.getValue();
+					if ((newuri == null) || (newuri.equals(""))) {
+						newuri = "/";
+					}
+					logger.debug("Redirect target: " + newuri);
+
+					HttpPost redirect = new HttpPost(newuri);
+					redirect.setEntity(postMethod.getEntity());
+					redirect.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
+					logger.info("GET: " + redirect.getURI());
+					httpManager.execute(redirect,
+							new ResponseHandler<Object>() {
+								public Object handleResponse(
+										HttpResponse response)
+										throws ClientProtocolException,
+										IOException {
+									// no more redirects?
+									onPostResponse(action, postMethod, response);
+									return null;
+								}
+							});
+					return;
+				}
+			}
+
+			InputStream inputStream = response.getEntity().getContent();
+			String out;
+			try {
+				String encoding = response.getFirstHeader("Content-Encoding") != null ? response
+						.getFirstHeader("Content-Encoding").getValue() : "";
+				if (GZIP_CONTENT_ENCODING.equalsIgnoreCase(encoding)) {
+					inputStream = new GZIPInputStream(inputStream);
+				}
+
+				Header charsetHeader = response.getFirstHeader("Content-Type");
+				String charset;
+				if (charsetHeader == null)
+					charset = MediaWikiBot.ENCODING;
+				else
+					charset = getContentCharSet(charsetHeader);
+
+				out = IoUtils.readToString(inputStream, charset);
+			} finally {
+				inputStream.close();
+			}
+
+			action.processReturningText(postMethod, out);
+
+			action.validateReturningCookies(httpManager.getCookieStore()
+					.getCookies(), postMethod);
+
+			logger.debug(postMethod.getURI() + " || " + "POST: "
+					+ response.getStatusLine().toString());
+		} catch (CookieException exc) {
+			throw new ClientProtocolException(exc);
+		} catch (ProcessException exc) {
+			throw new ClientProtocolException(exc);
+		}
+	}
+
 	protected final String performAction(
 			final ContentProcessable contentProcessable)
 			throws ActionException, ProcessException {
@@ -253,80 +328,5 @@ public abstract class HttpBot {
 			}
 		});
 
-	}
-
-	private void onPostResponse(final ContentProcessable action,
-			final HttpPost postMethod, HttpResponse response)
-			throws IOException {
-		try {
-			int statuscode = response.getStatusLine().getStatusCode();
-			if (action.followRedirects()
-					&& (statuscode == HttpStatus.SC_MOVED_TEMPORARILY
-							|| statuscode == HttpStatus.SC_MOVED_PERMANENTLY
-							|| statuscode == HttpStatus.SC_SEE_OTHER || statuscode == HttpStatus.SC_TEMPORARY_REDIRECT)) {
-				/*
-				 * Usually a successful form-based login results in a redicrect
-				 * to another url
-				 */
-				Header header = response.getFirstHeader("location");
-				if (header != null) {
-					String newuri = header.getValue();
-					if ((newuri == null) || (newuri.equals(""))) {
-						newuri = "/";
-					}
-					logger.debug("Redirect target: " + newuri);
-
-					HttpPost redirect = new HttpPost(newuri);
-					redirect.setEntity(postMethod.getEntity());
-					redirect.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
-					logger.info("GET: " + redirect.getURI());
-					httpManager.execute(redirect,
-							new ResponseHandler<Object>() {
-								public Object handleResponse(
-										HttpResponse response)
-										throws ClientProtocolException,
-										IOException {
-									// no more redirects?
-									onPostResponse(action, postMethod, response);
-									return null;
-								}
-							});
-					return;
-				}
-			}
-
-			InputStream inputStream = response.getEntity().getContent();
-			String out;
-			try {
-				String encoding = response.getFirstHeader("Content-Encoding") != null ? response
-						.getFirstHeader("Content-Encoding").getValue() : "";
-				if (GZIP_CONTENT_ENCODING.equalsIgnoreCase(encoding)) {
-					inputStream = new GZIPInputStream(inputStream);
-				}
-
-				Header charsetHeader = response.getFirstHeader("Content-Type");
-				String charset;
-				if (charsetHeader == null)
-					charset = MediaWikiBot.ENCODING;
-				else
-					charset = getContentCharSet(charsetHeader);
-
-				out = IoUtils.readToString(inputStream, charset);
-			} finally {
-				inputStream.close();
-			}
-
-			action.processReturningText(postMethod, out);
-
-			action.validateReturningCookies(httpManager.getCookieStore()
-					.getCookies(), postMethod);
-
-			logger.debug(postMethod.getURI() + " || " + "POST: "
-					+ response.getStatusLine().toString());
-		} catch (CookieException exc) {
-			throw new ClientProtocolException(exc);
-		} catch (ProcessException exc) {
-			throw new ClientProtocolException(exc);
-		}
 	}
 }

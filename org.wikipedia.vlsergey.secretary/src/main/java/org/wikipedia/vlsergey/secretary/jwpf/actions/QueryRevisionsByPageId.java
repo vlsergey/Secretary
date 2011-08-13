@@ -55,6 +55,7 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction
 				properties);
 	}
 
+	@Override
 	protected void parseQueryContinue(Element queryContinueElement) {
 		Element revisionsElement = (Element) queryContinueElement
 				.getElementsByTagName("revisions").item(0);

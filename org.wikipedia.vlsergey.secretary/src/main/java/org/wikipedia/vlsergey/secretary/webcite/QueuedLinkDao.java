@@ -22,39 +22,59 @@ public class QueuedLinkDao {
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = false, propagation = Propagation.REQUIRED)
 	public void addLinkToQueue(QueuedLink link) {
+		QueuedLink prev = findLink(link.getUrl(), link.getAccessDate());
 
-		@SuppressWarnings("unchecked")
-		List<QueuedLink> previous = template
-				.find("SELECT link FROM QueuedLink link WHERE url=? AND accessDate=?",
-						link.getUrl(), link.getAccessDate());
-
-		if (previous.size() > 1)
-			throw new IllegalStateException("Too many links in DB with url='"
-					+ link.getUrl() + "' AND accessDate='"
-					+ link.getAccessDate() + "'");
-
-		if (previous.isEmpty()) {
+		if (prev == null) {
 			link.setQueuedTimestamp(System.currentTimeMillis());
+			link.setAccessDate(StringUtils.trimToEmpty(link.getAccessDate()));
+			link.setArticleDate(StringUtils.trimToEmpty(link.getArticleDate()));
+			link.setAuthor(StringUtils.trimToEmpty(link.getAuthor()));
+			link.setTitle(StringUtils.trimToEmpty(link.getTitle()));
+			link.setUrl(StringUtils.trimToEmpty(link.getUrl()));
 			template.save(link);
 			return;
 		}
 
-		QueuedLink prev = previous.get(0);
 		boolean updated = false;
 		if (StringUtils.isEmpty(prev.getAuthor())
 				&& StringUtils.isNotEmpty(link.getAuthor())) {
-			prev.setAuthor(link.getAuthor());
+			prev.setAuthor(StringUtils.trimToEmpty(link.getAuthor()));
 			updated = true;
 		}
 
 		if (StringUtils.isEmpty(prev.getTitle())
 				&& StringUtils.isNotEmpty(link.getTitle())) {
-			prev.setTitle(link.getTitle());
+			prev.setTitle(StringUtils.trimToEmpty(link.getTitle()));
 			updated = true;
 		}
 
 		if (updated)
 			template.flush();
+	}
+
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public long findCount() {
+		return ((Number) template.find(
+				"SELECT COUNT(links) FROM QueuedLink links").get(0))
+				.longValue();
+	}
+
+	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = true, propagation = Propagation.MANDATORY)
+	public QueuedLink findLink(String url, String accessedDate) {
+		@SuppressWarnings("unchecked")
+		List<QueuedLink> result = template.find("SELECT link "
+				+ "FROM QueuedLink link " + "WHERE url=? AND accessDate=?",
+				StringUtils.trimToEmpty(url),
+				StringUtils.trimToEmpty(accessedDate));
+
+		if (result.size() > 1)
+			throw new IllegalStateException("Too many links in DB with url='"
+					+ url + "' AND accessDate='" + accessedDate + "'");
+
+		if (result.isEmpty())
+			return null;
+
+		return result.get(0);
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
@@ -76,6 +96,10 @@ public class QueuedLinkDao {
 				return result.get(0);
 			}
 		});
+	}
+
+	public boolean hasLink(String url, String accessedDate) {
+		return findLink(url, accessedDate) != null;
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

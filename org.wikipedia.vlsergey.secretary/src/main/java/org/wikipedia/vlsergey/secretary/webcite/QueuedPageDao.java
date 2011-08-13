@@ -47,6 +47,13 @@ public class QueuedPageDao {
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public long findCount() {
+		return ((Number) template.find(
+				"SELECT COUNT(pages) FROM QueuedPage pages").get(0))
+				.longValue();
+	}
+
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public QueuedPage getPageFromQueue() {
 		return template.execute(new HibernateCallback<QueuedPage>() {
 			public QueuedPage doInHibernate(Session session)
@@ -65,6 +72,13 @@ public class QueuedPageDao {
 				return result.get(0);
 			}
 		});
+	}
+
+	@SuppressWarnings("unchecked")
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public List<QueuedPage> getPagesFromQueue() {
+		return template.find("SELECT pages " + "FROM QueuedPage pages "
+				+ "ORDER BY lastCheckTimestamp");
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

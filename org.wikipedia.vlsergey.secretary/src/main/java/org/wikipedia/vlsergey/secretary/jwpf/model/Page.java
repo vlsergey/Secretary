@@ -25,15 +25,15 @@ public interface Page {
 
 	// List<ImageInfo> getImageInfo();
 
-	List<? extends Revision> getRevisions();
+	Long getId();
 
 	Set<? extends Page> getLinks();
 
+	Boolean getMissing();
+
 	Integer getNamespace();
 
-	Long getId();
+	List<? extends Revision> getRevisions();
 
 	String getTitle();
-
-	Boolean getMissing();
 }

@@ -32,12 +32,12 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
  */
 public interface ContentProcessable {
 
+	public boolean followRedirects();
+
 	/**
 	 * @return the of messages in this action
 	 */
 	List<HttpRequestBase> getMessages();
-
-	public boolean followRedirects();
 
 	/**
 	 * 

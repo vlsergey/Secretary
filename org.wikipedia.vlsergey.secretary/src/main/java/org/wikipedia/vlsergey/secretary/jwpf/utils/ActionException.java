@@ -50,21 +50,21 @@ public class ActionException extends JwbfException {
 	/**
 	 * 
 	 * @param arg0
-	 *            sub
-	 */
-	public ActionException(Throwable arg0) {
-		super(arg0);
-	}
-
-	/**
-	 * 
-	 * @param arg0
 	 *            text
 	 * @param arg1
 	 *            sub
 	 */
 	public ActionException(final String arg0, Throwable arg1) {
 		super(arg0, arg1);
+	}
+
+	/**
+	 * 
+	 * @param arg0
+	 *            sub
+	 */
+	public ActionException(Throwable arg0) {
+		super(arg0);
 	}
 
 }

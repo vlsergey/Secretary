@@ -11,26 +11,45 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 public class ArchivedLinkDao {
-	protected HibernateTemplate template = null;
-
 	private static final Logger logger = LoggerFactory
 			.getLogger(ArchivedLinkDao.class);
 
-	public void setSessionFactory(SessionFactory sessionFactory) {
-		template = new HibernateTemplate(sessionFactory);
-	}
+	protected HibernateTemplate template = null;
 
 	@SuppressWarnings("unchecked")
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
-	public List<ArchivedLink> getArchivedLinks(String url, String accessDate) {
-		return template.find("SELECT links " + "FROM ArchivedLink links "
+	public ArchivedLink findLink(String url, String accessDate) {
+		List<ArchivedLink> result = template.find("SELECT links "
+				+ "FROM ArchivedLink links "
 				+ "WHERE accessUrl=? AND accessDate=?",
 				StringUtils.trimToEmpty(url),
 				StringUtils.trimToEmpty(accessDate));
+
+		if (result.size() > 2) {
+			logger.error("More than one URLs with same access date (" + url
+					+ ") and URL '" + accessDate + "'");
+			throw new IllegalStateException();
+		}
+
+		if (result.isEmpty())
+			return null;
+
+		return result.get(0);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void persist(ArchivedLink archivedLink) {
+
+		archivedLink.setAccessDate(StringUtils.trimToEmpty(archivedLink
+				.getAccessDate()));
+		archivedLink.setAccessUrl(StringUtils.trimToEmpty(archivedLink
+				.getAccessUrl()));
+		archivedLink.setArchiveDate(StringUtils.trimToEmpty(archivedLink
+				.getArchiveDate()));
+		archivedLink.setArchiveResult(StringUtils.trimToEmpty(archivedLink
+				.getArchiveResult()));
+		archivedLink.setArchiveUrl(StringUtils.trimToEmpty(archivedLink
+				.getArchiveUrl()));
 
 		logger.info("Remember link '" + archivedLink.getArchiveUrl()
 				+ "' as archived at '" + archivedLink.getArchiveDate()
@@ -38,5 +57,9 @@ public class ArchivedLinkDao {
 				+ "' accessed at '" + archivedLink.getAccessDate() + "'");
 
 		template.persist(archivedLink);
+	}
+
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		template = new HibernateTemplate(sessionFactory);
 	}
 }

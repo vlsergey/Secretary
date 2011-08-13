@@ -20,21 +20,18 @@ public class WebCiteLimiter {
 		template.persist(entity);
 	}
 
-	public long getNextAllowedTime() {
+	public boolean isAllowed() {
 		@SuppressWarnings("unchecked")
 		List<WebCiteQueryEvent> events = template.find("SELECT events "
 				+ "FROM WebCiteQueryEvent events " + "WHERE id > ? "
 				+ "ORDER BY id DESC",
 				Long.valueOf(System.currentTimeMillis() - PERIOD));
 
-		if (events.isEmpty())
-			return System.currentTimeMillis() + 1000;
-
 		if (events.size() >= REQUESTS) {
-			return events.get(0).getId() + PERIOD + 5000;
+			return false;
 		}
 
-		return events.get(0).getId() + 1000;
+		return true;
 	}
 
 	public void setSessionFactory(SessionFactory sessionFactory) {

@@ -4,8 +4,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.webcite.QueuedLinkProcessor;
-import org.wikipedia.vlsergey.secretary.webcite.QueuedPageDao;
 import org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor;
+import org.wikipedia.vlsergey.secretary.webcite.WebCiteArchiver;
 
 public class Secretary {
 
@@ -38,15 +38,20 @@ public class Secretary {
 		MediaWikiBot mediaWikiBot = appContext.getBean(MediaWikiBot.class);
 		mediaWikiBot.httpLogin(login, password);
 
+		WebCiteArchiver webCiteArchiver = appContext
+				.getBean(WebCiteArchiver.class);
+		webCiteArchiver.updateIgnoringList();
+
 		QueuedLinkProcessor queuedLinkProcessor = appContext
 				.getBean(QueuedLinkProcessor.class);
 		queuedLinkProcessor.start();
 
-		QueuedPageDao queuedPageDao = appContext.getBean(QueuedPageDao.class);
-		for (Long pageId : mediaWikiBot
-				.queryEmbeddedInPageIds("Шаблон:Избранная статья")) {
-			queuedPageDao.addPageToQueue(pageId, pageId.longValue());
-		}
+		// QueuedPageDao queuedPageDao =
+		// appContext.getBean(QueuedPageDao.class);
+		// for (Long pageId : mediaWikiBot
+		// .queryEmbeddedInPageIds("Шаблон:Cite web")) {
+		// queuedPageDao.addPageToQueue(pageId, pageId.longValue());
+		// }
 
 		// for (String articleTitle : new String[] { "Маскаро, Хуан",
 		// "Гигантское магнетосопротивление", "Мор, Георг",

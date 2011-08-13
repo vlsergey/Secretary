@@ -32,14 +32,14 @@ import java.util.Collection;
 public interface MultiAction<R> extends ContentProcessable {
 
 	/**
-	 * @return the results collecting during _this_ single action
-	 */
-	public Collection<R> getResults();
-
-	/**
 	 * @return necessary information for the next action or null if this was the
 	 *         last one
 	 */
 	public MultiAction<R> getNextAction();
+
+	/**
+	 * @return the results collecting during _this_ single action
+	 */
+	public Collection<R> getResults();
 
 }

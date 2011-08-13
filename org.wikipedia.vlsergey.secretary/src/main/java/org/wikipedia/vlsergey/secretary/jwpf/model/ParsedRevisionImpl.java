@@ -30,13 +30,13 @@ public class ParsedRevisionImpl implements Revision {
 
 	private String content = null;
 
+	private Long id = null;
+
 	private Boolean minor;
 
 	private final Page page;
 
 	private String parsetree = null;
-
-	private Long id = null;
 
 	private Long size = null;
 
@@ -108,16 +108,16 @@ public class ParsedRevisionImpl implements Revision {
 		this.content = content;
 	}
 
+	public void setId(Long revisionID) {
+		this.id = revisionID;
+	}
+
 	public void setMinor(Boolean minor) {
 		this.minor = minor;
 	}
 
 	public void setParsetree(String parsetree) {
 		this.parsetree = parsetree;
-	}
-
-	public void setId(Long revisionID) {
-		this.id = revisionID;
 	}
 
 	public void setSize(Long size) {

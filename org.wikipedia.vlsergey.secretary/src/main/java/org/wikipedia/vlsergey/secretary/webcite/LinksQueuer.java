@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
+import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
@@ -27,16 +28,40 @@ public class LinksQueuer {
 	private ArchivedLinkDao archivedLinkDao;
 
 	@Autowired
-	private QueuedLinkDao queuedLinkDao;
-
-	@Autowired
 	private ArticleLinksCollector articleLinksCollector;
 
 	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
+	private QueuedLinkDao queuedLinkDao;
+
+	@Autowired
 	private WikiCache wikiCache;
+
+	public boolean isQueuedOrArchived(String url, String accessDate) {
+		return archivedLinkDao.findLink(url, accessDate) != null
+				|| queuedLinkDao.findLink(url, accessDate) != null;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED)
+	public ArchivedLink queueOrGetResult(ArticleLink articleLink) {
+		ArchivedLink archivedLink = archivedLinkDao.findLink(articleLink.url,
+				articleLink.accessDate);
+
+		if (archivedLink != null)
+			return archivedLink;
+
+		QueuedLink queuedLink = new QueuedLink();
+		queuedLink.setAccessDate(articleLink.accessDate);
+		queuedLink.setArticleDate(articleLink.articleDate);
+		queuedLink.setAuthor(articleLink.author);
+		queuedLink.setTitle(articleLink.title);
+		queuedLink.setUrl(articleLink.url);
+		queuedLinkDao.addLinkToQueue(queuedLink);
+
+		return null;
+	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
 	public void saveArchivedLink(ArticleLink articleLink) {
@@ -51,53 +76,55 @@ public class LinksQueuer {
 		archivedLinkDao.persist(archivedLink);
 	}
 
-	@Transactional(propagation = Propagation.REQUIRED)
-	public ArchivedLink queueOrGetResult(ArticleLink articleLink) {
-		List<ArchivedLink> archivedLinks = archivedLinkDao.getArchivedLinks(
-				articleLink.url, articleLink.accessDate);
-
-		if (archivedLinks.size() > 2) {
-			logger.error("More than one URLs with same access date ("
-					+ articleLink.accessDate + ") and URL '" + articleLink.url
-					+ "'");
-			throw new IllegalStateException();
-		}
-
-		if (!archivedLinks.isEmpty()) {
-			return archivedLinks.get(0);
-		}
-
-		QueuedLink queuedLink = new QueuedLink();
-		queuedLink.setAccessDate(articleLink.accessDate);
-		queuedLink.setArticleDate(articleLink.articleDate);
-		queuedLink.setAuthor(articleLink.author);
-		queuedLink.setTitle(articleLink.title);
-		queuedLink.setUrl(articleLink.url);
-		queuedLinkDao.addLinkToQueue(queuedLink);
-
-		return null;
-	}
-
 	@Transactional(propagation = Propagation.NEVER)
 	public void storeArchivedLinksFromArticle(Long pageId) throws Exception {
-		String latestContent = wikiCache.queryLatestRevisionContent(pageId);
-
-		if (StringUtils.isEmpty(latestContent))
+		Revision latestRevision = wikiCache.queryLatestRevision(pageId);
+		if (latestRevision == null) {
+			logger.warn("No latest revision for page #" + pageId);
 			return;
+		}
 
-		storeArchivedLinksFromArticleContent(latestContent);
+		String latestContent = latestRevision.getContent();
+
+		if (StringUtils.isEmpty(latestContent)) {
+			logger.warn("No content for revision #" + latestRevision.getId()
+					+ " of page #" + pageId + " ('"
+					+ latestRevision.getPage().getTitle() + "')");
+			return;
+		}
+
+		try {
+			storeArchivedLinksFromArticleContent(latestContent);
+		} catch (ParsingException exc) {
+			logger.warn("Parsing exception occur during processing revision #"
+					+ latestRevision.getId() + " of page #" + pageId + " ('"
+					+ latestRevision.getPage().getTitle() + "'): " + exc, exc);
+		}
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
 	public void storeArchivedLinksFromArticle(String articleName)
 			throws Exception {
+		Revision latestRevision = wikiCache.queryLatestRevision(articleName);
+		if (latestRevision == null) {
+			logger.warn("No latest revision for page '" + articleName + "'");
+			return;
+		}
+
 		String latestContent = wikiCache
 				.queryLatestRevisionContent(articleName);
 
 		if (StringUtils.isEmpty(latestContent))
 			return;
 
-		storeArchivedLinksFromArticleContent(latestContent);
+		try {
+			storeArchivedLinksFromArticleContent(latestContent);
+		} catch (ParsingException exc) {
+			logger.warn("Parsing exception occur during processing revision #"
+					+ latestRevision.getId() + " of page #"
+					+ latestRevision.getPage().getId() + " ('" + articleName
+					+ "'): " + exc, exc);
+		}
 	}
 
 	@Transactional(propagation = Propagation.SUPPORTS)
@@ -158,8 +185,8 @@ public class LinksQueuer {
 				continue;
 			}
 
-			if (!archivedLinkDao.getArchivedLinks(articleLink.url,
-					articleLink.accessDate).isEmpty()) {
+			if (archivedLinkDao.findLink(articleLink.url,
+					articleLink.accessDate) != null) {
 				// already have such link in out DB
 				logger.debug("Ignoring archive URL '" + archiveUrl
 						+ "' (as archive copy of '" + originalUrl

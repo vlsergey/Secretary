@@ -5,68 +5,67 @@ import java.util.Collections;
 import java.util.List;
 
 public class Parameter extends AbstractContainer {
-    private Content name;
+	private Content name;
 
-    private Content value;
+	private Content value;
 
-    public Parameter(Content parameterName, Content value) {
-	this.name = parameterName;
-	this.value = value;
-    }
-
-    public String getCanonicalName() {
-	if (name == null)
-	    return null;
-
-	StringBuilder stringBuilder = new StringBuilder();
-	List<? extends Content> toStr = name instanceof ArticleFragment ? ((ArticleFragment) name)
-		.getChildren()
-		: Collections.<Content> singletonList(name);
-	for (Content content : toStr) {
-	    if (content instanceof Text) {
-		stringBuilder.append(content.toWiki());
-	    } else if (content instanceof Comment) {
-		// ignore
-	    } else {
-		throw new UnsupportedOperationException(
-			"Unsupported content in template name: "
-				+ content.getClass().getName());
-	    }
+	public Parameter(Content parameterName, Content value) {
+		this.name = parameterName;
+		this.value = value;
 	}
-	return stringBuilder.toString().trim().toLowerCase();
-    }
 
-    @Override
-    public List<Content> getChildren() {
-	List<Content> result = new ArrayList<Content>();
+	public String getCanonicalName() {
+		if (name == null)
+			return null;
 
-	addToChildren(result, name);
-	addToChildren(result, value);
+		StringBuilder stringBuilder = new StringBuilder();
+		List<? extends Content> toStr = name instanceof ArticleFragment ? ((ArticleFragment) name)
+				.getChildren() : Collections.<Content> singletonList(name);
+		for (Content content : toStr) {
+			if (content instanceof Text) {
+				stringBuilder.append(content.toWiki());
+			} else if (content instanceof Comment) {
+				// ignore
+			} else {
+				throw new UnsupportedOperationException(
+						"Unsupported content in template name: "
+								+ content.getClass().getName());
+			}
+		}
+		return stringBuilder.toString().trim().toLowerCase();
+	}
 
-	return result;
-    }
+	@Override
+	public List<Content> getChildren() {
+		List<Content> result = new ArrayList<Content>();
 
-    public Content getName() {
-	return name;
-    }
+		addToChildren(result, name);
+		addToChildren(result, value);
 
-    public Content getValue() {
-	return value;
-    }
+		return result;
+	}
 
-    public void setName(Content name) {
-	this.name = name;
-    }
+	public Content getName() {
+		return name;
+	}
 
-    public void setValue(Content value) {
-	this.value = value;
-    }
+	public Content getValue() {
+		return value;
+	}
 
-    @Override
-    public String toWiki() {
-	if (name == null)
-	    return "|" + value.toWiki();
+	public void setName(Content name) {
+		this.name = name;
+	}
 
-	return "|" + name.toWiki() + "=" + value.toWiki();
-    }
+	public void setValue(Content value) {
+		this.value = value;
+	}
+
+	@Override
+	public String toWiki() {
+		if (name == null)
+			return "|" + value.toWiki();
+
+		return "|" + name.toWiki() + "=" + value.toWiki();
+	}
 }

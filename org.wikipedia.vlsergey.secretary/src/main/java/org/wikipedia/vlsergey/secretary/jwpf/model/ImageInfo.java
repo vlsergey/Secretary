@@ -20,27 +20,27 @@ package org.wikipedia.vlsergey.secretary.jwpf.model;
 import java.util.Date;
 
 public interface ImageInfo {
-    public String getComment();
+	public String getComment();
 
-    public String getDescriptionURL();
+	public String getDescriptionURL();
 
-    public Integer getHeight();
+	public Integer getHeight();
 
-    public String getImageName();
+	public String getImageName();
 
-    public String getMetadata();
+	public String getMetadata();
 
-    public String getMime();
+	public String getMime();
 
-    public String getSHA1();
+	public String getSHA1();
 
-    public Long getSize();
+	public Long getSize();
 
-    public Date getTimestamp();
+	public Date getTimestamp();
 
-    public String getURL();
+	public String getURL();
 
-    public String getUser();
+	public String getUser();
 
-    public Integer getWidth();
+	public Integer getWidth();
 }

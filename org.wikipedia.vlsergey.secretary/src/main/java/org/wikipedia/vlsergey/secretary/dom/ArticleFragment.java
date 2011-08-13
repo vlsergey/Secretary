@@ -22,41 +22,41 @@ import java.util.List;
 
 public class ArticleFragment extends AbstractContainer {
 
-    private static final long serialVersionUID = 358081004448028714L;
+	private static final long serialVersionUID = 358081004448028714L;
 
-    private List<Content> children;
+	private List<Content> children;
 
-    public ArticleFragment(List<? extends Content> children) {
-        this.children = new ArrayList<Content>(children);
-    }
+	public ArticleFragment(List<? extends Content> children) {
+		this.children = new ArrayList<Content>(children);
+	}
 
-    @Override
-    public List<Content> getChildren() {
-        return children;
-    }
+	@Override
+	public List<Content> getChildren() {
+		return children;
+	}
 
-    public Section getSectionByName(String sectionName) {
-        for (Content content : getChildren()) {
-            if (content instanceof Section) {
-                Section section = (Section) content;
-                if (section.getHeader().toWiki().trim().equalsIgnoreCase(
-                        sectionName))
-                    return section;
-            }
-        }
-        return null;
-    }
+	public Section getSectionByName(String sectionName) {
+		for (Content content : getChildren()) {
+			if (content instanceof Section) {
+				Section section = (Section) content;
+				if (section.getHeader().toWiki().trim()
+						.equalsIgnoreCase(sectionName))
+					return section;
+			}
+		}
+		return null;
+	}
 
-    public List<Section> getSections() {
-        List<Section> result = new ArrayList<Section>();
-        for (Content content : getChildren()) {
-            if (content instanceof Section)
-                result.add((Section) content);
-        }
-        return result;
-    }
+	public List<Section> getSections() {
+		List<Section> result = new ArrayList<Section>();
+		for (Content content : getChildren()) {
+			if (content instanceof Section)
+				result.add((Section) content);
+		}
+		return result;
+	}
 
-    public void setChildren(List<Content> children) {
-        this.children = children;
-    }
+	public void setChildren(List<Content> children) {
+		this.children = children;
+	}
 }

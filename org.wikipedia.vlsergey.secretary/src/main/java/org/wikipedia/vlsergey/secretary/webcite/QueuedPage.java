@@ -15,12 +15,12 @@ public class QueuedPage {
 		return id;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
-	}
-
 	public long getLastCheckTimestamp() {
 		return lastCheckTimestamp;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public void setLastCheckTimestamp(long lastCheckTimestamp) {

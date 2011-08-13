@@ -50,21 +50,21 @@ public class CookieException extends ActionException {
 	/**
 	 * 
 	 * @param arg0
-	 *            sub
-	 */
-	public CookieException(Throwable arg0) {
-		super(arg0);
-	}
-
-	/**
-	 * 
-	 * @param arg0
 	 *            exception text
 	 * @param arg1
 	 *            sub
 	 */
 	public CookieException(String arg0, Throwable arg1) {
 		super(arg0, arg1);
+	}
+
+	/**
+	 * 
+	 * @param arg0
+	 *            sub
+	 */
+	public CookieException(Throwable arg0) {
+		super(arg0);
 	}
 
 }

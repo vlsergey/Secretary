@@ -18,23 +18,23 @@
 package org.wikipedia.vlsergey.secretary.dom;
 
 public class Comment extends Content {
-    private String comment;
+	private String comment;
 
-    public Comment(String comment) {
-        this.comment = comment;
-    }
+	public Comment(String comment) {
+		this.comment = comment;
+	}
 
-    public String getComment() {
-        return comment;
-    }
+	public String getComment() {
+		return comment;
+	}
 
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
 
-    @Override
-    public String toWiki() {
-        return "<!--" + comment + "-->";
-    }
+	@Override
+	public String toWiki() {
+		return "<!--" + comment + "-->";
+	}
 
 }

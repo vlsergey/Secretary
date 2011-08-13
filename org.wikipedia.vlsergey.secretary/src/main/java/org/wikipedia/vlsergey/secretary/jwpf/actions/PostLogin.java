@@ -59,9 +59,9 @@ public class PostLogin extends MWAction {
 
 	private LoginData login = null;
 
-	private TicketData ticketData = null;
-
 	private final String password;
+
+	private TicketData ticketData = null;
 
 	private final String username;
 
@@ -107,10 +107,6 @@ public class PostLogin extends MWAction {
 		}
 	}
 
-	public boolean needConfirmation() {
-		return ticketData != null;
-	}
-
 	public PostPostLogin getConfirmationAction() {
 		return new PostPostLogin(ticketData, username, password);
 	}
@@ -122,11 +118,16 @@ public class PostLogin extends MWAction {
 		return login;
 	}
 
+	public boolean needConfirmation() {
+		return ticketData != null;
+	}
+
 	/**
 	 * @param s
 	 *            incomming
 	 * @return after testing
 	 */
+	@Override
 	public void processReturningText(final HttpRequestBase hm, final String s)
 			throws ProcessException {
 		SAXBuilder builder = new SAXBuilder();

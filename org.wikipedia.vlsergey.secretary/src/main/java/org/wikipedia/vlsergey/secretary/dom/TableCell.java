@@ -22,62 +22,62 @@ import java.util.List;
 
 public class TableCell extends AbstractContainer {
 
-    private Content attributes;
+	private Content attributes;
 
-    private Content attributesBorder;
+	private Content attributesBorder;
 
-    private Content border;
+	private Content border;
 
-    private Content content;
+	private Content content;
 
-    public TableCell(Content beginning, Content attributes,
-            Content attributesBorder, Content content) {
-        this.border = beginning;
-        this.attributes = attributes;
-        this.attributesBorder = attributesBorder;
-        this.content = content;
-    }
+	public TableCell(Content beginning, Content attributes,
+			Content attributesBorder, Content content) {
+		this.border = beginning;
+		this.attributes = attributes;
+		this.attributesBorder = attributesBorder;
+		this.content = content;
+	}
 
-    public Content getAttributes() {
-        return attributes;
-    }
+	public Content getAttributes() {
+		return attributes;
+	}
 
-    public Content getAttributesBorder() {
-        return attributesBorder;
-    }
+	public Content getAttributesBorder() {
+		return attributesBorder;
+	}
 
-    public Content getBorder() {
-        return border;
-    }
+	public Content getBorder() {
+		return border;
+	}
 
-    @Override
-    public List<Content> getChildren() {
-        List<Content> result = new ArrayList<Content>();
-        addToChildren(result, border);
-        addToChildren(result, attributes);
-        addToChildren(result, attributesBorder);
-        addToChildren(result, content);
-        return result;
-    }
+	@Override
+	public List<Content> getChildren() {
+		List<Content> result = new ArrayList<Content>();
+		addToChildren(result, border);
+		addToChildren(result, attributes);
+		addToChildren(result, attributesBorder);
+		addToChildren(result, content);
+		return result;
+	}
 
-    public Content getContent() {
-        return content;
-    }
+	public Content getContent() {
+		return content;
+	}
 
-    public void setAttributes(Content attributes) {
-        this.attributes = attributes;
-    }
+	public void setAttributes(Content attributes) {
+		this.attributes = attributes;
+	}
 
-    public void setAttributesBorder(Content attributesBorder) {
-        this.attributesBorder = attributesBorder;
-    }
+	public void setAttributesBorder(Content attributesBorder) {
+		this.attributesBorder = attributesBorder;
+	}
 
-    public void setBorder(Content beginning) {
-        this.border = beginning;
-    }
+	public void setBorder(Content beginning) {
+		this.border = beginning;
+	}
 
-    public void setContent(Content content) {
-        this.content = content;
-    }
+	public void setContent(Content content) {
+		this.content = content;
+	}
 
 }

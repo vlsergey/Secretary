@@ -32,8 +32,8 @@ package org.wikipedia.vlsergey.secretary.jwpf.utils;
  */
 public class TicketData {
 
-	private final String token;
 	private final String sessionId;
+	private final String token;
 
 	public TicketData(String token, String sessionId) {
 		this.token = token;

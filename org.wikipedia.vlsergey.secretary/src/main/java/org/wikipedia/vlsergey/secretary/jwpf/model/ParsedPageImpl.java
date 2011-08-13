@@ -28,13 +28,13 @@ public class ParsedPageImpl implements Page {
 
 	// List<ImageInfo> imageInfo;
 
+	private Long id;
+
 	private Set<Page> links;
 
 	private Boolean missing = null;
 
 	private Integer namespace;
-
-	private Long id;
 
 	private List<Revision> revisions;
 
@@ -48,17 +48,21 @@ public class ParsedPageImpl implements Page {
 	// return imageInfo;
 	// }
 
+	@Id
+	public Long getId() {
+		return id;
+	}
+
 	public Set<Page> getLinks() {
 		return links;
 	}
 
-	public Integer getNamespace() {
-		return namespace;
+	public Boolean getMissing() {
+		return missing;
 	}
 
-	@Id
-	public Long getId() {
-		return id;
+	public Integer getNamespace() {
+		return namespace;
 	}
 
 	public List<Revision> getRevisions() {
@@ -69,10 +73,6 @@ public class ParsedPageImpl implements Page {
 		return title;
 	}
 
-	public Boolean getMissing() {
-		return missing;
-	}
-
 	public void setCategories(Set<Page> categories) {
 		this.categories = categories;
 	}
@@ -80,6 +80,10 @@ public class ParsedPageImpl implements Page {
 	// public void setImageInfo(List<ImageInfo> imageInfo) {
 	// this.imageInfo = imageInfo;
 	// }
+
+	public void setId(Long pageID) {
+		this.id = pageID;
+	}
 
 	public void setLinks(Set<Page> links) {
 		this.links = links;
@@ -91,10 +95,6 @@ public class ParsedPageImpl implements Page {
 
 	public void setNamespace(Integer namespace) {
 		this.namespace = namespace;
-	}
-
-	public void setId(Long pageID) {
-		this.id = pageID;
 	}
 
 	public void setRevisions(List<Revision> revisions) {

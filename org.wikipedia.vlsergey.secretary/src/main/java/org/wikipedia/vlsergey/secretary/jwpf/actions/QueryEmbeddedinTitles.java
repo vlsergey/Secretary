@@ -35,37 +35,20 @@ import org.w3c.dom.Element;
 public class QueryEmbeddedinTitles extends AbstractQueryAction implements
 		MultiAction<String> {
 
+	private String namespaces;
+
 	/**
 	 * information necessary to get the next api page.
 	 */
 	private String nextPageInfo = null;
+
+	private String title;
 
 	/**
 	 * Collection that will contain the result (titles of articles using the
 	 * template) after performing the action has finished.
 	 */
 	private Collection<String> titleCollection = new ArrayList<String>();
-
-	private String title;
-
-	private String namespaces;
-
-	/**
-	 * The private constructor, which is used to create follow-up actions.
-	 */
-	private QueryEmbeddedinTitles(String title, String namespaces,
-			String nextPageInfo) {
-		this.title = title;
-		this.namespaces = namespaces;
-
-		String query = "/api.php?action=query&list=embeddedin" + "&eititle="
-				+ encode(title)
-				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "")
-				+ "&eilimit=" + getLimit() + "&format=xml" + "&eicontinue="
-				+ encode(nextPageInfo);
-
-		msgs.add(new HttpGet(query));
-	}
 
 	/**
 	 * The public constructor. It will have an MediaWiki-request generated,
@@ -82,6 +65,23 @@ public class QueryEmbeddedinTitles extends AbstractQueryAction implements
 				+ encode(title)
 				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "")
 				+ "&eilimit=" + getLimit() + "&format=xml";
+
+		msgs.add(new HttpGet(query));
+	}
+
+	/**
+	 * The private constructor, which is used to create follow-up actions.
+	 */
+	private QueryEmbeddedinTitles(String title, String namespaces,
+			String nextPageInfo) {
+		this.title = title;
+		this.namespaces = namespaces;
+
+		String query = "/api.php?action=query&list=embeddedin" + "&eititle="
+				+ encode(title)
+				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "")
+				+ "&eilimit=" + getLimit() + "&format=xml" + "&eicontinue="
+				+ encode(nextPageInfo);
 
 		msgs.add(new HttpGet(query));
 	}

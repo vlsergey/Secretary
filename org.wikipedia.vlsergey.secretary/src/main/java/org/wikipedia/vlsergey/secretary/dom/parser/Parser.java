@@ -29,16 +29,6 @@ public class Parser extends AbstractParser {
 	}
 
 	@Override
-	protected Section newSection(int level, Content header,
-			Text afterHeaderSpaces, Content content) {
-
-		ArticleFragment articleFragment = content instanceof ArticleFragment ? (ArticleFragment) content
-				: new ArticleFragment(Arrays.asList(new Content[] { content }));
-
-		return new Section(level, header, afterHeaderSpaces, articleFragment);
-	}
-
-	@Override
 	protected NoWiki newNoWiki(String escapedText) {
 		return new NoWiki(escapedText);
 	}
@@ -51,6 +41,16 @@ public class Parser extends AbstractParser {
 	@Override
 	protected Parameter newParameter(final Content name, final Content value) {
 		return new Parameter(name, value);
+	}
+
+	@Override
+	protected Section newSection(int level, Content header,
+			Text afterHeaderSpaces, Content content) {
+
+		ArticleFragment articleFragment = content instanceof ArticleFragment ? (ArticleFragment) content
+				: new ArticleFragment(Arrays.asList(new Content[] { content }));
+
+		return new Section(level, header, afterHeaderSpaces, articleFragment);
 	}
 
 	@Override

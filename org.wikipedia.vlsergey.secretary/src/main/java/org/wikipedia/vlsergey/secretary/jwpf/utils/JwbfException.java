@@ -47,19 +47,19 @@ public class JwbfException extends RuntimeException {
 	/**
 	 * @param arg0
 	 *            a
-	 */
-	public JwbfException(Throwable arg0) {
-		super(arg0);
-	}
-
-	/**
-	 * @param arg0
-	 *            a
 	 * @param arg1
 	 *            a
 	 */
 	public JwbfException(String arg0, Throwable arg1) {
 		super(arg0, arg1);
+	}
+
+	/**
+	 * @param arg0
+	 *            a
+	 */
+	public JwbfException(Throwable arg0) {
+		super(arg0);
 	}
 
 }

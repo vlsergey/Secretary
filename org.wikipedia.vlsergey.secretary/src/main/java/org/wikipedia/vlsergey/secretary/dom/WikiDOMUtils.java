@@ -25,94 +25,96 @@ import org.apache.commons.lang.StringUtils;
 
 public class WikiDOMUtils {
 
-    public static Section getFirstSectionWithArticleLink(
-            ArticleFragment articleFragment, String articleTitle) {
-        for (Section section : articleFragment.getSections()) {
-            if (hasArticleLink(section.getHeader(), articleTitle))
-                return section;
+	public static Section getFirstSectionWithArticleLink(
+			ArticleFragment articleFragment, String articleTitle) {
+		for (Section section : articleFragment.getSections()) {
+			if (hasArticleLink(section.getHeader(), articleTitle))
+				return section;
 
-            Section child = getFirstSectionWithArticleLink(
-                    section.getContent(), articleTitle);
-            if (child != null)
-                return child;
-        }
-        return null;
-    }
+			Section child = getFirstSectionWithArticleLink(
+					section.getContent(), articleTitle);
+			if (child != null)
+				return child;
+		}
+		return null;
+	}
 
-    public static boolean hasArticleLink(Content content, String articleTitle) {
-        articleTitle = articleTitle.toLowerCase();
-        articleTitle = articleTitle.replace(" ", "_");
+	public static boolean hasArticleLink(Content content, String articleTitle) {
+		articleTitle = articleTitle.toLowerCase();
+		articleTitle = articleTitle.replace(" ", "_");
 
-        // XXX: Until Link content introduced
-        if (content instanceof Text) {
-            Pattern pattern = Pattern.compile("\\[\\[[ \\t]*"
-                    + Pattern.quote(articleTitle) + "[ \\t]*((\\]\\])|(\\|))");
+		// XXX: Until Link content introduced
+		if (content instanceof Text) {
+			Pattern pattern = Pattern.compile("\\[\\[[ \\t]*"
+					+ Pattern.quote(articleTitle) + "[ \\t]*((\\]\\])|(\\|))");
 
-            String text = ((Text) content).getText().toLowerCase();
-            text = text.replace(" ", "_");
-            Matcher matcher = pattern.matcher(text);
-            return matcher.find();
-        }
+			String text = ((Text) content).getText().toLowerCase();
+			text = text.replace(" ", "_");
+			Matcher matcher = pattern.matcher(text);
+			return matcher.find();
+		}
 
-        if (content instanceof AbstractContainer) {
-            for (Content child : ((AbstractContainer) content).getChildren()) {
-                if (hasArticleLink(child, articleTitle))
-                    return true;
-            }
-        }
+		if (content instanceof AbstractContainer) {
+			for (Content child : ((AbstractContainer) content).getChildren()) {
+				if (hasArticleLink(child, articleTitle))
+					return true;
+			}
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    public static void trim(Content content) {
-        trimLeft(content);
-        trimRight(content);
-    }
+	public static void trim(Content content) {
+		trimLeft(content);
+		trimRight(content);
+	}
 
-    public static void trimLeft(Content content) {
-        if (content instanceof ArticleFragment) {
-            final List<? extends Content> children = ((ArticleFragment) content).getChildren();
-            if (children.size() != 0)
-                trimLeft(children.get(0));
+	public static void trimLeft(Content content) {
+		if (content instanceof ArticleFragment) {
+			final List<? extends Content> children = ((ArticleFragment) content)
+					.getChildren();
+			if (children.size() != 0)
+				trimLeft(children.get(0));
 
-            return;
-        } else if (content instanceof Text) {
-            Text text = (Text) content;
-            String string = text.getText();
-            string = StringUtils.stripStart(string, " \t\n\r");
-            text.setText(string);
+			return;
+		} else if (content instanceof Text) {
+			Text text = (Text) content;
+			String string = text.getText();
+			string = StringUtils.stripStart(string, " \t\n\r");
+			text.setText(string);
 
-            return;
-        } else if (content instanceof Section || content instanceof Template) {
-            return;
-        }
+			return;
+		} else if (content instanceof Section || content instanceof Template) {
+			return;
+		}
 
-        throw new UnsupportedOperationException(content.getClass().getName());
-    }
+		throw new UnsupportedOperationException(content.getClass().getName());
+	}
 
-    public static void trimRight(Content content) {
-        if (content instanceof ArticleFragment) {
-            final List<? extends Content> children = ((ArticleFragment) content).getChildren();
-            if (children.size() != 0)
-                trimRight(children.get(children.size() - 1));
+	public static void trimRight(Content content) {
+		if (content instanceof ArticleFragment) {
+			final List<? extends Content> children = ((ArticleFragment) content)
+					.getChildren();
+			if (children.size() != 0)
+				trimRight(children.get(children.size() - 1));
 
-            return;
-        } else if (content instanceof Text) {
-            Text text = (Text) content;
-            String string = text.getText();
-            string = StringUtils.stripEnd(string, " \t\n\r");
-            text.setText(string);
+			return;
+		} else if (content instanceof Text) {
+			Text text = (Text) content;
+			String string = text.getText();
+			string = StringUtils.stripEnd(string, " \t\n\r");
+			text.setText(string);
 
-            return;
-        } else if (content instanceof Section) {
-            ArticleFragment articleFragment = ((Section) content).getContent();
-            trimRight(articleFragment);
-            articleFragment.getChildren().add(new Text("\n"));
-            return;
-        } else if (content instanceof Template) {
-            return;
-        }
+			return;
+		} else if (content instanceof Section) {
+			ArticleFragment articleFragment = ((Section) content).getContent();
+			trimRight(articleFragment);
+			articleFragment.getChildren().add(new Text("\n"));
+			return;
+		} else if (content instanceof Template) {
+			return;
+		}
 
-        throw new UnsupportedOperationException(content.getClass().getName());
-    }
+		throw new UnsupportedOperationException(content.getClass().getName());
+	}
 }

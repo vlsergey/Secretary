@@ -18,20 +18,20 @@
 package org.wikipedia.vlsergey.secretary.jwpf;
 
 public enum Direction {
-    NEWER("newer"), OLDER("older");
+	NEWER("newer"), OLDER("older");
 
-    private String queryString;
+	private String queryString;
 
-    private Direction(String queryString) {
-        this.queryString = queryString;
-    }
+	private Direction(String queryString) {
+		this.queryString = queryString;
+	}
 
-    public String getQueryString() {
-        return queryString;
-    }
+	public String getQueryString() {
+		return queryString;
+	}
 
-    @Override
-    public String toString() {
-        return getQueryString();
-    }
+	@Override
+	public String toString() {
+		return getQueryString();
+	}
 }

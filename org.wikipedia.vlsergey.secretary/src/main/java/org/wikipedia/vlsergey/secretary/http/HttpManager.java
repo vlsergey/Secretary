@@ -38,10 +38,6 @@ public class HttpManager {
 		HttpClientParams.setRedirecting(client.getParams(), true);
 	}
 
-	public final CookieStore getCookieStore() {
-		return client.getCookieStore();
-	}
-
 	public final HttpResponse execute(HttpUriRequest request)
 			throws IOException, ClientProtocolException {
 		return client.execute(request);
@@ -51,6 +47,10 @@ public class HttpManager {
 			ResponseHandler<? extends T> responseHandler) throws IOException,
 			ClientProtocolException {
 		return client.execute(request, responseHandler);
+	}
+
+	public final CookieStore getCookieStore() {
+		return client.getCookieStore();
 	}
 
 }

@@ -2,11 +2,14 @@ package org.wikipedia.vlsergey.secretary.webcite;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,9 +28,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.wikipedia.vlsergey.secretary.dom.Parameter;
-import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
+import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 
 public class WebCiteArchiver {
@@ -37,120 +39,6 @@ public class WebCiteArchiver {
 	private static final String PATTERN_WEBCITE_ARCHIVE_RESPONSE = "An[ ]archive[ ]of[ ]this[ ]page[ ]should[ ]shortly[ ]be[ ]available[ ]at[ ]\\<\\/p\\>\\<br[ ]\\/\\>"
 			+ "\\<p\\>\\<a[ ]href\\=([^\\>]*)\\>";
 	private static final String PATTERN_WEBCITE_QUERY_RESPONSE = "\\<resultset\\>\\<result status\\=\\\"([^\\\"]*)\\\"\\>";
-
-	boolean ignoreCite(PerArticleReport perArticleReport,
-			Template citeWebTemplate) {
-
-		Parameter urlParameter = citeWebTemplate
-				.getParameter(WikiConstants.PARAMETER_URL);
-		if (urlParameter == null
-				|| StringUtils.isEmpty(urlParameter.getValue().toString()
-						.trim()))
-			return true;
-		String url = urlParameter.getValue().toString().trim();
-
-		Parameter deadlinkParameter = citeWebTemplate
-				.getParameter(WikiConstants.PARAMETER_DEADLINK);
-		if (deadlinkParameter != null
-				&& StringUtils.isNotEmpty(deadlinkParameter.getValue()
-						.toString().trim())) {
-
-			if (perArticleReport != null)
-				perArticleReport.skippedMarkedDead(url);
-
-			return true;
-		}
-
-		Parameter archiveurlParameter = citeWebTemplate
-				.getParameter(WikiConstants.PARAMETER_ARCHIVEURL);
-		if (archiveurlParameter != null
-				&& StringUtils.isNotEmpty(archiveurlParameter.getValue()
-						.toString().trim())) {
-
-			if (perArticleReport != null)
-				perArticleReport.skippedMarkedArchived(url);
-
-			return true;
-		}
-
-		if (ignoreUrl(perArticleReport, url))
-			return true;
-
-		return false;
-	}
-
-	static boolean ignoreUrl(PerArticleReport perArticleReport, String url) {
-		if (!url.startsWith("http://"))
-			return true;
-
-		URI uri;
-		try {
-			uri = URI.create(url);
-		} catch (IllegalArgumentException exc) {
-			logger.warn("URL " + url + " skipped due wrong format: "
-					+ exc.getMessage());
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIncorrectFormat(url);
-
-			return true;
-		}
-
-		String host = uri.getHost().toLowerCase();
-
-		return WebCiteArchiver.isIgnoreHost(perArticleReport, url, host);
-	}
-
-	static final Set<String> SKIP_ERRORS = new HashSet<String>(Arrays.asList(
-	//
-
-			// http://www.webcitation.org/5wAZdFTwc
-			"beyond2020.cso.ie",
-
-			// http://www.webcitation.org/5w7BcNTfc
-			"logainm.ie",
-
-			// http://www.webcitation.org/5w7BcNTfc
-			"www.logainm.ie"
-
-	));
-
-	static final Set<String> SKIP_NO_CACHE = new HashSet<String>(Arrays.asList(
-	//
-			"www1.folha.uol.com.br", //
-
-			"www.ctv.ca",//
-
-			"www.bluesnews.com",//
-			"www.inishturkisland.com",//
-			"www.janes.com",//
-			"www.plastichead.com",//
-			"www.sherdog.com",//
-			"securitylabs.websense.com",//
-
-			"www.sportovci.cz",//
-
-			"antiaircraft.org",//
-
-			"www.3dnews.ru",//
-			"cult.compulenta.ru",//
-			"hard.compulenta.ru",//
-			"offline.computerra.ru",//
-			"www.computerra.ru",//
-			"www.crpg.ru",//
-			"www.dishmodels.ru",//
-			"www.game-ost.ru",//
-			"interfax.ru", "www.interfax.ru", //
-			"www.tver.izbirkom.ru",//
-			"www.liveinternet.ru",//
-			"kino.otzyv.ru",//
-			"www.rg.ru",//
-			"www.systematic.ru",//
-			"www.translogist.ru",//
-
-			"media.mabila.ua"//
-
-	));
 
 	static final Set<String> SKIP_ARCHIVES = new HashSet<String>(Arrays.asList(
 			//
@@ -165,6 +53,63 @@ public class WebCiteArchiver {
 
 			"www.peeep.us"));
 
+	static final Set<String> SKIP_ERRORS = new HashSet<String>(Arrays.asList(
+	//
+
+			// http://www.webcitation.org/5wAZdFTwc
+			"beyond2020.cso.ie",
+
+			// http://www.webcitation.org/5w7BcNTfc
+			"logainm.ie",
+
+			// http://www.webcitation.org/5w7BcNTfc
+			"www.logainm.ie"));
+
+	static final Set<String> SKIP_NO_CACHE = new HashSet<String>(Arrays.asList(
+			//
+			"www1.folha.uol.com.br", //
+
+			"www.ctv.ca",//
+
+			"www.bluesnews.com",//
+			"www.inishturkisland.com",//
+			"www.janes.com",//
+			"ms-pictures.com",
+			"www.ms-pictures.com", //
+			"www.plastichead.com",//
+			"www.sherdog.com",//
+			"secunia.com",
+			"www.secunia.com",//
+			"securitylabs.websense.com",//
+
+			"www.sportovci.cz",//
+
+			"blogs.yahoo.co.jp", //
+
+			"antiaircraft.org",//
+
+			"www.3dnews.ru",//
+			"cult.compulenta.ru", "hard.compulenta.ru",
+			"science.compulenta.ru",//
+			"offline.computerra.ru", "www.computerra.ru",//
+			"www.crpg.ru",//
+			"www.dishmodels.ru",//
+			"domtest.ru",//
+			"www.game-ost.ru",//
+			"infuture.ru", "www.infuture.ru", //
+			"interfax.ru", "www.interfax.ru", //
+			"www.tver.izbirkom.ru",//
+			"www.liveinternet.ru",//
+			"astro-era.narod.ru", //
+			"kino.otzyv.ru",//
+			"www.rg.ru",//
+			"www.systematic.ru",//
+			"www.translogist.ru",//
+
+			"media.mabila.ua"//
+
+	));
+
 	static final Set<String> SKIP_TECH_LIMITS = new HashSet<String>(
 			Arrays.asList(
 			//
@@ -176,6 +121,7 @@ public class WebCiteArchiver {
 					"www.discogs.com",//
 					"books.google.com",//
 					"forum.ixbt.com",//
+					"nationsencyclopedia.com", "www.nationsencyclopedia.com", //
 					"www.stpattys.com",//
 					"www.wheresgeorge.com",//
 					"ru.youtube.com",//
@@ -194,10 +140,12 @@ public class WebCiteArchiver {
 					"www.solon.org",//
 					"www.yellowribbon.org",//
 
+					"computer-museum.ru", "www.computer-museum.ru", // alw404
 					"books.google.ru",//
 					"video.mail.ru",//
 					"www.ozon.ru",//
 					"really.ru",//
+					"perm.ru", "www.perm.ru", // alw404
 					"maps.yandex.ru",//
 
 					"books.google.co.uk",//
@@ -228,55 +176,11 @@ public class WebCiteArchiver {
 		return postMethod;
 	}
 
-	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url,
-			String host) {
-
-		if (SKIP_ERRORS.contains(host)) {
-			logger.debug("URL "
-					+ url
-					+ " skipped due to usual errors of WebCite leading to undeadable text");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreTechLimits(url);
-
-			return true;
-		}
-
-		if (SKIP_TECH_LIMITS.contains(host)) {
-			logger.debug("URL " + url
-					+ " skipped due to technical limitatios of WebCite");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreTechLimits(url);
-
-			return true;
-		}
-
-		if (SKIP_NO_CACHE.contains(host)) {
-			logger.debug("URL "
-					+ url
-					+ " skipped because pages on this site usually have 'no-cache' tag");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreNoCache(url);
-
-			return true;
-		}
-
-		if (SKIP_ARCHIVES.contains(host)) {
-			logger.debug("URL " + url + " skipped (are u serious?)");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreSence(url);
-
-			return true;
-		}
-
-		return false;
-	}
-
 	@Autowired
 	private HttpManager httpManager;
+
+	@Autowired
+	private MediaWikiBot mediaWikiBot;
 
 	public String archive(final String url, final String title,
 			final String author, final String date) throws Exception {
@@ -355,6 +259,55 @@ public class WebCiteArchiver {
 			}
 		});
 
+	}
+
+	public void updateIgnoringList() throws Exception {
+		updateIgnoringList(SKIP_ERRORS,
+				"Участник:WebCite Archiver/IgnoreErrors");
+		updateIgnoringList(SKIP_NO_CACHE,
+				"Участник:WebCite Archiver/IgnoreNoCache");
+		updateIgnoringList(SKIP_ARCHIVES,
+				"Участник:WebCite Archiver/IgnoreSence");
+		updateIgnoringList(SKIP_TECH_LIMITS,
+				"Участник:WebCite Archiver/IgnoreTechLimits");
+	}
+
+	private void updateIgnoringList(Set<String> hostsToIgnore, String pageName)
+			throws Exception {
+		StringBuffer stringBuffer = new StringBuffer();
+
+		List<String> hosts = new ArrayList<String>(hostsToIgnore);
+		Collections.sort(hosts, new Comparator<String>() {
+
+			final Map<String, String> cache = new HashMap<String, String>();
+
+			public int compare(String o1, String o2) {
+
+				String s1 = inverse(o1);
+				String s2 = inverse(o2);
+
+				return s1.compareToIgnoreCase(s2);
+			}
+
+			private String inverse(String direct) {
+				String result = cache.get(direct);
+				if (result != null)
+					return result;
+
+				String[] splitted = StringUtils.split(direct, ".");
+				Collections.reverse(Arrays.asList(splitted));
+				result = StringUtils.join(splitted, ".");
+				cache.put(direct, result);
+				return result;
+			}
+		});
+
+		for (String hostName : hosts) {
+			stringBuffer.append("* " + hostName + "\n");
+		}
+
+		mediaWikiBot.writeContent(pageName, null, stringBuffer.toString(),
+				null, "Update ignoring sites list", true, true, false);
 	}
 
 }

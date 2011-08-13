@@ -6,22 +6,24 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import org.apache.commons.lang.StringUtils;
+
 @Entity
 public class QueuedLink {
 
-	private String accessDate;
+	private String accessDate = StringUtils.EMPTY;
 
-	private String articleDate;
+	private String articleDate = StringUtils.EMPTY;
 
-	private String author;
+	private String author = StringUtils.EMPTY;
 
 	private long id;
 
 	private long queuedTimestamp;
 
-	private String title;
+	private String title = StringUtils.EMPTY;
 
-	private String url;
+	private String url = StringUtils.EMPTY;
 
 	public String getAccessDate() {
 		return accessDate;
