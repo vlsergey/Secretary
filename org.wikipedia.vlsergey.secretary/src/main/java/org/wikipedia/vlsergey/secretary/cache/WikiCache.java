@@ -37,7 +37,7 @@ public class WikiCache {
 
 		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
 		for (Revision revision : mediaWikiBot.queryRevisionsByPageIds(pageIds,
-				RevisionPropery.IDS)) {
+				RevisionPropery.IDS, RevisionPropery.TIMESTAMP)) {
 			// update info in DB
 			storedRevisionDao.getOrCreate(revision);
 
@@ -66,7 +66,8 @@ public class WikiCache {
 		}
 
 		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIds(
-				toLoad, RevisionPropery.IDS, RevisionPropery.CONTENT)) {
+				toLoad, RevisionPropery.IDS, RevisionPropery.TIMESTAMP,
+				RevisionPropery.CONTENT)) {
 			// update cache
 			revision = storedRevisionDao.getOrCreate(revision);
 			resultMap.put(revision.getId(), revision);

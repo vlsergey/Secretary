@@ -19,12 +19,14 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.MultiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.PostLogin;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinTitles;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryExturlusage;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageId;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevisionIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -206,6 +208,7 @@ public class MediaWikiBot extends HttpBot {
 				 * 
 				 * @return true if has next
 				 */
+				@Override
 				public boolean hasNext() {
 					while (index >= generatingIterable.knownResults.size()
 							&& generatingIterable.nextAction != null) {
@@ -220,6 +223,7 @@ public class MediaWikiBot extends HttpBot {
 				 * 
 				 * @return a element of iteration
 				 */
+				@Override
 				public R next() {
 					while (index >= generatingIterable.knownResults.size()
 							&& generatingIterable.nextAction != null) {
@@ -231,6 +235,7 @@ public class MediaWikiBot extends HttpBot {
 				/**
 				 * is not supported
 				 */
+				@Override
 				public void remove() {
 					throw new UnsupportedOperationException();
 				}
@@ -245,6 +250,7 @@ public class MediaWikiBot extends HttpBot {
 				this.nextAction = initialAction;
 			}
 
+			@Override
 			public Iterator<R> iterator() {
 				return new MultiActionResultIterator<R>(this);
 			}
@@ -289,6 +295,16 @@ public class MediaWikiBot extends HttpBot {
 				+ Arrays.toString(namespaces) + ")");
 
 		QueryEmbeddedinTitles a = new QueryEmbeddedinTitles(template,
+				createNsString(namespaces));
+		return performMultiAction(a);
+	}
+
+	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol,
+			String query, int... namespaces) throws ActionException {
+		logger.info("queryEmbeddedInPageTitles(" + protocol + ", " + query
+				+ ", " + Arrays.toString(namespaces) + ")");
+
+		QueryExturlusage a = new QueryExturlusage(protocol, query,
 				createNsString(namespaces));
 		return performMultiAction(a);
 	}
@@ -475,6 +491,8 @@ public class MediaWikiBot extends HttpBot {
 
 	public String queryTokenEdit(Revision revision) throws ActionException,
 			ProcessException {
+		logger.info("queryTokenEdit( " + revision + " )");
+
 		QueryTokenEdit queryTokenEdit = new QueryTokenEdit(revision);
 		performAction(queryTokenEdit);
 
@@ -487,6 +505,8 @@ public class MediaWikiBot extends HttpBot {
 
 	public String queryTokenEdit(String pageTitle) throws ActionException,
 			ProcessException {
+		logger.info("queryTokenEdit( '" + pageTitle + "' )");
+
 		QueryTokenEdit queryTokenEdit = new QueryTokenEdit(pageTitle);
 		performAction(queryTokenEdit);
 

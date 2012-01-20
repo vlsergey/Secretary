@@ -45,7 +45,8 @@ public class LinksQueuer {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
-	public ArchivedLink queueOrGetResult(ArticleLink articleLink) {
+	public ArchivedLink queueOrGetResult(ArticleLink articleLink,
+			long newPriority) {
 		ArchivedLink archivedLink = archivedLinkDao.findLink(articleLink.url,
 				articleLink.accessDate);
 
@@ -57,6 +58,7 @@ public class LinksQueuer {
 		queuedLink.setArticleDate(articleLink.articleDate);
 		queuedLink.setAuthor(articleLink.author);
 		queuedLink.setTitle(articleLink.title);
+		queuedLink.setPriority(newPriority);
 		queuedLink.setUrl(articleLink.url);
 		queuedLinkDao.addLinkToQueue(queuedLink);
 

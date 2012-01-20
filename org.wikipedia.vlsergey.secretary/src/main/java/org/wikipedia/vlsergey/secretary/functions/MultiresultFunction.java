@@ -14,6 +14,7 @@ public abstract class MultiresultFunction<A, B> extends
 			@Override
 			public Iterable<B> apply(final Iterable<A> a) {
 				return new Iterable<B>() {
+					@Override
 					public Iterator<B> iterator() {
 						return new Iterator<B>() {
 							private Iterator<B> curentResult = Collections
@@ -22,11 +23,13 @@ public abstract class MultiresultFunction<A, B> extends
 							private final Iterator<A> sourceIterator = a
 									.iterator();
 
+							@Override
 							public boolean hasNext() {
 								return curentResult.hasNext()
 										|| sourceIterator.hasNext();
 							}
 
+							@Override
 							public B next() {
 								if (curentResult.hasNext())
 									return curentResult.next();
@@ -45,6 +48,7 @@ public abstract class MultiresultFunction<A, B> extends
 								throw new NoSuchElementException();
 							}
 
+							@Override
 							public void remove() {
 								throw new UnsupportedOperationException();
 							}

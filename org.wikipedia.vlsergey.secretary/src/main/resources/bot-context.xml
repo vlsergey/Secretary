@@ -1,9 +1,15 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:p="http://www.springframework.org/schema/p" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans 
-	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	   					   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
 
-	<bean id="httpManager" class="org.wikipedia.vlsergey.secretary.http.HttpManager" />
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary" />
+
+	<bean id="httpManager" class="org.wikipedia.vlsergey.secretary.http.HttpManager">
+		<!-- <property name="localSocksPorts" value="1080" /> -->
+	</bean>
+	<bean id="externalIpChecker" class="org.wikipedia.vlsergey.secretary.http.ExternalIpChecker" />
 
 	<bean id="mediaWikiBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot" />
 

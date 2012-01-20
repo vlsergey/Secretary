@@ -102,6 +102,7 @@ public class WebCiteArchiver {
 			"www.liveinternet.ru",//
 			"astro-era.narod.ru", //
 			"kino.otzyv.ru",//
+			"render.ru", "www.render.ru", //
 			"www.rg.ru",//
 			"www.systematic.ru",//
 			"www.translogist.ru",//
@@ -128,6 +129,7 @@ public class WebCiteArchiver {
 					"www.youtube.com",//
 
 					"futuretrance.de",//
+					"books.google.de",//
 					"www.rfid-handbook.de",//
 					"www.voicesfromthedarkside.de",//
 
@@ -182,82 +184,92 @@ public class WebCiteArchiver {
 	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
-	public String archive(final String url, final String title,
-			final String author, final String date) throws Exception {
+	public String archive(final String httpClientCode, final String url,
+			final String title, final String author, final String date)
+			throws Exception {
 
 		// okay, archiving
-		logger.debug("Archiving " + url);
+		logger.debug("Using " + httpClientCode + " to archive " + url);
 
 		HttpPost httpPost = buildRequest(url, title, author, date);
 
-		return httpManager.execute(httpPost, new ResponseHandler<String>() {
-			public String handleResponse(HttpResponse archiveResponse)
-					throws ClientProtocolException, IOException {
+		return httpManager.execute(httpClientCode, httpPost,
+				new ResponseHandler<String>() {
+					@Override
+					public String handleResponse(HttpResponse archiveResponse)
+							throws ClientProtocolException, IOException {
 
-				if (archiveResponse.getStatusLine().getStatusCode() != 200) {
-					logger.error("Unsupported response: "
-							+ archiveResponse.getStatusLine());
-					throw new UnsupportedOperationException(
-							"Unsupported response code from WebCite");
-				}
+						if (archiveResponse.getStatusLine().getStatusCode() != 200) {
+							logger.error("Unsupported response: "
+									+ archiveResponse.getStatusLine());
+							throw new UnsupportedOperationException(
+									"Unsupported response code from WebCite");
+						}
 
-				String result = IoUtils.readToString(archiveResponse
-						.getEntity().getContent(), HTTP.UTF_8);
+						String result = IoUtils.readToString(archiveResponse
+								.getEntity().getContent(), HTTP.UTF_8);
 
-				Pattern pattern = Pattern
-						.compile(PATTERN_WEBCITE_ARCHIVE_RESPONSE);
-				Matcher matcher = pattern.matcher(result);
+						Pattern pattern = Pattern
+								.compile(PATTERN_WEBCITE_ARCHIVE_RESPONSE);
+						Matcher matcher = pattern.matcher(result);
 
-				if (!matcher.find()) {
-					logger.error("Pattern of response not found on archiving response page");
-					logger.debug(result);
+						if (!matcher.find()) {
+							logger.error("Pattern of response not found on archiving response page");
+							logger.debug(result);
 
-					throw new UnsupportedOperationException(
-							"Unsupported from response content. "
-									+ "Details in DEBUG log.");
-				}
+							throw new UnsupportedOperationException(
+									"Unsupported from response content. "
+											+ "Details in DEBUG log.");
+						}
 
-				String archiveUrl = matcher.group(1);
-				logger.info("URL " + url + " was archived at " + archiveUrl);
-				return archiveUrl;
-			}
-		});
+						String archiveUrl = matcher.group(1);
+						logger.info("URL " + url + " was archived at "
+								+ archiveUrl);
+						return archiveUrl;
+					}
+				});
 	}
 
-	public String getStatus(final String webCiteId)
+	public String getStatus(final String httpClientCode, final String webCiteId)
 			throws ClientProtocolException, IOException {
 		HttpGet getMethod = new HttpGet(
 				"http://www.webcitation.org/query?returnxml=true&id="
 						+ webCiteId);
 
-		return httpManager.execute(getMethod, new ResponseHandler<String>() {
-			public String handleResponse(HttpResponse httpResponse)
-					throws ClientProtocolException, IOException {
+		return httpManager.execute(httpClientCode, getMethod,
+				new ResponseHandler<String>() {
+					@Override
+					public String handleResponse(HttpResponse httpResponse)
+							throws ClientProtocolException, IOException {
 
-				HttpEntity entity = httpResponse.getEntity();
-				String result = IoUtils.readToString(entity.getContent(),
-						HTTP.UTF_8);
+						HttpEntity entity = httpResponse.getEntity();
+						String result = IoUtils.readToString(
+								entity.getContent(), HTTP.UTF_8);
 
-				Pattern pattern = Pattern
-						.compile(PATTERN_WEBCITE_QUERY_RESPONSE);
-				Matcher matcher = pattern.matcher(result);
+						Pattern pattern = Pattern
+								.compile(PATTERN_WEBCITE_QUERY_RESPONSE);
+						Matcher matcher = pattern.matcher(result);
 
-				if (matcher.find()) {
+						if (matcher.find()) {
 
-					logger.debug("Archive status of '" + webCiteId + "' is '"
-							+ matcher.group(1) + "'");
+							logger.debug("Archive status of '" + webCiteId
+									+ "' is '" + matcher.group(1) + "'");
 
-					return matcher.group(1);
-				}
+							return matcher.group(1);
+						}
 
-				if (!matcher.find()) {
-					logger.error("Pattern of response not found on query XML response page");
-					logger.trace(result);
-				}
+						if (result.contains("<error>Invalid snapshot ID "))
+							return "Invalid snapshot ID";
 
-				return null;
-			}
-		});
+						if (!matcher.find()) {
+							logger.error("Pattern of response not found on query XML response page for ID '"
+									+ webCiteId + "'");
+							logger.trace(result);
+						}
+
+						return null;
+					}
+				});
 
 	}
 
@@ -281,6 +293,7 @@ public class WebCiteArchiver {
 
 			final Map<String, String> cache = new HashMap<String, String>();
 
+			@Override
 			public int compare(String o1, String o2) {
 
 				String s1 = inverse(o1);

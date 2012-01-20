@@ -20,11 +20,12 @@ public class QueuedPageDao {
 	protected HibernateTemplate template = null;
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = false, propagation = Propagation.REQUIRED)
-	public void addPageToQueue(Long pageId, long lastCheckTimestamp) {
+	public void addPageToQueue(Long pageId, long priority,
+			long lastCheckTimestamp) {
 
 		@SuppressWarnings("unchecked")
-		List<QueuedPage> previous = template.find(
-				"SELECT page FROM QueuedPage page WHERE id=?", pageId);
+		List<QueuedPage> previous = template.find("SELECT page "
+				+ "FROM QueuedPage page " + "WHERE id=?", pageId);
 
 		if (previous.size() > 1)
 			throw new IllegalStateException(
@@ -34,16 +35,15 @@ public class QueuedPageDao {
 			QueuedPage queuedPage = new QueuedPage();
 			queuedPage.setId(pageId);
 			queuedPage.setLastCheckTimestamp(lastCheckTimestamp);
+			queuedPage.setPriority(priority);
 			template.save(queuedPage);
 			return;
 		}
 
 		QueuedPage prev = previous.get(0);
-
-		if (prev.getLastCheckTimestamp() < lastCheckTimestamp) {
-			prev.setLastCheckTimestamp(lastCheckTimestamp);
-			template.flush();
-		}
+		prev.setPriority(Long.valueOf(Math.max(prev.getPriority(), priority)));
+		prev.setLastCheckTimestamp(Long.valueOf(Math.max(
+				prev.getLastCheckTimestamp(), lastCheckTimestamp)));
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
@@ -61,7 +61,7 @@ public class QueuedPageDao {
 
 				Query query = session.createQuery("SELECT pages "
 						+ "FROM QueuedPage pages "
-						+ "ORDER BY lastCheckTimestamp");
+						+ "ORDER BY lastCheckTimestamp, priority DESC");
 				query.setMaxResults(1);
 
 				@SuppressWarnings("unchecked")
@@ -78,7 +78,7 @@ public class QueuedPageDao {
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public List<QueuedPage> getPagesFromQueue() {
 		return template.find("SELECT pages " + "FROM QueuedPage pages "
-				+ "ORDER BY lastCheckTimestamp");
+				+ "ORDER BY lastCheckTimestamp, priority DESC");
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

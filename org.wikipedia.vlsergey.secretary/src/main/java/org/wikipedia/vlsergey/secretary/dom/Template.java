@@ -127,6 +127,18 @@ public class Template extends AbstractContainer {
 		return parameters;
 	}
 
+	public void removeParameter(String name) {
+		final List<Content> children = parameters.getChildren();
+		for (Content content : new ArrayList<Content>(children)) {
+			Parameter parameter = (Parameter) content;
+			if (parameter.getName() != null
+					&& StringUtils.equalsIgnoreCase(name, parameter
+							.getCanonicalName().trim())) {
+				children.remove(parameter);
+			}
+		}
+	}
+
 	public void setName(Content name) {
 		this.name = name;
 	}

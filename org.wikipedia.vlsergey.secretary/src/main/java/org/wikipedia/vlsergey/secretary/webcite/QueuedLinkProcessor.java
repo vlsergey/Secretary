@@ -7,6 +7,7 @@ import org.apache.commons.lang.time.DateFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.wikipedia.vlsergey.secretary.http.HttpManager;
 
 public class QueuedLinkProcessor {
 	private static final Logger logger = LoggerFactory
@@ -14,6 +15,9 @@ public class QueuedLinkProcessor {
 
 	@Autowired
 	private ArchivedLinkDao archivedLinkDao;
+
+	@Autowired
+	private HttpManager httpManager;
 
 	@Autowired
 	private QueuedLinkDao queuedLinkDao;
@@ -42,46 +46,74 @@ public class QueuedLinkProcessor {
 		if (queuedLink == null)
 			return false;
 
-		// are we sure there is no match?
-		if (archivedLinkDao.findLink(queuedLink.getUrl(),
-				queuedLink.getAccessDate()) != null) {
-			// already processed
-			queuedLinkDao.removeLinkFromQueue(queuedLink);
+		try {
+			// are we sure there is no match?
+			if (archivedLinkDao.findLink(queuedLink.getUrl(),
+					queuedLink.getAccessDate()) != null) {
+				// already processed
+				queuedLinkDao.removeLinkFromQueue(queuedLink);
+				return true;
+			}
+
+			// make sure we made at least 5 second pause between requests
+			logger.debug("Sleeping 5 seconds...");
+			Thread.sleep(5 * 1000);
+
+			String allowedClient = null;
+			while (allowedClient == null) {
+				for (String clientCode : httpManager.getClientCodes()) {
+					if (webCiteLimiter.isAllowed(clientCode)) {
+						allowedClient = clientCode;
+						break;
+					}
+				}
+
+				if (allowedClient == null) {
+					Thread.sleep(10 * 60 * 1000);
+				}
+			}
+
+			assert allowedClient != null;
+			assert webCiteLimiter.isAllowed(allowedClient);
+
+			// should be allowed now
+			webCiteLimiter.beforeRequest(allowedClient);
+			String archiveUrl = webCiteArchiver.archive(allowedClient,
+					queuedLink.getUrl(), queuedLink.getTitle(),
+					queuedLink.getAuthor(), queuedLink.getArticleDate());
+
+			String webCiteCode = StringUtils
+					.substringAfterLast(archiveUrl, "/");
+			logger.debug("WebCite code is '" + webCiteCode + "'");
+
+			String status = webCiteArchiver.getStatus(allowedClient,
+					webCiteCode);
+
+			for (QueuedLink sameUrl : queuedLinkDao.findByUrl(queuedLink
+					.getUrl())) {
+				logger.debug("Creating new archived record for '"
+						+ sameUrl.getUrl() + "' and date '"
+						+ sameUrl.getAccessDate() + "'");
+
+				ArchivedLink archivedLink = new ArchivedLink();
+				archivedLink.setAccessDate(StringUtils.trimToEmpty(sameUrl
+						.getAccessDate()));
+				archivedLink.setAccessUrl(StringUtils.trimToEmpty(sameUrl
+						.getUrl()));
+				archivedLink.setArchiveDate(DateFormatUtils.format(new Date(),
+						"yyyy-MM-dd"));
+				archivedLink.setArchiveResult(StringUtils.trimToEmpty(status));
+				archivedLink.setArchiveUrl(StringUtils.trimToEmpty(archiveUrl));
+				archivedLinkDao.persist(archivedLink);
+
+				queuedLinkDao.removeLinkFromQueue(sameUrl);
+			}
+
 			return true;
+		} catch (Exception exc) {
+			queuedLinkDao.reducePriority(queuedLink);
+			throw exc;
 		}
-
-		while (!webCiteLimiter.isAllowed()) {
-			logger.debug("Sleeping until 10 minutes...");
-			Thread.sleep(10 * 60 * 1000);
-		}
-
-		// make sure we made at least 5 second pause between requests
-		Thread.sleep(5 * 1000);
-
-		assert webCiteLimiter.isAllowed();
-
-		// should be allowed now
-		webCiteLimiter.beforeRequest();
-		String archiveUrl = webCiteArchiver.archive(queuedLink.getUrl(),
-				queuedLink.getTitle(), queuedLink.getAuthor(),
-				queuedLink.getArticleDate());
-
-		String webCiteCode = StringUtils.substringAfterLast(archiveUrl, "/");
-		logger.debug("WebCite code is '" + webCiteCode + "'");
-
-		String status = webCiteArchiver.getStatus(webCiteCode);
-
-		ArchivedLink archivedLink = new ArchivedLink();
-		archivedLink.setAccessDate(StringUtils.trimToEmpty(queuedLink
-				.getAccessDate()));
-		archivedLink.setAccessUrl(StringUtils.trimToEmpty(queuedLink.getUrl()));
-		archivedLink.setArchiveDate(DateFormatUtils.format(new Date(),
-				"yyyy-MM-dd"));
-		archivedLink.setArchiveResult(StringUtils.trimToEmpty(status));
-		archivedLink.setArchiveUrl(StringUtils.trimToEmpty(archiveUrl));
-		archivedLinkDao.persist(archivedLink);
-
-		return true;
 	}
 
 	public void start() {

@@ -19,6 +19,8 @@ public class QueuedLink {
 
 	private long id;
 
+	private long priority;
+
 	private long queuedTimestamp;
 
 	private String title = StringUtils.EMPTY;
@@ -42,6 +44,11 @@ public class QueuedLink {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	public long getId() {
 		return id;
+	}
+
+	@Column()
+	public long getPriority() {
+		return priority;
 	}
 
 	public long getQueuedTimestamp() {
@@ -72,6 +79,10 @@ public class QueuedLink {
 
 	public void setId(long id) {
 		this.id = id;
+	}
+
+	public void setPriority(long priority) {
+		this.priority = priority;
 	}
 
 	public void setQueuedTimestamp(long queuedTimestamp) {

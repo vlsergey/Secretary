@@ -14,20 +14,29 @@ public class WebCiteLimiter {
 
 	protected HibernateTemplate template = null;
 
-	public void beforeRequest() {
+	public void beforeRequest(String hostCode) {
 		final WebCiteQueryEvent entity = new WebCiteQueryEvent();
-		entity.setId(System.currentTimeMillis());
+		entity.setHostCode(hostCode);
+		entity.setTimestamp(System.currentTimeMillis());
 		template.persist(entity);
 	}
 
-	public boolean isAllowed() {
+	public boolean isAllowed(String hostCode) {
 		@SuppressWarnings("unchecked")
 		List<WebCiteQueryEvent> events = template.find("SELECT events "
-				+ "FROM WebCiteQueryEvent events " + "WHERE id > ? "
-				+ "ORDER BY id DESC",
-				Long.valueOf(System.currentTimeMillis() - PERIOD));
+				+ "FROM WebCiteQueryEvent events " + "WHERE hostCode = ? "
+				+ "ORDER BY timestamp DESC", hostCode);
 
 		if (events.size() >= REQUESTS) {
+			WebCiteQueryEvent last = events.get(0);
+			if (System.currentTimeMillis() - last.getTimestamp() > PERIOD) {
+				// cleanup and allow
+				template.bulkUpdate("DELETE "
+						+ "FROM WebCiteQueryEvent events "
+						+ "WHERE hostCode = ?", hostCode);
+				return true;
+			}
+
 			return false;
 		}
 

@@ -34,6 +34,10 @@ public class StoredPageDao {
 			(stored).setTitle(withContent.getTitle());
 		}
 
+		if (withContent.getNamespace() != null) {
+			(stored).setNamespace(withContent.getNamespace());
+		}
+
 		if (withContent.getMissing() != null) {
 			(stored).setMissing(withContent.getMissing());
 		}

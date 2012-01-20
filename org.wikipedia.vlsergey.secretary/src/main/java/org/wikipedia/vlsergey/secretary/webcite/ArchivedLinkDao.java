@@ -18,16 +18,38 @@ public class ArchivedLinkDao {
 
 	@SuppressWarnings("unchecked")
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
-	public ArchivedLink findLink(String url, String accessDate) {
+	public List<ArchivedLink> findByAccessUrl(String url) {
+		return template.find("SELECT links " + "FROM ArchivedLink links "
+				+ "WHERE accessUrl=?", StringUtils.trimToEmpty(url));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
+	public List<ArchivedLink> findByArchiveResult(String archiveResult) {
+		return template.find("SELECT links " + "FROM ArchivedLink links "
+				+ "WHERE archiveresult=?",
+				StringUtils.trimToEmpty(archiveResult));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
+	public List<ArchivedLink> findByArchiveUrl(String url) {
+		return template.find("SELECT links " + "FROM ArchivedLink links "
+				+ "WHERE archiveUrl=?", StringUtils.trimToEmpty(url));
+	}
+
+	@SuppressWarnings("unchecked")
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
+	public ArchivedLink findLink(String accessUrl, String accessDate) {
 		List<ArchivedLink> result = template.find("SELECT links "
 				+ "FROM ArchivedLink links "
 				+ "WHERE accessUrl=? AND accessDate=?",
-				StringUtils.trimToEmpty(url),
+				StringUtils.trimToEmpty(accessUrl),
 				StringUtils.trimToEmpty(accessDate));
 
 		if (result.size() > 2) {
-			logger.error("More than one URLs with same access date (" + url
-					+ ") and URL '" + accessDate + "'");
+			logger.error("More than one URLs with same access date ("
+					+ accessUrl + ") and URL '" + accessDate + "'");
 			throw new IllegalStateException();
 		}
 
@@ -57,6 +79,15 @@ public class ArchivedLinkDao {
 				+ "' accessed at '" + archivedLink.getAccessDate() + "'");
 
 		template.persist(archivedLink);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public void setArchiveResult(ArchivedLink archivedLink, String archiveResult) {
+		ArchivedLink link = findLink(archivedLink.getAccessUrl(),
+				archivedLink.getAccessDate());
+		link.setArchiveResult(StringUtils.trimToEmpty(archiveResult));
+
+		template.persist(link);
 	}
 
 	public void setSessionFactory(SessionFactory sessionFactory) {

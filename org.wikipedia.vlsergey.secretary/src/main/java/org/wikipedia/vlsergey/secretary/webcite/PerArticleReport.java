@@ -175,13 +175,13 @@ public class PerArticleReport {
 		skippedTooYoung.add(url);
 	}
 
-	public String toWiki(boolean noWikiLinks) {
+	public String toWiki(String title, String anchor, boolean noWikiLinks) {
 		StringBuilder stringBuilder = new StringBuilder();
 
-		stringBuilder
-				.append("\n\n== Отчёт [[Участник:WebCite Archiver|бота WebCite Archiver]] ==\n");
-		stringBuilder
-				.append("[[Участник:WebCite Archiver|Бот WebCite Archiver]] просмотрел текст статьи и внёс в неё следующие изменения. ");
+		stringBuilder.append("\n\n== ");
+		stringBuilder.append(title);
+		stringBuilder.append(" ==\n");
+		stringBuilder.append("<div id='" + anchor + "'></div>");
 		if (archived.size() != 0)
 			stringBuilder
 					.append(archived.size()

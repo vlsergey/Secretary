@@ -2,10 +2,9 @@ package org.wikipedia.vlsergey.secretary;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.wikipedia.vlsergey.secretary.http.ExternalIpChecker;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
-import org.wikipedia.vlsergey.secretary.webcite.QueuedLinkProcessor;
-import org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor;
-import org.wikipedia.vlsergey.secretary.webcite.WebCiteArchiver;
+import org.wikipedia.vlsergey.secretary.webcite.WebCiteChecker;
 
 public class Secretary {
 
@@ -35,36 +34,62 @@ public class Secretary {
 		ApplicationContext appContext = new ClassPathXmlApplicationContext(
 				"application-context.xml");
 
+		ExternalIpChecker ExternalIpChecker = appContext
+				.getBean(ExternalIpChecker.class);
+		ExternalIpChecker.assertIpAddressesAreDifferent();
+
 		MediaWikiBot mediaWikiBot = appContext.getBean(MediaWikiBot.class);
 		mediaWikiBot.httpLogin(login, password);
 
-		WebCiteArchiver webCiteArchiver = appContext
-				.getBean(WebCiteArchiver.class);
-		webCiteArchiver.updateIgnoringList();
+		WebCiteChecker webCiteChecker = appContext
+				.getBean(WebCiteChecker.class);
+		webCiteChecker.run();
 
-		QueuedLinkProcessor queuedLinkProcessor = appContext
-				.getBean(QueuedLinkProcessor.class);
-		queuedLinkProcessor.start();
+		// WebCiteArchiver webCiteArchiver = appContext
+		// .getBean(WebCiteArchiver.class);
+		// webCiteArchiver.updateIgnoringList();
+
+		// QueuedLinkProcessor queuedLinkProcessor = appContext
+		// .getBean(QueuedLinkProcessor.class);
+		// queuedLinkProcessor.start();
 
 		// QueuedPageDao queuedPageDao =
 		// appContext.getBean(QueuedPageDao.class);
 		// for (Long pageId : mediaWikiBot
-		// .queryEmbeddedInPageIds("Шаблон:Cite web")) {
-		// queuedPageDao.addPageToQueue(pageId, pageId.longValue());
+		// .queryEmbeddedInPageIds("Шаблон:Избранная статья")) {
+		// queuedPageDao.addPageToQueue(pageId, 1000, pageId.longValue());
 		// }
-
-		// for (String articleTitle : new String[] { "Маскаро, Хуан",
-		// "Гигантское магнетосопротивление", "Мор, Георг",
-		// "Шривастава, Чандрика Прасад", "Тагор, Рабиндранат",
-		// "Десятинная церковь", "Варанаси", "Айодхья" }) {
+		// for (Long pageId : mediaWikiBot
+		// .queryEmbeddedInPageIds("Шаблон:Хорошая статья")) {
+		// queuedPageDao.addPageToQueue(pageId, 500, pageId.longValue());
+		// }
+		//
+		// for (String articleTitle : new String[] {
+		// "Википедия:Пресса о Википедии" }) {
 		// queuedPageDao.addPageToQueue(
 		// mediaWikiBot
 		// .queryRevisionLatest(articleTitle,
-		// RevisionPropery.IDS).getPage().getId(), 0);
+		// RevisionPropery.IDS).getPage().getId(),
+		// 5000, 0);
 		// }
 
-		QueuedPageProcessor queuedPageProcessor = appContext
-				.getBean(QueuedPageProcessor.class);
-		queuedPageProcessor.run();
+		// for (String articleTitle : new String[] { "Unlimited Detail",
+		// "F.E.A.R. 2: Reborn", "CellFactor: Combat Training",
+		// "CellFactor: Revolution", "Ageia", "NovodeX", "Meqon",
+		// "Reality Engine", "Прямая кинематика", "Инверсная кинематика",
+		// "Bullet Physics Library", "Open Physics Initiative",
+		// "EPU Engine", "Dagor Engine" }) {
+		// queuedPageDao.addPageToQueue(
+		// mediaWikiBot
+		// .queryRevisionLatest(articleTitle,
+		// RevisionPropery.IDS).getPage().getId(),
+		// 5000, 0);
+		// }
+
+		// QueuedPageProcessor queuedPageProcessor = appContext
+		// .getBean(QueuedPageProcessor.class);
+		// queuedPageProcessor.run();
+
+		// Thread.sleep(72l * 60l * 60l * 1000l);
 	}
 }
