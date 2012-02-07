@@ -28,6 +28,10 @@ public class QueuedLinkProcessor {
 	@Autowired
 	private WebCiteLimiter webCiteLimiter;
 
+	public void clearQueue() {
+		queuedLinkDao.removeAll();
+	}
+
 	protected void run() {
 		while (true) {
 			try {
@@ -43,12 +47,14 @@ public class QueuedLinkProcessor {
 
 	private boolean runImpl() throws Exception {
 		QueuedLink queuedLink = queuedLinkDao.getLinkFromQueue();
-		if (queuedLink == null)
+		if (queuedLink == null) {
+			logger.debug("No links in queue. Sleep.");
 			return false;
+		}
 
 		try {
 			// are we sure there is no match?
-			if (archivedLinkDao.findLink(queuedLink.getUrl(),
+			if (archivedLinkDao.findNonBrokenLink(queuedLink.getUrl(),
 					queuedLink.getAccessDate()) != null) {
 				// already processed
 				queuedLinkDao.removeLinkFromQueue(queuedLink);

@@ -39,7 +39,7 @@ public class WikiCache {
 		for (Revision revision : mediaWikiBot.queryRevisionsByPageIds(pageIds,
 				RevisionPropery.IDS, RevisionPropery.TIMESTAMP)) {
 			// update info in DB
-			storedRevisionDao.getOrCreate(revision);
+			revision = storedRevisionDao.getOrCreate(revision);
 
 			pageIdToLatestRevision.put(revision.getPage().getId(),
 					revision.getId());

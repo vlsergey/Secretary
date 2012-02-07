@@ -1,12 +1,23 @@
 package org.wikipedia.vlsergey.secretary;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.wikipedia.vlsergey.secretary.functions.IteratorUtils;
 import org.wikipedia.vlsergey.secretary.http.ExternalIpChecker;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
-import org.wikipedia.vlsergey.secretary.webcite.WebCiteChecker;
+import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
+import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.webcite.QueuedLinkProcessor;
+import org.wikipedia.vlsergey.secretary.webcite.QueuedPageDao;
+import org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor;
+import org.wikipedia.vlsergey.secretary.webcite.WebCiteArchiver;
 
 public class Secretary {
+
+	private static final Log logger = LogFactory.getLog(Secretary.class);
 
 	private static final String login;
 
@@ -41,31 +52,51 @@ public class Secretary {
 		MediaWikiBot mediaWikiBot = appContext.getBean(MediaWikiBot.class);
 		mediaWikiBot.httpLogin(login, password);
 
-		WebCiteChecker webCiteChecker = appContext
-				.getBean(WebCiteChecker.class);
-		webCiteChecker.run();
+		// FilesCategoryHelper filesCategoryHelper = appContext
+		// .getBean(FilesCategoryHelper.class);
+		// filesCategoryHelper.run();
 
-		// WebCiteArchiver webCiteArchiver = appContext
-		// .getBean(WebCiteArchiver.class);
-		// webCiteArchiver.updateIgnoringList();
+		// WebCiteChecker webCiteChecker = appContext
+		// .getBean(WebCiteChecker.class);
+		// webCiteChecker.run();
 
-		// QueuedLinkProcessor queuedLinkProcessor = appContext
-		// .getBean(QueuedLinkProcessor.class);
-		// queuedLinkProcessor.start();
+		WebCiteArchiver webCiteArchiver = appContext
+				.getBean(WebCiteArchiver.class);
+		webCiteArchiver.updateIgnoringList();
 
-		// QueuedPageDao queuedPageDao =
-		// appContext.getBean(QueuedPageDao.class);
-		// for (Long pageId : mediaWikiBot
-		// .queryEmbeddedInPageIds("Шаблон:Избранная статья")) {
-		// queuedPageDao.addPageToQueue(pageId, 1000, pageId.longValue());
-		// }
-		// for (Long pageId : mediaWikiBot
-		// .queryEmbeddedInPageIds("Шаблон:Хорошая статья")) {
-		// queuedPageDao.addPageToQueue(pageId, 500, pageId.longValue());
-		// }
-		//
+		QueuedLinkProcessor queuedLinkProcessor = appContext
+				.getBean(QueuedLinkProcessor.class);
+		queuedLinkProcessor.start();
+
+		QueuedPageDao queuedPageDao = appContext.getBean(QueuedPageDao.class);
+		QueuedPageProcessor queuedPageProcessor = appContext
+				.getBean(QueuedPageProcessor.class);
+
+		queuedPageProcessor.clearQueue();
+		// queuedLinkProcessor.clearQueue();
+
+		for (Long pageId : IteratorUtils.map(mediaWikiBot.queryCategoryMembers(
+				"Категория:Википедия:Пресса о Википедии:Архив",
+				CategoryMemberType.PAGE, Namespaces.PROJECT),
+				CategoryMember.pageIdF)) {
+			queuedPageDao.addPageToQueue(pageId, 5000, 0);
+		}
+
+		for (Long pageId : mediaWikiBot
+				.queryEmbeddedInPageIds("Шаблон:Избранная статья")) {
+			queuedPageDao.addPageToQueue(pageId, 1000, pageId.longValue());
+		}
+		for (Long pageId : mediaWikiBot
+				.queryEmbeddedInPageIds("Шаблон:Хорошая статья")) {
+			queuedPageDao.addPageToQueue(pageId, 500, pageId.longValue());
+		}
+		for (Long pageId : mediaWikiBot
+				.queryEmbeddedInPageIds("Шаблон:Cite web")) {
+			queuedPageDao.addPageToQueue(pageId, 0, pageId.longValue());
+		}
+
 		// for (String articleTitle : new String[] {
-		// "Википедия:Пресса о Википедии" }) {
+		// "Президентские выборы в Белоруссии (2006)", "" }) {
 		// queuedPageDao.addPageToQueue(
 		// mediaWikiBot
 		// .queryRevisionLatest(articleTitle,
@@ -73,23 +104,8 @@ public class Secretary {
 		// 5000, 0);
 		// }
 
-		// for (String articleTitle : new String[] { "Unlimited Detail",
-		// "F.E.A.R. 2: Reborn", "CellFactor: Combat Training",
-		// "CellFactor: Revolution", "Ageia", "NovodeX", "Meqon",
-		// "Reality Engine", "Прямая кинематика", "Инверсная кинематика",
-		// "Bullet Physics Library", "Open Physics Initiative",
-		// "EPU Engine", "Dagor Engine" }) {
-		// queuedPageDao.addPageToQueue(
-		// mediaWikiBot
-		// .queryRevisionLatest(articleTitle,
-		// RevisionPropery.IDS).getPage().getId(),
-		// 5000, 0);
-		// }
+		queuedPageProcessor.run();
 
-		// QueuedPageProcessor queuedPageProcessor = appContext
-		// .getBean(QueuedPageProcessor.class);
-		// queuedPageProcessor.run();
-
-		// Thread.sleep(72l * 60l * 60l * 1000l);
+		Thread.sleep(72l * 60l * 60l * 1000l);
 	}
 }

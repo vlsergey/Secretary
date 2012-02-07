@@ -40,15 +40,16 @@ public class ArchivedLinkDao {
 
 	@SuppressWarnings("unchecked")
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
-	public ArchivedLink findLink(String accessUrl, String accessDate) {
+	public ArchivedLink findNonBrokenLink(String accessUrl, String accessDate) {
 		List<ArchivedLink> result = template.find("SELECT links "
 				+ "FROM ArchivedLink links "
-				+ "WHERE accessUrl=? AND accessDate=?",
+				+ "WHERE accessUrl=? AND accessDate=? AND archiveResult!=?",
 				StringUtils.trimToEmpty(accessUrl),
-				StringUtils.trimToEmpty(accessDate));
+				StringUtils.trimToEmpty(accessDate),
+				StringUtils.trimToEmpty(ArchivedLink.STATUS_BROKEN));
 
 		if (result.size() > 2) {
-			logger.error("More than one URLs with same access date ("
+			logger.error("More than one non-broken URLs with same access date ("
 					+ accessUrl + ") and URL '" + accessDate + "'");
 			throw new IllegalStateException();
 		}
@@ -83,10 +84,9 @@ public class ArchivedLinkDao {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void setArchiveResult(ArchivedLink archivedLink, String archiveResult) {
-		ArchivedLink link = findLink(archivedLink.getAccessUrl(),
-				archivedLink.getAccessDate());
+		ArchivedLink link = template.get(ArchivedLink.class,
+				Long.valueOf(archivedLink.getId()));
 		link.setArchiveResult(StringUtils.trimToEmpty(archiveResult));
-
 		template.persist(link);
 	}
 

@@ -8,6 +8,11 @@ import javax.persistence.Id;
 
 @Entity
 public class ArchivedLink {
+
+	public static final String STATUS_BROKEN = "Invalid snapshot ID";
+
+	public static final String STATUS_SUCCESS = "success";
+
 	private String accessDate;
 
 	private String accessUrl;

@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.webcite;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -7,7 +8,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.ClientProtocolException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,10 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
+import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class LinksQueuer {
 	private static final Logger logger = LoggerFactory
@@ -37,18 +40,21 @@ public class LinksQueuer {
 	private QueuedLinkDao queuedLinkDao;
 
 	@Autowired
+	private WebCiteArchiver webCiteArchiver;
+
+	@Autowired
 	private WikiCache wikiCache;
 
 	public boolean isQueuedOrArchived(String url, String accessDate) {
-		return archivedLinkDao.findLink(url, accessDate) != null
+		return archivedLinkDao.findNonBrokenLink(url, accessDate) != null
 				|| queuedLinkDao.findLink(url, accessDate) != null;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
 	public ArchivedLink queueOrGetResult(ArticleLink articleLink,
 			long newPriority) {
-		ArchivedLink archivedLink = archivedLinkDao.findLink(articleLink.url,
-				articleLink.accessDate);
+		ArchivedLink archivedLink = archivedLinkDao.findNonBrokenLink(
+				articleLink.url, articleLink.accessDate);
 
 		if (archivedLink != null)
 			return archivedLink;
@@ -66,13 +72,25 @@ public class LinksQueuer {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
-	public void saveArchivedLink(ArticleLink articleLink) {
+	public void saveArchivedLink(ArticleLink articleLink)
+			throws ClientProtocolException, IOException {
 		ArchivedLink archivedLink = new ArchivedLink();
 		archivedLink.setAccessDate(articleLink.accessDate);
 		archivedLink.setAccessUrl(articleLink.url);
 		archivedLink.setArchiveDate(articleLink.archiveDate);
-		// what else may be in article already?
-		archivedLink.setArchiveResult("success");
+
+		String status;
+		if (archivedLink.getAccessUrl().startsWith(
+				"http://www.webcitation.org/")) {
+			status = webCiteArchiver.getStatus(HttpManager.DEFAULT_CLIENT,
+					StringUtils.substringAfter(archivedLink.getAccessUrl(),
+							"http://www.webcitation.org/"));
+		} else {
+			// what else may be in article already?
+			status = ArchivedLink.STATUS_SUCCESS;
+		}
+		archivedLink.setArchiveResult(status);
+
 		archivedLink.setArchiveUrl(articleLink.archiveUrl);
 
 		archivedLinkDao.persist(archivedLink);
@@ -130,7 +148,8 @@ public class LinksQueuer {
 	}
 
 	@Transactional(propagation = Propagation.SUPPORTS)
-	public void storeArchivedLinksFromArticleContent(String latestContent) {
+	public void storeArchivedLinksFromArticleContent(String latestContent)
+			throws Exception {
 		ArticleFragment articleFragment = new Parser().parse(latestContent);
 		List<ArticleLink> allLinks = articleLinksCollector
 				.getAllLinks(articleFragment);
@@ -187,7 +206,7 @@ public class LinksQueuer {
 				continue;
 			}
 
-			if (archivedLinkDao.findLink(articleLink.url,
+			if (archivedLinkDao.findNonBrokenLink(articleLink.url,
 					articleLink.accessDate) != null) {
 				// already have such link in out DB
 				logger.debug("Ignoring archive URL '" + archiveUrl

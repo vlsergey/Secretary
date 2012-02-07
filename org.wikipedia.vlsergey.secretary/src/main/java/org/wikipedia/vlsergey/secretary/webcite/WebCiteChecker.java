@@ -30,9 +30,6 @@ public class WebCiteChecker {
 	private ArticleLinksCollector articleLinksCollector;
 
 	@Autowired
-	private HttpManager httpManager;
-
-	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
@@ -93,30 +90,28 @@ public class WebCiteChecker {
 	}
 
 	public void run() throws Exception {
-		// String clientCode = httpManager.getClientCodes().iterator().next();
+		for (ArchivedLink archivedLink : archivedLinkDao
+				.findByArchiveResult("")) {
+			try {
+				String webCiteCode = StringUtils.substringAfter(
+						archivedLink.getArchiveUrl(),
+						"http://www.webcitation.org/");
+				if (StringUtils.isEmpty(webCiteCode))
+					continue;
 
-		// for (ArchivedLink archivedLink : archivedLinkDao
-		// .findByArchiveResult("")) {
-		// try {
-		// String webCiteCode = StringUtils.substringAfter(
-		// archivedLink.getArchiveUrl(),
-		// "http://www.webcitation.org/");
-		// if (StringUtils.isEmpty(webCiteCode))
-		// continue;
-		//
-		// if (!StringUtils.isAlphanumeric(webCiteCode))
-		// continue;
-		//
-		// String archiveResult = webCiteArchiver.getStatus(clientCode,
-		// webCiteCode);
-		// archivedLink.setArchiveResult(archiveResult);
-		// archivedLinkDao.setArchiveResult(archivedLink, archiveResult);
-		//
-		// Thread.sleep(500);
-		// } catch (Exception exc) {
-		// logger.error(exc, exc);
-		// }
-		// }
+				if (!StringUtils.isAlphanumeric(webCiteCode))
+					continue;
+
+				String archiveResult = webCiteArchiver.getStatus(
+						HttpManager.DEFAULT_CLIENT, webCiteCode);
+				archivedLink.setArchiveResult(archiveResult);
+				archivedLinkDao.setArchiveResult(archivedLink, archiveResult);
+
+				Thread.sleep(500);
+			} catch (Exception exc) {
+				logger.error(exc, exc);
+			}
+		}
 
 		Set<Long> pages = new TreeSet<Long>();
 		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage(

@@ -17,6 +17,7 @@ import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.Edit;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.MultiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.PostLogin;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryCategorymembers;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryExturlusage;
@@ -26,6 +27,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevisionIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
+import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
+import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -147,6 +151,13 @@ public class MediaWikiBot extends HttpBot {
 			loggedIn = true;
 			return;
 		}
+	}
+
+	protected boolean isBotRegistered() {
+		String registered = System
+				.getProperty("org.wikipedia.vlsergey.bot.registered");
+		registered = registered == null ? "" : registered;
+		return "1".equals(registered) || "true".equals(registered);
 	}
 
 	public boolean isLoggedIn() {
@@ -279,6 +290,16 @@ public class MediaWikiBot extends HttpBot {
 		return new MultiActionResultIterable<R>(initialAction);
 	}
 
+	public Iterable<CategoryMember> queryCategoryMembers(String categoryTitle,
+			CategoryMemberType type, int... namespaces) throws ActionException {
+		logger.info("queryCategoryMembers(" + categoryTitle + ", " + type
+				+ ", " + Arrays.toString(namespaces) + ")");
+
+		QueryCategorymembers a = new QueryCategorymembers(categoryTitle,
+				createNsString(namespaces), type.getQueryString());
+		return performMultiAction(a);
+	}
+
 	public Iterable<Long> queryEmbeddedInPageIds(String template,
 			int... namespaces) throws ActionException {
 		logger.info("queryEmbeddedInPageIds(" + template + ", "
@@ -371,11 +392,12 @@ public class MediaWikiBot extends HttpBot {
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		List<Long> buffer = new ArrayList<Long>(50);
+		final int limit = isBotRegistered() ? 500 : 50;
+		List<Long> buffer = new ArrayList<Long>(limit);
 		for (Long pageId : pageIds) {
 			buffer.add(pageId);
 
-			if (buffer.size() == 50) {
+			if (buffer.size() == limit) {
 				logger.info("queryRevisionsByPageIds(...): " + buffer);
 
 				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(
@@ -423,7 +445,7 @@ public class MediaWikiBot extends HttpBot {
 				addSingleRevisionsToResult(bufferAction.getResults(), result);
 				return result;
 			}
-		}.batchlazy(50);
+		}.batchlazy(isBotRegistered() ? 500 : 50);
 	}
 
 	public Collection<Revision> queryRevisionsByRevisionIds(
@@ -434,11 +456,12 @@ public class MediaWikiBot extends HttpBot {
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		List<Long> buffer = new ArrayList<Long>(50);
+		final int limit = isBotRegistered() ? 500 : 50;
+		List<Long> buffer = new ArrayList<Long>(limit);
 		for (Long revisionId : revisionIds) {
 			buffer.add(revisionId);
 
-			if (buffer.size() == 50) {
+			if (buffer.size() == limit) {
 				logger.info("queryRevisionsByRevisionIds(...): " + buffer);
 
 				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(

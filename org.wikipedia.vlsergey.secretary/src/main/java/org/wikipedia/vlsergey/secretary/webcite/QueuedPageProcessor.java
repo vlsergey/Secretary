@@ -15,6 +15,7 @@ import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang.time.DateUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.CircularRedirectException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
@@ -24,14 +25,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
-import org.wikipedia.vlsergey.secretary.dom.Parameter;
+import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
-import org.wikipedia.vlsergey.secretary.jwpf.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
@@ -102,9 +103,8 @@ public class QueuedPageProcessor {
 			return true;
 
 		if (latestRevision.getPage().getNamespace().longValue() != 0
-				&& !StringUtils.equalsIgnoreCase(
-						"Википедия:Пресса о Википедии", latestRevision
-								.getPage().getTitle())) {
+				&& !StringUtils.startsWithIgnoreCase(latestRevision.getPage()
+						.getTitle(), "Википедия:Пресса о Википедии")) {
 			logger.info("Skip page #" + latestRevision.getPage().getId()
 					+ " ('" + latestRevision.getPage().getTitle()
 					+ "') because not an article");
@@ -221,7 +221,7 @@ public class QueuedPageProcessor {
 			final boolean multilineFormat = articleLink.template.toString()
 					.contains("\n");
 
-			ArchivedLink archivedLink = archivedLinkDao.findLink(
+			ArchivedLink archivedLink = archivedLinkDao.findNonBrokenLink(
 					articleLink.url, articleLink.accessDate);
 			if (archivedLink != null) {
 				processArchivedLink(perArticleReport, articleLink,
@@ -240,6 +240,18 @@ public class QueuedPageProcessor {
 			}
 
 			logger.debug("Checking status of " + url);
+
+			if (url.startsWith("http://www.gzt.ru/")
+					|| url.startsWith("http://gzt.ru/")) {
+				logger.warn("Dead project: " + url);
+				perArticleReport.dead(url, "проект закрыт");
+				articleLink.template.setParameterValue(
+						WikiConstants.PARAMETER_DEADLINK, new Text(
+								"project-closed"));
+
+				articleLink.template.format(multilineFormat, multilineFormat);
+				continue;
+			}
 
 			StatusLine statusLine;
 			try {
@@ -263,6 +275,19 @@ public class QueuedPageProcessor {
 						});
 
 			} catch (ClientProtocolException exc) {
+
+				if (exc.getCause() instanceof CircularRedirectException) {
+					logger.warn("Dead link: " + url + " — " + exc);
+					perArticleReport.dead(url,
+							"циклическая переадресация (circular redirect)");
+
+					articleLink.template.setParameterValue(
+							WikiConstants.PARAMETER_DEADLINK, new Text(
+									"circular-redirect"));
+					articleLink.template.format(multilineFormat,
+							multilineFormat);
+					continue;
+				}
 
 				logger.warn("Potential dead link (unknown error): " + url
 						+ " — " + exc, exc);
@@ -290,12 +315,10 @@ public class QueuedPageProcessor {
 
 				logger.warn("Dead link: " + url + " — " + exc);
 				perArticleReport.dead(url, "сервер не найден (uknown host)");
-				articleLink.template
-						.getParameters()
-						.getChildren()
-						.add(new Parameter(new Text(
-								WikiConstants.PARAMETER_DEADLINK), new Text(
-								"unknown-host")));
+				articleLink.template.setParameterValue(
+						WikiConstants.PARAMETER_DEADLINK, new Text(
+								"unknown-host"));
+
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
 
@@ -319,6 +342,7 @@ public class QueuedPageProcessor {
 				processArchivedLink(perArticleReport, articleLink,
 						multilineFormat, archivedLink);
 				break;
+			case 400:
 			case 401:
 			case 403:
 			case 404:
@@ -330,12 +354,10 @@ public class QueuedPageProcessor {
 				perArticleReport.dead(url, "страница недоступна (" + statusLine
 						+ ")");
 
-				articleLink.template
-						.getParameters()
-						.getChildren()
-						.add(new Parameter(new Text(
-								WikiConstants.PARAMETER_DEADLINK), new Text(""
-								+ statusCode)));
+				articleLink.template.setParameterValue(
+						WikiConstants.PARAMETER_DEADLINK, new Text(""
+								+ statusCode));
+
 				articleLink.template.format(multilineFormat, multilineFormat);
 
 				break;
@@ -348,6 +370,10 @@ public class QueuedPageProcessor {
 		}
 
 		return !hasUncompletedLinks;
+	}
+
+	public void clearQueue() {
+		queuedPageDao.removeAll();
 	}
 
 	private Set<ArticleLink> getAllSupportedLinks(
@@ -367,19 +393,17 @@ public class QueuedPageProcessor {
 	boolean ignoreCite(PerArticleReport perArticleReport,
 			Template citeWebTemplate) {
 
-		Parameter urlParameter = citeWebTemplate
-				.getParameter(WikiConstants.PARAMETER_URL);
+		Content urlParameter = citeWebTemplate
+				.getParameterValue(WikiConstants.PARAMETER_URL);
 		if (urlParameter == null
-				|| StringUtils.isEmpty(urlParameter.getValue().toString()
-						.trim()))
+				|| StringUtils.isEmpty(urlParameter.toString().trim()))
 			return true;
-		String url = urlParameter.getValue().toString().trim();
+		String url = urlParameter.toString().trim();
 
-		Parameter deadlinkParameter = citeWebTemplate
-				.getParameter(WikiConstants.PARAMETER_DEADLINK);
+		Content deadlinkParameter = citeWebTemplate
+				.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
 		if (deadlinkParameter != null
-				&& StringUtils.isNotEmpty(deadlinkParameter.getValue()
-						.toString().trim())) {
+				&& StringUtils.isNotEmpty(deadlinkParameter.toString().trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedDead(url);
@@ -387,11 +411,11 @@ public class QueuedPageProcessor {
 			return true;
 		}
 
-		Parameter archiveurlParameter = citeWebTemplate
-				.getParameter(WikiConstants.PARAMETER_ARCHIVEURL);
+		Content archiveurlParameter = citeWebTemplate
+				.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
 		if (archiveurlParameter != null
-				&& StringUtils.isNotEmpty(archiveurlParameter.getValue()
-						.toString().trim())) {
+				&& StringUtils
+						.isNotEmpty(archiveurlParameter.toString().trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedArchived(url);
@@ -411,30 +435,27 @@ public class QueuedPageProcessor {
 		logger.debug("URL '" + archivedLink.getAccessUrl()
 				+ "' were archived at '" + archivedLink.getArchiveUrl() + "'");
 
-		if (StringUtils.isNotEmpty(archivedLink.getArchiveResult())) {
-			logger.debug("Status of " + archivedLink.getArchiveUrl()
-					+ " is unknown...");
+		logger.debug("Status of " + archivedLink.getArchiveUrl() + " is '"
+				+ archivedLink.getArchiveResult() + "'...");
+
+		if (!StringUtils.equalsIgnoreCase(ArchivedLink.STATUS_SUCCESS,
+				archivedLink.getArchiveResult())) {
 			return;
 		}
 
 		String archiveUrl = archivedLink.getArchiveUrl();
 		String status = archivedLink.getArchiveResult();
 
-		if ("success".equals(status)) {
+		if (ArchivedLink.STATUS_SUCCESS.equals(status)) {
 			perArticleReport.archived(archivedLink.getAccessUrl(), archiveUrl);
 
-			articleLink.template
-					.getParameters()
-					.getChildren()
-					.add(new Parameter(new Text(
-							WikiConstants.PARAMETER_ARCHIVEURL), new Text(
-							archiveUrl)));
-			articleLink.template
-					.getParameters()
-					.getChildren()
-					.add(new Parameter(new Text(
-							WikiConstants.PARAMETER_ARCHIVEDATE), new Text(
-							archivedLink.getArchiveDate())));
+			articleLink.template.setParameterValue(
+					WikiConstants.PARAMETER_ARCHIVEURL, new Text(archiveUrl));
+
+			articleLink.template.setParameterValue(
+					WikiConstants.PARAMETER_ARCHIVEDATE,
+					new Text(archivedLink.getArchiveDate()));
+
 			articleLink.template.format(multilineFormat, multilineFormat);
 
 		} else {
@@ -471,7 +492,8 @@ public class QueuedPageProcessor {
 			try {
 				boolean completed = runImpl();
 
-				long toSleep = queuedPageDao.findCount() / 60 / 10;
+				// long toSleep = queuedPageDao.findCount() / 60 / 10;
+				long toSleep = 60;
 				logger.debug("Sleeping "
 						+ toSleep
 						+ " minutes before another cycle with all queued pages...");
@@ -512,7 +534,7 @@ public class QueuedPageProcessor {
 								"Участник:WebCite Archiver/Statistics",
 								null,
 								"На момент обновления статистики "
-										+ "({{subst:CURRENTTIME}} {{REVISIONDAY}}.{{REVISIONMONTH}}) "
+										+ "({{subst:CURRENTTIME}} {{subst:CURRENTMONTHABBREV}}, {{subst:CURRENTDAY2}}) "
 										+ "в очереди находилось '''" + pages
 										+ "''' страниц и '''" + links
 										+ "''' ссылок", null,

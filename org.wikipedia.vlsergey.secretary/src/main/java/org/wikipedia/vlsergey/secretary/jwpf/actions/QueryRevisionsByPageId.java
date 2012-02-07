@@ -3,7 +3,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
-import org.wikipedia.vlsergey.secretary.jwpf.Direction;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 

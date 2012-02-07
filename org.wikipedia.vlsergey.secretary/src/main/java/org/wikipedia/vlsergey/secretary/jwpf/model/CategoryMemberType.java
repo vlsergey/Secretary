@@ -17,19 +17,21 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
-import java.util.List;
-import java.util.Set;
+public enum CategoryMemberType {
+	FILE("file"), PAGE("page"), SUBCAT("subcat");
 
-public interface Page extends Comparable<Page> {
-	Long getId();
+	private String queryString;
 
-	Set<? extends Page> getLinks();
+	private CategoryMemberType(String queryString) {
+		this.queryString = queryString;
+	}
 
-	Boolean getMissing();
+	public String getQueryString() {
+		return queryString;
+	}
 
-	Integer getNamespace();
-
-	List<? extends Revision> getRevisions();
-
-	String getTitle();
+	@Override
+	public String toString() {
+		return getQueryString();
+	}
 }

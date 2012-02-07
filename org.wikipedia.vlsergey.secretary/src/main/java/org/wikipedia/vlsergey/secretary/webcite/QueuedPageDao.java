@@ -56,6 +56,7 @@ public class QueuedPageDao {
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public QueuedPage getPageFromQueue() {
 		return template.execute(new HibernateCallback<QueuedPage>() {
+			@Override
 			public QueuedPage doInHibernate(Session session)
 					throws HibernateException, SQLException {
 
@@ -79,6 +80,11 @@ public class QueuedPageDao {
 	public List<QueuedPage> getPagesFromQueue() {
 		return template.find("SELECT pages " + "FROM QueuedPage pages "
 				+ "ORDER BY lastCheckTimestamp, priority DESC");
+	}
+
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+	public void removeAll() {
+		template.bulkUpdate("DELETE FROM QueuedPage");
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

@@ -1,12 +1,12 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
-import org.apache.commons.lang.StringUtils;
 import org.hibernate.SessionFactory;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Repository
 public class StoredPageDao {
@@ -20,6 +20,7 @@ public class StoredPageDao {
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = false)
 	public StoredPage getOrCreate(Page withContent) {
 		final Long id = withContent.getId();
+		// boolean flushRequired = false;
 
 		StoredPage stored = getById(id);
 		if (stored == null) {
@@ -27,26 +28,46 @@ public class StoredPageDao {
 			stored.setId(id);
 			template.persist(stored);
 			stored = template.get(StoredPage.class, id);
-			template.flush();
+			// flushRequired = true;
 		}
 
-		if (StringUtils.isNotEmpty(withContent.getTitle())) {
-			(stored).setTitle(withContent.getTitle());
+		if (updateRequired(withContent.getTitle(), stored.getTitle())) {
+			stored.setTitle(withContent.getTitle());
+			// flushRequired = true;
 		}
 
-		if (withContent.getNamespace() != null) {
-			(stored).setNamespace(withContent.getNamespace());
+		if (updateRequired(withContent.getNamespace(), stored.getNamespace())) {
+			stored.setNamespace(withContent.getNamespace());
+			// flushRequired = true;
 		}
 
-		if (withContent.getMissing() != null) {
-			(stored).setMissing(withContent.getMissing());
+		if (updateRequired(withContent.getMissing(), stored.getMissing())) {
+			stored.setMissing(withContent.getMissing());
+			// flushRequired = true;
 		}
 
-		template.flush();
+		// if (flushRequired)
+		// template.flush();
+
 		return stored;
 	}
 
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		template = new HibernateTemplate(sessionFactory);
+	}
+
+	private boolean updateRequired(final Boolean newValue,
+			final Boolean oldValue) {
+		return newValue != null && !newValue.equals(oldValue);
+	}
+
+	private boolean updateRequired(final Integer newValue,
+			final Integer oldValue) {
+		return newValue != null && !newValue.equals(oldValue);
+	}
+
+	private boolean updateRequired(final String newValue, final String oldValue) {
+		return StringUtils.isNotEmpty(newValue)
+				&& !StringUtils.equals(oldValue, newValue);
 	}
 }

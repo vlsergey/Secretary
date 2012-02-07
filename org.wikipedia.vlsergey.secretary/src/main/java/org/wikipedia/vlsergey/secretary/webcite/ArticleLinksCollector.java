@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikipedia.vlsergey.secretary.dom.AbstractContainer;
 import org.wikipedia.vlsergey.secretary.dom.Content;
-import org.wikipedia.vlsergey.secretary.dom.Parameter;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 
 public class ArticleLinksCollector {
@@ -19,11 +18,7 @@ public class ArticleLinksCollector {
 			.getLogger(ArticleLinksCollector.class);
 
 	static String getParameterOrEmpty(Template template, String parameterName) {
-		Parameter parameter = template.getParameter(parameterName);
-		if (parameter == null)
-			return StringUtils.EMPTY;
-
-		final Content value = parameter.getValue();
+		final Content value = template.getParameterValue(parameterName);
 
 		if (value == null)
 			return StringUtils.EMPTY;
@@ -132,11 +127,11 @@ public class ArticleLinksCollector {
 
 		String url = articleLink.url;
 
-		Parameter deadlinkParameter = articleLink.template
-				.getParameter(WikiConstants.PARAMETER_DEADLINK);
-		if (deadlinkParameter != null
-				&& StringUtils.isNotEmpty(deadlinkParameter.getValue()
-						.toString().trim())) {
+		Content deadlinkParameterValue = articleLink.template
+				.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
+		if (deadlinkParameterValue != null
+				&& StringUtils.isNotEmpty(deadlinkParameterValue.toString()
+						.trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedDead(url);
@@ -144,11 +139,11 @@ public class ArticleLinksCollector {
 			return true;
 		}
 
-		Parameter archiveurlParameter = articleLink.template
-				.getParameter(WikiConstants.PARAMETER_ARCHIVEURL);
-		if (archiveurlParameter != null
-				&& StringUtils.isNotEmpty(archiveurlParameter.getValue()
-						.toString().trim())) {
+		Content archiveurlParameterValue = articleLink.template
+				.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
+		if (archiveurlParameterValue != null
+				&& StringUtils.isNotEmpty(archiveurlParameterValue.toString()
+						.trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedArchived(url);

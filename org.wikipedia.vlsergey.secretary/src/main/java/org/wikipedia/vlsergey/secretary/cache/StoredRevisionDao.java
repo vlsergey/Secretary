@@ -1,8 +1,11 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.SessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
@@ -12,10 +15,19 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
 @Repository
 public class StoredRevisionDao {
+	private static final Logger logger = LoggerFactory
+			.getLogger(StoredRevisionDao.class);
+
 	@Autowired
 	private StoredPageDao storedPageDao;
 
 	protected HibernateTemplate template = null;
+
+	@SuppressWarnings("unchecked")
+	public List<Long> getAllRevisionIds() {
+		return template
+				.find("SELECT revisions.id FROM Revision revisions ORDER BY id");
+	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public StoredRevision getOrCreate(Revision withContent) {
@@ -27,41 +39,73 @@ public class StoredRevisionDao {
 			revisionImpl.setId(id);
 			template.persist(revisionImpl);
 			revisionImpl = template.get(StoredRevision.class, id);
-			template.flush();
+			// template.flush();
 		}
 
 		if (withContent.getPage() != null) {
-			StoredPage storedPage = storedPageDao.getOrCreate(withContent
-					.getPage());
-			revisionImpl.setPage(storedPage);
+			boolean flushRequired = false;
+
+			StoredPage storedPage;
+			if (revisionImpl.getPage() == null) {
+				storedPage = storedPageDao.getOrCreate(withContent.getPage());
+				revisionImpl.setPage(storedPage);
+				flushRequired = true;
+			} else {
+				storedPage = revisionImpl.getPage();
+			}
 
 			if (storedPage.getRevisions() == null) {
 				storedPage.setRevisions(new ArrayList<StoredRevision>());
+				flushRequired = true;
 			}
-			if (!storedPage.getRevisions().contains(revisionImpl))
+			if (!storedPage.getRevisions().contains(revisionImpl)) {
 				storedPage.getRevisions().add(revisionImpl);
+				flushRequired = true;
+			}
 
-			template.flush();
+			// if (flushRequired)
+			// template.flush();
 		}
 
-		if (withContent.getAnon() != null)
-			revisionImpl.setAnon(withContent.getAnon());
-		if (withContent.getBot() != null)
-			revisionImpl.setBot(withContent.getBot());
-		if (withContent.getComment() != null)
-			revisionImpl.setComment(withContent.getComment());
-		if (withContent.getContent() != null)
-			revisionImpl.setContent(withContent.getContent());
-		if (withContent.getMinor() != null)
-			revisionImpl.setMinor(withContent.getMinor());
-		if (withContent.getSize() != null)
-			revisionImpl.setSize(withContent.getSize());
-		if (withContent.getTimestamp() != null)
-			revisionImpl.setTimestamp(withContent.getTimestamp());
-		if (withContent.getUser() != null)
-			revisionImpl.setUser(withContent.getUser());
+		boolean flushRequired = false;
 
-		template.flush();
+		if (updateRequired(withContent.getAnon(), revisionImpl.getAnon())) {
+			revisionImpl.setAnon(withContent.getAnon());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getBot(), revisionImpl.getBot())) {
+			revisionImpl.setBot(withContent.getBot());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getComment(), revisionImpl.getComment())) {
+			revisionImpl.setComment(withContent.getComment());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getContent(), revisionImpl.getContent())) {
+			revisionImpl.setContent(withContent.getContent());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getMinor(), revisionImpl.getMinor())) {
+			revisionImpl.setMinor(withContent.getMinor());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getSize(), revisionImpl.getSize())) {
+			revisionImpl.setSize(withContent.getSize());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getTimestamp(),
+				revisionImpl.getTimestamp())) {
+			revisionImpl.setTimestamp(withContent.getTimestamp());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getUser(), revisionImpl.getUser())) {
+			revisionImpl.setUser(withContent.getUser());
+			flushRequired = true;
+		}
+
+		// if (flushRequired)
+		// template.flush();
+
 		return revisionImpl;
 	}
 
@@ -78,4 +122,9 @@ public class StoredRevisionDao {
 	public void updateCache(Revision withContent) {
 		getOrCreate(withContent);
 	}
+
+	private boolean updateRequired(final Object newValue, final Object oldValue) {
+		return newValue != null && !newValue.equals(oldValue);
+	}
+
 }

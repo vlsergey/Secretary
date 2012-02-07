@@ -22,11 +22,7 @@ import java.util.Set;
 
 import javax.persistence.Id;
 
-public class ParsedPageImpl implements Page {
-
-	private Set<Page> categories;
-
-	// List<ImageInfo> imageInfo;
+public class ParsedPageImpl extends AbstractPage {
 
 	private Long id;
 
@@ -40,46 +36,36 @@ public class ParsedPageImpl implements Page {
 
 	private String title;
 
-	public Set<Page> getCategories() {
-		return categories;
-	}
-
-	// public List<ImageInfo> getImageInfo() {
-	// return imageInfo;
-	// }
-
+	@Override
 	@Id
 	public Long getId() {
 		return id;
 	}
 
+	@Override
 	public Set<Page> getLinks() {
 		return links;
 	}
 
+	@Override
 	public Boolean getMissing() {
 		return missing;
 	}
 
+	@Override
 	public Integer getNamespace() {
 		return namespace;
 	}
 
+	@Override
 	public List<Revision> getRevisions() {
 		return revisions;
 	}
 
+	@Override
 	public String getTitle() {
 		return title;
 	}
-
-	public void setCategories(Set<Page> categories) {
-		this.categories = categories;
-	}
-
-	// public void setImageInfo(List<ImageInfo> imageInfo) {
-	// this.imageInfo = imageInfo;
-	// }
 
 	public void setId(Long pageID) {
 		this.id = pageID;

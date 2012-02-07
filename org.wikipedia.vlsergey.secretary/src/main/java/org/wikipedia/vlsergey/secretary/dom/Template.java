@@ -2,9 +2,10 @@ package org.wikipedia.vlsergey.secretary.dom;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class Template extends AbstractContainer {
 
@@ -112,19 +113,36 @@ public class Template extends AbstractContainer {
 		return (Parameter) parameters.getChildren().get(index);
 	}
 
-	public Parameter getParameter(String name) {
+	public ArticleFragment getParameters() {
+		return parameters;
+	}
+
+	public List<Parameter> getParameters(String name) {
+		List<Parameter> result = new LinkedList<Parameter>();
+
 		for (Content content : parameters.getChildren()) {
 			Parameter parameter = (Parameter) content;
 			if (parameter.getName() != null
 					&& StringUtils.equalsIgnoreCase(name, parameter
-							.getCanonicalName().trim()))
-				return parameter;
+							.getCanonicalName().trim())) {
+				result.add(parameter);
+			}
 		}
-		return null;
+
+		return result;
 	}
 
-	public ArticleFragment getParameters() {
-		return parameters;
+	public Content getParameterValue(String name) {
+		final List<Parameter> matchedParameters = getParameters(name);
+		for (Parameter parameter : matchedParameters) {
+			if (StringUtils.trimToNull(parameter.getValue().toWiki()) != null) {
+				return parameter.getValue();
+			}
+		}
+		if (!matchedParameters.isEmpty())
+			return matchedParameters.get(0).getValue();
+
+		return null;
 	}
 
 	public void removeParameter(String name) {
@@ -145,6 +163,28 @@ public class Template extends AbstractContainer {
 
 	public void setParameters(ArticleFragment parameters) {
 		this.parameters = parameters;
+	}
+
+	public void setParameterValue(String parameterName, Content value) {
+		final List<Parameter> matchedParameters = getParameters(parameterName);
+
+		if (matchedParameters.isEmpty()) {
+			parameters.getChildren().add(
+					new Parameter(new Text(parameterName), value));
+			return;
+		}
+
+		if (matchedParameters.size() == 1) {
+			Parameter parameter = matchedParameters.get(0);
+			parameter.setValue(value);
+			return;
+		}
+
+		Parameter first = matchedParameters.get(0);
+		first.setValue(value);
+		while (getParameters(parameterName).size() > 1)
+			parameters.getChildren()
+					.remove(getParameters(parameterName).get(1));
 	}
 
 	@Override

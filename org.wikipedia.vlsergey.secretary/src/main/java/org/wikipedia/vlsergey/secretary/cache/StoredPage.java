@@ -25,14 +25,10 @@ import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 
-import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.AbstractPage;
 
 @Entity(name = "Page")
-public class StoredPage implements Page {
-
-	private Set<StoredPage> categories;
-
-	// List<ImageInfo> imageInfo;
+public class StoredPage extends AbstractPage {
 
 	private Long id;
 
@@ -46,49 +42,38 @@ public class StoredPage implements Page {
 
 	private String title;
 
-	@ManyToMany
-	public Set<StoredPage> getCategories() {
-		return categories;
-	}
-
-	// public List<ImageInfo> getImageInfo() {
-	// return imageInfo;
-	// }
-
+	@Override
 	@Id
 	public Long getId() {
 		return id;
 	}
 
+	@Override
 	@ManyToMany
 	public Set<StoredPage> getLinks() {
 		return links;
 	}
 
+	@Override
 	public Boolean getMissing() {
 		return missing;
 	}
 
+	@Override
 	public Integer getNamespace() {
 		return namespace;
 	}
 
+	@Override
 	@OneToMany
 	public List<StoredRevision> getRevisions() {
 		return revisions;
 	}
 
+	@Override
 	public String getTitle() {
 		return title;
 	}
-
-	public void setCategories(Set<StoredPage> categories) {
-		this.categories = categories;
-	}
-
-	// public void setImageInfo(List<ImageInfo> imageInfo) {
-	// this.imageInfo = imageInfo;
-	// }
 
 	public void setId(Long pageID) {
 		this.id = pageID;

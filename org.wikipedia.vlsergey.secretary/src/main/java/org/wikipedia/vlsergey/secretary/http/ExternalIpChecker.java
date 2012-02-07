@@ -27,6 +27,9 @@ public class ExternalIpChecker {
 
 	public void assertIpAddressesAreDifferent() throws ClientProtocolException,
 			IOException {
+		if (httpManager.getClientCodes().size() == 1)
+			return;
+
 		Set<InetAddress> usedAddresses = new LinkedHashSet<InetAddress>();
 
 		for (String clientCode : httpManager.getClientCodes()) {

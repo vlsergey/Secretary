@@ -5,6 +5,15 @@ import java.util.Iterator;
 public abstract class Function<A, R> {
 	public abstract R apply(A a);
 
+	public <B> Function<A, B> map(final Function<R, B> mapFunction) {
+		return new Function<A, B>() {
+			@Override
+			public B apply(A a) {
+				return mapFunction.apply(Function.this.apply(a));
+			}
+		};
+	}
+
 	public MultiresultFunction<A, R> toMultiresultFunction() {
 		return new MultiresultFunction<A, R>() {
 			@Override

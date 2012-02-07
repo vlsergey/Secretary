@@ -152,6 +152,11 @@ public class QueuedLinkDao {
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
+	public void removeAll() {
+		template.bulkUpdate("DELETE FROM QueuedLink");
+	}
+
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void removeLinkFromQueue(QueuedLink queuedLink) {
 		logger.info("Removing link '" + queuedLink.getUrl() + "' ('"
 				+ queuedLink.getAccessDate() + "') from queue...");

@@ -15,7 +15,7 @@
  *
  * Created on 30.03.2008
  */
-package org.wikipedia.vlsergey.secretary.jwpf;
+package org.wikipedia.vlsergey.secretary.jwpf.model;
 
 public enum Direction {
 	NEWER("newer"), OLDER("older");
