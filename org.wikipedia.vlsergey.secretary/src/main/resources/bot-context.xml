@@ -11,6 +11,11 @@
 	</bean>
 	<bean id="externalIpChecker" class="org.wikipedia.vlsergey.secretary.http.ExternalIpChecker" />
 
-	<bean id="mediaWikiBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot" />
+	<bean id="ruWikipediaBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot">
+		<property name="bot" value="1" />
+		<property name="login" value="Secretary" />
+		<property name="password" value="#{systemProperties.SecretaryPassword}" />
+		<property name="site" value="http://ru.wikipedia.org/w"/>
+	</bean>
 
 </beans>

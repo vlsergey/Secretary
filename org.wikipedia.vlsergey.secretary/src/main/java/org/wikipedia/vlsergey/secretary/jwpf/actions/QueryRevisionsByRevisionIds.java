@@ -6,8 +6,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByRevisionIds(Iterable<Long> revids,
-			RevisionPropery[] properties) {
+	public QueryRevisionsByRevisionIds(Iterable<Long> revids, RevisionPropery[] properties) {
 		super(properties);
 
 		HttpPost postMethod = new HttpPost("/api.php");

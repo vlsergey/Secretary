@@ -23,17 +23,14 @@ public class WebCiteLimiter {
 
 	public boolean isAllowed(String hostCode) {
 		@SuppressWarnings("unchecked")
-		List<WebCiteQueryEvent> events = template.find("SELECT events "
-				+ "FROM WebCiteQueryEvent events " + "WHERE hostCode = ? "
-				+ "ORDER BY timestamp DESC", hostCode);
+		List<WebCiteQueryEvent> events = template.find("SELECT events " + "FROM WebCiteQueryEvent events "
+				+ "WHERE hostCode = ? " + "ORDER BY timestamp DESC", hostCode);
 
 		if (events.size() >= REQUESTS) {
 			WebCiteQueryEvent last = events.get(0);
 			if (System.currentTimeMillis() - last.getTimestamp() > PERIOD) {
 				// cleanup and allow
-				template.bulkUpdate("DELETE "
-						+ "FROM WebCiteQueryEvent events "
-						+ "WHERE hostCode = ?", hostCode);
+				template.bulkUpdate("DELETE " + "FROM WebCiteQueryEvent events " + "WHERE hostCode = ?", hostCode);
 				return true;
 			}
 

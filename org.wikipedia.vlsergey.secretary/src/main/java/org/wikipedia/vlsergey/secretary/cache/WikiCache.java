@@ -8,7 +8,7 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
@@ -22,31 +22,27 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 @Transactional(propagation = Propagation.NEVER)
 public class WikiCache {
 
-	private static final Logger logger = LoggerFactory
-			.getLogger(WikiCache.class);
+	private static final Logger logger = LoggerFactory.getLogger(WikiCache.class);
 
-	@Autowired
+	
 	private MediaWikiBot mediaWikiBot;
 
-	@Autowired
+	
 	private StoredRevisionDao storedRevisionDao;
 
-	public List<Revision> queryLatestContentByPageIds(Iterable<Long> pageIds)
-			throws ActionException, ProcessException {
+	public List<Revision> queryLatestContentByPageIds(Iterable<Long> pageIds) throws ActionException, ProcessException {
 		logger.info("queryLatestContentByPageIds: " + pageIds);
 
 		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
-		for (Revision revision : mediaWikiBot.queryRevisionsByPageIds(pageIds,
-				RevisionPropery.IDS, RevisionPropery.TIMESTAMP)) {
+		for (Revision revision : mediaWikiBot.queryRevisionsByPageIds(pageIds, RevisionPropery.IDS,
+				RevisionPropery.TIMESTAMP)) {
 			// update info in DB
 			revision = storedRevisionDao.getOrCreate(revision);
 
-			pageIdToLatestRevision.put(revision.getPage().getId(),
-					revision.getId());
+			pageIdToLatestRevision.put(revision.getPage().getId(), revision.getId());
 		}
 
-		Map<Long, Revision> resultMap = new LinkedHashMap<Long, Revision>(
-				pageIdToLatestRevision.size());
+		Map<Long, Revision> resultMap = new LinkedHashMap<Long, Revision>(pageIdToLatestRevision.size());
 		List<Long> toLoad = new ArrayList<Long>(pageIdToLatestRevision.size());
 
 		for (Long pageId : pageIds) {
@@ -56,8 +52,7 @@ public class WikiCache {
 				continue;
 			}
 
-			Revision stored = storedRevisionDao
-					.getRevisionById(latestRevisionId);
+			Revision stored = storedRevisionDao.getRevisionById(latestRevisionId);
 			if (stored != null && StringUtils.isNotEmpty(stored.getContent())) {
 				resultMap.put(latestRevisionId, stored);
 			} else {
@@ -65,9 +60,8 @@ public class WikiCache {
 			}
 		}
 
-		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIds(
-				toLoad, RevisionPropery.IDS, RevisionPropery.TIMESTAMP,
-				RevisionPropery.CONTENT)) {
+		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIds(toLoad, RevisionPropery.IDS,
+				RevisionPropery.TIMESTAMP, RevisionPropery.CONTENT)) {
 			// update cache
 			revision = storedRevisionDao.getOrCreate(revision);
 			resultMap.put(revision.getId(), revision);
@@ -103,9 +97,8 @@ public class WikiCache {
 	public Revision queryLatestRevision(Long pageId) {
 		logger.debug("queryLatestRevision(" + pageId + ")");
 
-		Revision latest = mediaWikiBot.queryRevisionByPageId(pageId,
-				new RevisionPropery[] { RevisionPropery.IDS,
-						RevisionPropery.TIMESTAMP });
+		Revision latest = mediaWikiBot.queryRevisionByPageId(pageId, new RevisionPropery[] { RevisionPropery.IDS,
+				RevisionPropery.TIMESTAMP });
 
 		if (latest == null)
 			return null;
@@ -114,10 +107,8 @@ public class WikiCache {
 		if (stored != null && StringUtils.isNotEmpty(stored.getContent()))
 			return stored;
 
-		Revision withContent = mediaWikiBot.queryRevisionByRevisionId(
-				latest.getId(), new RevisionPropery[] { RevisionPropery.IDS,
-						RevisionPropery.CONTENT, RevisionPropery.TIMESTAMP },
-				false);
+		Revision withContent = mediaWikiBot.queryRevisionByRevisionId(latest.getId(), new RevisionPropery[] {
+				RevisionPropery.IDS, RevisionPropery.CONTENT, RevisionPropery.TIMESTAMP }, false);
 
 		if (withContent == null)
 			// deleted
@@ -130,9 +121,8 @@ public class WikiCache {
 	public Revision queryLatestRevision(String pageTitle) {
 		logger.debug("queryLatestRevision('" + pageTitle + "')");
 
-		Revision latest = mediaWikiBot.queryRevisionLatest(pageTitle,
-				new RevisionPropery[] { RevisionPropery.IDS,
-						RevisionPropery.TIMESTAMP });
+		Revision latest = mediaWikiBot.queryRevisionLatest(pageTitle, new RevisionPropery[] { RevisionPropery.IDS,
+				RevisionPropery.TIMESTAMP });
 
 		if (latest == null)
 			return null;
@@ -141,10 +131,8 @@ public class WikiCache {
 		if (StringUtils.isNotEmpty(stored.getContent()))
 			return stored;
 
-		latest = mediaWikiBot.queryRevisionByRevisionId(latest.getId(),
-				new RevisionPropery[] { RevisionPropery.IDS,
-						RevisionPropery.CONTENT, RevisionPropery.TIMESTAMP },
-				false);
+		latest = mediaWikiBot.queryRevisionByRevisionId(latest.getId(), new RevisionPropery[] { RevisionPropery.IDS,
+				RevisionPropery.CONTENT, RevisionPropery.TIMESTAMP }, false);
 		return latest;
 	}
 
@@ -160,8 +148,7 @@ public class WikiCache {
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
-	public String queryLatestRevisionContent(String pageTitle)
-			throws JwbfException {
+	public String queryLatestRevisionContent(String pageTitle) throws JwbfException {
 		logger.debug("queryLatestRevisionContent('" + pageTitle + "')");
 
 		Revision latest = queryLatestRevision(pageTitle);
@@ -182,10 +169,8 @@ public class WikiCache {
 		if (stored != null && StringUtils.isNotEmpty(stored.getContent()))
 			return stored.getContent();
 
-		Revision withContent = mediaWikiBot.queryRevisionByRevisionId(
-				revisionId, new RevisionPropery[] { RevisionPropery.IDS,
-						RevisionPropery.CONTENT, RevisionPropery.TIMESTAMP },
-				false);
+		Revision withContent = mediaWikiBot.queryRevisionByRevisionId(revisionId, new RevisionPropery[] {
+				RevisionPropery.IDS, RevisionPropery.CONTENT, RevisionPropery.TIMESTAMP }, false);
 
 		if (withContent == null)
 			// deleted

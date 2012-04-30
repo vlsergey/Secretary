@@ -24,8 +24,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class LinksQueuer {
-	private static final Logger logger = LoggerFactory
-			.getLogger(LinksQueuer.class);
+	private static final Logger logger = LoggerFactory.getLogger(LinksQueuer.class);
 
 	@Autowired
 	private ArchivedLinkDao archivedLinkDao;
@@ -33,7 +32,6 @@ public class LinksQueuer {
 	@Autowired
 	private ArticleLinksCollector articleLinksCollector;
 
-	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
@@ -42,8 +40,15 @@ public class LinksQueuer {
 	@Autowired
 	private WebCiteArchiver webCiteArchiver;
 
-	@Autowired
 	private WikiCache wikiCache;
+
+	public MediaWikiBot getMediaWikiBot() {
+		return mediaWikiBot;
+	}
+
+	public WikiCache getWikiCache() {
+		return wikiCache;
+	}
 
 	public boolean isQueuedOrArchived(String url, String accessDate) {
 		return archivedLinkDao.findNonBrokenLink(url, accessDate) != null
@@ -51,10 +56,8 @@ public class LinksQueuer {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
-	public ArchivedLink queueOrGetResult(ArticleLink articleLink,
-			long newPriority) {
-		ArchivedLink archivedLink = archivedLinkDao.findNonBrokenLink(
-				articleLink.url, articleLink.accessDate);
+	public ArchivedLink queueOrGetResult(ArticleLink articleLink, long newPriority) {
+		ArchivedLink archivedLink = archivedLinkDao.findNonBrokenLink(articleLink.url, articleLink.accessDate);
 
 		if (archivedLink != null)
 			return archivedLink;
@@ -72,19 +75,16 @@ public class LinksQueuer {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
-	public void saveArchivedLink(ArticleLink articleLink)
-			throws ClientProtocolException, IOException {
+	public void saveArchivedLink(ArticleLink articleLink) throws ClientProtocolException, IOException {
 		ArchivedLink archivedLink = new ArchivedLink();
 		archivedLink.setAccessDate(articleLink.accessDate);
 		archivedLink.setAccessUrl(articleLink.url);
 		archivedLink.setArchiveDate(articleLink.archiveDate);
 
 		String status;
-		if (archivedLink.getAccessUrl().startsWith(
-				"http://www.webcitation.org/")) {
+		if (archivedLink.getAccessUrl().startsWith("http://www.webcitation.org/")) {
 			status = webCiteArchiver.getStatus(HttpManager.DEFAULT_CLIENT,
-					StringUtils.substringAfter(archivedLink.getAccessUrl(),
-							"http://www.webcitation.org/"));
+					StringUtils.substringAfter(archivedLink.getAccessUrl(), "http://www.webcitation.org/"));
 		} else {
 			// what else may be in article already?
 			status = ArchivedLink.STATUS_SUCCESS;
@@ -94,6 +94,14 @@ public class LinksQueuer {
 		archivedLink.setArchiveUrl(articleLink.archiveUrl);
 
 		archivedLinkDao.persist(archivedLink);
+	}
+
+	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
+		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	public void setWikiCache(WikiCache wikiCache) {
+		this.wikiCache = wikiCache;
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
@@ -107,8 +115,7 @@ public class LinksQueuer {
 		String latestContent = latestRevision.getContent();
 
 		if (StringUtils.isEmpty(latestContent)) {
-			logger.warn("No content for revision #" + latestRevision.getId()
-					+ " of page #" + pageId + " ('"
+			logger.warn("No content for revision #" + latestRevision.getId() + " of page #" + pageId + " ('"
 					+ latestRevision.getPage().getTitle() + "')");
 			return;
 		}
@@ -116,23 +123,20 @@ public class LinksQueuer {
 		try {
 			storeArchivedLinksFromArticleContent(latestContent);
 		} catch (ParsingException exc) {
-			logger.warn("Parsing exception occur during processing revision #"
-					+ latestRevision.getId() + " of page #" + pageId + " ('"
-					+ latestRevision.getPage().getTitle() + "'): " + exc, exc);
+			logger.warn("Parsing exception occur during processing revision #" + latestRevision.getId() + " of page #"
+					+ pageId + " ('" + latestRevision.getPage().getTitle() + "'): " + exc, exc);
 		}
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
-	public void storeArchivedLinksFromArticle(String articleName)
-			throws Exception {
+	public void storeArchivedLinksFromArticle(String articleName) throws Exception {
 		Revision latestRevision = wikiCache.queryLatestRevision(articleName);
 		if (latestRevision == null) {
 			logger.warn("No latest revision for page '" + articleName + "'");
 			return;
 		}
 
-		String latestContent = wikiCache
-				.queryLatestRevisionContent(articleName);
+		String latestContent = wikiCache.queryLatestRevisionContent(articleName);
 
 		if (StringUtils.isEmpty(latestContent))
 			return;
@@ -140,19 +144,15 @@ public class LinksQueuer {
 		try {
 			storeArchivedLinksFromArticleContent(latestContent);
 		} catch (ParsingException exc) {
-			logger.warn("Parsing exception occur during processing revision #"
-					+ latestRevision.getId() + " of page #"
-					+ latestRevision.getPage().getId() + " ('" + articleName
-					+ "'): " + exc, exc);
+			logger.warn("Parsing exception occur during processing revision #" + latestRevision.getId() + " of page #"
+					+ latestRevision.getPage().getId() + " ('" + articleName + "'): " + exc, exc);
 		}
 	}
 
 	@Transactional(propagation = Propagation.SUPPORTS)
-	public void storeArchivedLinksFromArticleContent(String latestContent)
-			throws Exception {
+	public void storeArchivedLinksFromArticleContent(String latestContent) throws Exception {
 		ArticleFragment articleFragment = new Parser().parse(latestContent);
-		List<ArticleLink> allLinks = articleLinksCollector
-				.getAllLinks(articleFragment);
+		List<ArticleLink> allLinks = articleLinksCollector.getAllLinks(articleFragment);
 
 		// for now - just save...
 		for (ArticleLink articleLink : allLinks) {
@@ -169,8 +169,7 @@ public class LinksQueuer {
 			try {
 				originalUri = URI.create(originalUrl);
 			} catch (IllegalArgumentException exc) {
-				logger.warn("URL " + originalUrl
-						+ " skipped due wrong format: " + exc.getMessage());
+				logger.warn("URL " + originalUrl + " skipped due wrong format: " + exc.getMessage());
 				continue;
 			}
 
@@ -192,25 +191,21 @@ public class LinksQueuer {
 			try {
 				archiveUri = URI.create(archiveUrl);
 			} catch (IllegalArgumentException exc) {
-				logger.warn("URL " + archiveUrl + " skipped due wrong format: "
-						+ exc.getMessage());
+				logger.warn("URL " + archiveUrl + " skipped due wrong format: " + exc.getMessage());
 				continue;
 			}
 			String archiveHost = archiveUri.getHost().toLowerCase();
 
 			if (!WebCiteArchiver.SKIP_ARCHIVES.contains(archiveHost)) {
 				// this archived copy is not on archives site
-				logger.warn("Ignoring archive URL '" + archiveUrl
-						+ "' (as archive copy of '" + originalUrl
+				logger.warn("Ignoring archive URL '" + archiveUrl + "' (as archive copy of '" + originalUrl
 						+ "') because unknown archive site");
 				continue;
 			}
 
-			if (archivedLinkDao.findNonBrokenLink(articleLink.url,
-					articleLink.accessDate) != null) {
+			if (archivedLinkDao.findNonBrokenLink(articleLink.url, articleLink.accessDate) != null) {
 				// already have such link in out DB
-				logger.debug("Ignoring archive URL '" + archiveUrl
-						+ "' (as archive copy of '" + originalUrl
+				logger.debug("Ignoring archive URL '" + archiveUrl + "' (as archive copy of '" + originalUrl
 						+ "') because already stored in DB");
 				continue;
 			}
@@ -223,18 +218,15 @@ public class LinksQueuer {
 	public void storeArchivedLinksFromWikipedia() throws Exception {
 
 		Collection<Long> pageIds = new HashSet<Long>();
-		for (Long pageId : mediaWikiBot
-				.queryEmbeddedInPageIds("Шаблон:Cite web")) {
+		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Cite web")) {
 			pageIds.add(pageId);
 		}
 		pageIds = new ArrayList<Long>(pageIds);
 		Collections.sort((List<Long>) pageIds);
 
-		for (Revision revision : wikiCache.queryLatestContentByPageIdsF()
-				.batchlazy(50).apply(pageIds)) {
-			logger.debug("Processing links from revision #" + revision.getId()
-					+ " of article #" + revision.getPage().getId() + " ('"
-					+ revision.getPage().getTitle() + "')");
+		for (Revision revision : wikiCache.queryLatestContentByPageIdsF().batchlazy(50).apply(pageIds)) {
+			logger.debug("Processing links from revision #" + revision.getId() + " of article #"
+					+ revision.getPage().getId() + " ('" + revision.getPage().getTitle() + "')");
 
 			try {
 				String content = revision.getContent();
@@ -244,10 +236,8 @@ public class LinksQueuer {
 
 				storeArchivedLinksFromArticleContent(content);
 			} catch (Exception exc) {
-				logger.error("Unable to process links from revision #"
-						+ revision.getId() + " of article #"
-						+ revision.getPage().getId() + " ('"
-						+ revision.getPage().getTitle() + "'):" + exc);
+				logger.error("Unable to process links from revision #" + revision.getId() + " of article #"
+						+ revision.getPage().getId() + " ('" + revision.getPage().getTitle() + "'):" + exc);
 			}
 		}
 	}

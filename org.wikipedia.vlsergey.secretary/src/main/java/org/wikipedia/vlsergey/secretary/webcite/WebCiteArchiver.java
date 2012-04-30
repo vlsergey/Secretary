@@ -41,11 +41,10 @@ public class WebCiteArchiver {
 	private static final String PATTERN_WEBCITE_QUERY_RESPONSE = "\\<resultset\\>\\<result status\\=\\\"([^\\\"]*)\\\"\\>";
 
 	static final Set<String> SKIP_ARCHIVES = new HashSet<String>(Arrays.asList(
-			//
+	//
 			"archive.wikiwix.com", "wikiwix.com",
 
-			"classic-web.archive.org", "liveweb.archive.org",
-			"replay.web.archive.org", "web.archive.org",
+			"classic-web.archive.org", "liveweb.archive.org", "replay.web.archive.org", "web.archive.org",
 
 			"liveweb.waybackmachine.org", "replay.waybackmachine.org",
 
@@ -69,7 +68,12 @@ public class WebCiteArchiver {
 			"logainm.ie",
 
 			// http://www.webcitation.org/5w7BcNTfc
-			"www.logainm.ie"));
+			"www.logainm.ie",
+
+			// always 403 by HTTP checker
+			"euskomedia.org", "www.euskomedia.org"
+
+	));
 
 	static final Set<String> SKIP_NO_CACHE = new HashSet<String>(Arrays.asList(
 			//
@@ -77,24 +81,35 @@ public class WebCiteArchiver {
 
 			"www.ctv.ca",//
 
+			"bluesnews.com",
 			"www.bluesnews.com",//
+			"inishturkisland.com",
 			"www.inishturkisland.com",//
+			"janes.com",
 			"www.janes.com",//
 			"ms-pictures.com",
 			"www.ms-pictures.com", //
 			"movies.nytimes.com",//
+			"plastichead.com",
 			"www.plastichead.com",//
+			"sherdog.com",
 			"www.sherdog.com",//
 			"secunia.com",
 			"www.secunia.com",//
 			"securitylabs.websense.com",//
+			"worldsnooker.com",
 			"www.worldsnooker.com",//
+			"x-rates.com",
+			"www.x-rates.com",//
 
 			"www.sportovci.cz",//
 
 			"www.nationalbanken.dk",//
 
 			"blogs.yahoo.co.jp", //
+
+			"fff.fr",
+			"www.fff.fr",//
 
 			"izrus.co.il",//
 
@@ -107,18 +122,19 @@ public class WebCiteArchiver {
 			"www.3dnews.ru",//
 			"www.art-catalog.ru",//
 			"www.cio-world.ru",//
-			"cult.compulenta.ru", "culture.compulenta.ru",
-			"hard.compulenta.ru", "net.compulenta.ru", "science.compulenta.ru",
-			"soft.compulenta.ru",//
+			"compulenta.ru", "cult.compulenta.ru", "culture.compulenta.ru", "hard.compulenta.ru", "net.compulenta.ru",
+			"science.compulenta.ru", "soft.compulenta.ru",//
 			"computerra.ru", "offline.computerra.ru", "www.computerra.ru",//
 			"www.crpg.ru",//
 			"www.dishmodels.ru",//
 			"domtest.ru",//
 			"www.finam.ru",//
+			"finmarket.ru", "www.finmarket.ru",//
 			"www.game-ost.ru",//
 			"www.gatchina-meria.ru",//
 			"infuture.ru", "www.infuture.ru", //
 			"interfax.ru", "www.interfax.ru", //
+			"interfax-russia.ru", "www.interfax-russia.ru", //
 			"www.tver.izbirkom.ru",//
 			"graph.document.kremlin.ru",//
 			"www.liveinternet.ru",//
@@ -126,6 +142,7 @@ public class WebCiteArchiver {
 			"newsmusic.ru", "www.newsmusic.ru",//
 			"kino.otzyv.ru",//
 			"www.oval.ru",//
+			"redstar.ru", "www.redstar.ru",//
 			"render.ru", "www.render.ru", //
 			"www.rg.ru",//
 			"ruformator.ru", //
@@ -140,96 +157,91 @@ public class WebCiteArchiver {
 			"www.cajt.pwp.blueyonder.co.uk" //
 	));
 
-	static final Set<String> SKIP_TECH_LIMITS = new HashSet<String>(
-			Arrays.asList(
-					//
-					"books.google.com.br",//
+	static final Set<String> SKIP_TECH_LIMITS = new HashSet<String>(Arrays.asList(
+	//
+			"books.google.com.br",//
 
-					"naviny.by",
-					"www.naviny.by", // alw404
+			"naviny.by", "www.naviny.by", // alw404
 
-					"www.animenewsnetwork.com",//
-					"www.azlyrics.com",//
-					"www.boston.com",//
-					"cinnamonpirate.com",//
-					"www.discogs.com",//
-					"dpreview.com",
-					"www.dpreview.com", //
-					"www.everyculture.com",//
-					"findarticles.com",//
-					"aom.heavengames.com", // alw404
-					"historynet.com",
-					"www.historynet.com",// alw404
-					"forum.ixbt.com",//
-					"books.google.com",//
-					"www.jame-world.com",//
-					"nationsencyclopedia.com",
-					"www.nationsencyclopedia.com", // alw404
-					"pqasb.pqarchiver.com", // alw404
-					"rottentomatoes.com",
-					"www.rottentomatoes.com",//
-					"www.sciencedirect.com", // alw404
-					"www.stpattys.com",//
-					"www.visi.com",//
-					"www.webelements.com",//
-					"www.wheresgeorge.com",//
-					"ru.youtube.com",//
-					"www.youtube.com",//
+			"www.animenewsnetwork.com",//
+			"www.azlyrics.com",//
+			"www.boston.com",//
+			"cinnamonpirate.com",//
+			"www.discogs.com",//
+			"dpreview.com", "www.dpreview.com", //
+			"www.everyculture.com",//
+			"filmreference.com", "www.filmreference.com", // alw404
+			"findarticles.com",//
+			"aom.heavengames.com", // alw404
+			"historynet.com", "www.historynet.com",// alw404
+			"forum.ixbt.com",//
+			"books.google.com", "news.google.com",//
+			"www.jame-world.com",//
+			"nationsencyclopedia.com", "www.nationsencyclopedia.com", // alw404
+			"ttcs.netfirms.com", // long timeout
+			"pqasb.pqarchiver.com", // alw404
+			"rottentomatoes.com", "www.rottentomatoes.com",//
+			"www.sciencedirect.com", // alw404
+			"springerlink.com", "www.springerlink.com",// alw404
+			"rogerebert.suntimes.com", // alw404
+			"www.stpattys.com",//
+			"www.visi.com",//
+			"www.webelements.com",//
+			"www.wheresgeorge.com",//
+			"ru.youtube.com",//
+			"www.youtube.com",//
 
-					"futuretrance.de",//
-					"books.google.de",//
-					"www.rfid-handbook.de",//
-					"www.voicesfromthedarkside.de",//
+			"biolib.cz", "www.biolib.cz", // alw404
 
-					"zapraudu-mirror.info", // alw404
+			"futuretrance.de",//
+			"books.google.de",//
+			"www.rfid-handbook.de",//
+			"structurae.de", "en.structurae.de", // alw404
+			"www.voicesfromthedarkside.de",//
 
-					"www.ncbi.nlm.nih.gov",//
+			"zapraudu-mirror.info", // alw404
 
-					"voynich.nu",//
+			"www.ncbi.nlm.nih.gov",//
 
-					"aerospaceweb.org",
-					"www.aerospaceweb.org",//
-					"arxiv.org",
-					"www.arxiv.org",//
-					"file-extensions.org",
-					"www.file-extensions.org",//
-					"globalsecurity.org",
-					"www.globalsecurity.org",//
-					"hdot.org",
-					"www.hdot.org", //
-					"mindat.org",
-					"www.mindat.org",//
-					"spatricksf.org", "www.spatricksf.org",
-					"wwww.spatricksf.org",//
-					"solon.org", "www.solon.org",//
-					"unhcr.org", "www.unhcr.org", //
-					"www.yellowribbon.org",//
+			"voynich.nu",//
 
-					"computer-museum.ru", "www.computer-museum.ru", // alw404
-					"books.google.ru",//
-					"video.mail.ru",//
-					"www.nkj.ru", // alw404
-					"www.ozon.ru",//
-					"really.ru",//
-					"perm.ru", "www.perm.ru", // alw404
-					"videoguide.ru", "www.videoguide.ru", // alw404
-					"walkspb.ru", "www.walkspb.ru", // alw404
-					"maps.yandex.ru",//
+			"aerospaceweb.org", "www.aerospaceweb.org",//
+			"arxiv.org", "www.arxiv.org",//
+			"file-extensions.org", "www.file-extensions.org",//
+			"globalsecurity.org", "www.globalsecurity.org",//
+			"hdot.org", "www.hdot.org", //
+			"mindat.org", "www.mindat.org",//
+			"spatricksf.org", "www.spatricksf.org", "wwww.spatricksf.org",//
+			"solon.org", "www.solon.org",//
+			"unhcr.org", "www.unhcr.org", //
+			"www.yellowribbon.org",//
 
-					"ati.su", "www.ati.su", //
+			"computer-museum.ru", "www.computer-museum.ru", // alw404
+			"base.consultant.ru", //
+			"books.google.ru",//
+			"video.mail.ru",//
+			"www.nkj.ru", // alw404
+			"www.ozon.ru",//
+			"really.ru",//
+			"perm.ru", "www.perm.ru", // alw404
+			"rutube.ru", "www.rutube.ru",// sense
+			"spartak-nalchik.ru", "www.spartak-nalchik.ru", // alw404
+			"videoguide.ru", "www.videoguide.ru", // alw404
+			"walkspb.ru", "www.walkspb.ru", // alw404
+			"maps.yandex.ru",//
 
-					"books.google.com.ua", "www.google.com.ua",//
+			"ati.su", "www.ati.su", //
 
-					"books.google.co.uk",//
-					"thesun.co.uk", "www.thesun.co.uk", //
-					"www.traditionalmusic.co.uk"
+			"books.google.com.ua", "www.google.com.ua",//
 
-			));
+			"books.google.co.uk",//
+			"thesun.co.uk", "www.thesun.co.uk", //
+			"www.traditionalmusic.co.uk"
 
-	private static HttpPost buildRequest(final String url, final String title,
-			final String author, final String date)
-			throws UnsupportedEncodingException, IOException,
-			ClientProtocolException {
+	));
+
+	private static HttpPost buildRequest(final String url, final String title, final String author, final String date)
+			throws UnsupportedEncodingException, IOException, ClientProtocolException {
 
 		HttpPost postMethod = new HttpPost("http://webcitation.org/archive.php");
 
@@ -252,111 +264,96 @@ public class WebCiteArchiver {
 	@Autowired
 	private HttpManager httpManager;
 
-	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
-	public String archive(final String httpClientCode, final String url,
-			final String title, final String author, final String date)
-			throws Exception {
+	public String archive(final String httpClientCode, final String url, final String title, final String author,
+			final String date) throws Exception {
 
 		// okay, archiving
 		logger.debug("Using " + httpClientCode + " to archive " + url);
 
 		HttpPost httpPost = buildRequest(url, title, author, date);
 
-		return httpManager.execute(httpClientCode, httpPost,
-				new ResponseHandler<String>() {
-					@Override
-					public String handleResponse(HttpResponse archiveResponse)
-							throws ClientProtocolException, IOException {
+		return httpManager.execute(httpClientCode, httpPost, new ResponseHandler<String>() {
+			@Override
+			public String handleResponse(HttpResponse archiveResponse) throws ClientProtocolException, IOException {
 
-						if (archiveResponse.getStatusLine().getStatusCode() != 200) {
-							logger.error("Unsupported response: "
-									+ archiveResponse.getStatusLine());
-							throw new UnsupportedOperationException(
-									"Unsupported response code from WebCite");
-						}
+				if (archiveResponse.getStatusLine().getStatusCode() != 200) {
+					logger.error("Unsupported response: " + archiveResponse.getStatusLine());
+					throw new UnsupportedOperationException("Unsupported response code from WebCite");
+				}
 
-						String result = IoUtils.readToString(archiveResponse
-								.getEntity().getContent(), HTTP.UTF_8);
+				String result = IoUtils.readToString(archiveResponse.getEntity().getContent(), HTTP.UTF_8);
 
-						Pattern pattern = Pattern
-								.compile(PATTERN_WEBCITE_ARCHIVE_RESPONSE);
-						Matcher matcher = pattern.matcher(result);
+				Pattern pattern = Pattern.compile(PATTERN_WEBCITE_ARCHIVE_RESPONSE);
+				Matcher matcher = pattern.matcher(result);
 
-						if (!matcher.find()) {
-							logger.error("Pattern of response not found on archiving response page");
-							logger.debug(result);
+				if (!matcher.find()) {
+					logger.error("Pattern of response not found on archiving response page");
+					logger.debug(result);
 
-							throw new UnsupportedOperationException(
-									"Unsupported from response content. "
-											+ "Details in DEBUG log.");
-						}
+					throw new UnsupportedOperationException("Unsupported from response content. "
+							+ "Details in DEBUG log.");
+				}
 
-						String archiveUrl = matcher.group(1);
-						logger.info("URL " + url + " was archived at "
-								+ archiveUrl);
-						return archiveUrl;
-					}
-				});
+				String archiveUrl = matcher.group(1);
+				logger.info("URL " + url + " was archived at " + archiveUrl);
+				return archiveUrl;
+			}
+		});
 	}
 
-	public String getStatus(final String httpClientCode, final String webCiteId)
-			throws ClientProtocolException, IOException {
-		HttpGet getMethod = new HttpGet(
-				"http://www.webcitation.org/query?returnxml=true&id="
-						+ webCiteId);
+	public MediaWikiBot getMediaWikiBot() {
+		return mediaWikiBot;
+	}
 
-		return httpManager.execute(httpClientCode, getMethod,
-				new ResponseHandler<String>() {
-					@Override
-					public String handleResponse(HttpResponse httpResponse)
-							throws ClientProtocolException, IOException {
+	public String getStatus(final String httpClientCode, final String webCiteId) throws ClientProtocolException,
+			IOException {
+		HttpGet getMethod = new HttpGet("http://www.webcitation.org/query?returnxml=true&id=" + webCiteId);
 
-						HttpEntity entity = httpResponse.getEntity();
-						String result = IoUtils.readToString(
-								entity.getContent(), HTTP.UTF_8);
+		return httpManager.execute(httpClientCode, getMethod, new ResponseHandler<String>() {
+			@Override
+			public String handleResponse(HttpResponse httpResponse) throws ClientProtocolException, IOException {
 
-						Pattern pattern = Pattern
-								.compile(PATTERN_WEBCITE_QUERY_RESPONSE);
-						Matcher matcher = pattern.matcher(result);
+				HttpEntity entity = httpResponse.getEntity();
+				String result = IoUtils.readToString(entity.getContent(), HTTP.UTF_8);
 
-						if (matcher.find()) {
+				Pattern pattern = Pattern.compile(PATTERN_WEBCITE_QUERY_RESPONSE);
+				Matcher matcher = pattern.matcher(result);
 
-							logger.debug("Archive status of '" + webCiteId
-									+ "' is '" + matcher.group(1) + "'");
+				if (matcher.find()) {
 
-							return matcher.group(1);
-						}
+					logger.debug("Archive status of '" + webCiteId + "' is '" + matcher.group(1) + "'");
 
-						if (result.contains("<error>Invalid snapshot ID "))
-							return "Invalid snapshot ID";
+					return matcher.group(1);
+				}
 
-						if (!matcher.find()) {
-							logger.error("Pattern of response not found on query XML response page for ID '"
-									+ webCiteId + "'");
-							logger.trace(result);
-						}
+				if (result.contains("<error>Invalid snapshot ID "))
+					return "Invalid snapshot ID";
 
-						return null;
-					}
-				});
+				if (!matcher.find()) {
+					logger.error("Pattern of response not found on query XML response page for ID '" + webCiteId + "'");
+					logger.trace(result);
+				}
 
+				return null;
+			}
+		});
+
+	}
+
+	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
+		this.mediaWikiBot = mediaWikiBot;
 	}
 
 	public void updateIgnoringList() throws Exception {
-		updateIgnoringList(SKIP_ERRORS,
-				"Участник:WebCite Archiver/IgnoreErrors");
-		updateIgnoringList(SKIP_NO_CACHE,
-				"Участник:WebCite Archiver/IgnoreNoCache");
-		updateIgnoringList(SKIP_ARCHIVES,
-				"Участник:WebCite Archiver/IgnoreSence");
-		updateIgnoringList(SKIP_TECH_LIMITS,
-				"Участник:WebCite Archiver/IgnoreTechLimits");
+		updateIgnoringList(SKIP_ERRORS, "Участник:WebCite Archiver/IgnoreErrors");
+		updateIgnoringList(SKIP_NO_CACHE, "Участник:WebCite Archiver/IgnoreNoCache");
+		updateIgnoringList(SKIP_ARCHIVES, "Участник:WebCite Archiver/IgnoreSence");
+		updateIgnoringList(SKIP_TECH_LIMITS, "Участник:WebCite Archiver/IgnoreTechLimits");
 	}
 
-	private void updateIgnoringList(Set<String> hostsToIgnore, String pageName)
-			throws Exception {
+	private void updateIgnoringList(Set<String> hostsToIgnore, String pageName) throws Exception {
 		StringBuffer stringBuffer = new StringBuffer();
 
 		List<String> hosts = new ArrayList<String>(hostsToIgnore);
@@ -390,8 +387,8 @@ public class WebCiteArchiver {
 			stringBuffer.append("* " + hostName + "\n");
 		}
 
-		mediaWikiBot.writeContent(pageName, null, stringBuffer.toString(),
-				null, "Update ignoring sites list", true, true, false);
+		mediaWikiBot.writeContent(pageName, null, stringBuffer.toString(), null, "Update ignoring sites list", true,
+				true, false);
 	}
 
 }

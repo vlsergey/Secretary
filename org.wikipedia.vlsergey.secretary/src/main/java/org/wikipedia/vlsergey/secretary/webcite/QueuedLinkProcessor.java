@@ -10,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 
 public class QueuedLinkProcessor {
-	private static final Logger logger = LoggerFactory
-			.getLogger(QueuedLinkProcessor.class);
+	private static final Logger logger = LoggerFactory.getLogger(QueuedLinkProcessor.class);
 
 	@Autowired
 	private ArchivedLinkDao archivedLinkDao;
@@ -53,9 +52,15 @@ public class QueuedLinkProcessor {
 		}
 
 		try {
+			// is it in ignore list already?
+			if (QueuedPageProcessor.ignoreUrl(null, queuedLink.getUrl())) {
+				// shall be skipped
+				queuedLinkDao.removeLinkFromQueue(queuedLink);
+				return true;
+			}
+
 			// are we sure there is no match?
-			if (archivedLinkDao.findNonBrokenLink(queuedLink.getUrl(),
-					queuedLink.getAccessDate()) != null) {
+			if (archivedLinkDao.findNonBrokenLink(queuedLink.getUrl(), queuedLink.getAccessDate()) != null) {
 				// already processed
 				queuedLinkDao.removeLinkFromQueue(queuedLink);
 				return true;
@@ -84,30 +89,22 @@ public class QueuedLinkProcessor {
 
 			// should be allowed now
 			webCiteLimiter.beforeRequest(allowedClient);
-			String archiveUrl = webCiteArchiver.archive(allowedClient,
-					queuedLink.getUrl(), queuedLink.getTitle(),
+			String archiveUrl = webCiteArchiver.archive(allowedClient, queuedLink.getUrl(), queuedLink.getTitle(),
 					queuedLink.getAuthor(), queuedLink.getArticleDate());
 
-			String webCiteCode = StringUtils
-					.substringAfterLast(archiveUrl, "/");
+			String webCiteCode = StringUtils.substringAfterLast(archiveUrl, "/");
 			logger.debug("WebCite code is '" + webCiteCode + "'");
 
-			String status = webCiteArchiver.getStatus(allowedClient,
-					webCiteCode);
+			String status = webCiteArchiver.getStatus(allowedClient, webCiteCode);
 
-			for (QueuedLink sameUrl : queuedLinkDao.findByUrl(queuedLink
-					.getUrl())) {
-				logger.debug("Creating new archived record for '"
-						+ sameUrl.getUrl() + "' and date '"
+			for (QueuedLink sameUrl : queuedLinkDao.findByUrl(queuedLink.getUrl())) {
+				logger.debug("Creating new archived record for '" + sameUrl.getUrl() + "' and date '"
 						+ sameUrl.getAccessDate() + "'");
 
 				ArchivedLink archivedLink = new ArchivedLink();
-				archivedLink.setAccessDate(StringUtils.trimToEmpty(sameUrl
-						.getAccessDate()));
-				archivedLink.setAccessUrl(StringUtils.trimToEmpty(sameUrl
-						.getUrl()));
-				archivedLink.setArchiveDate(DateFormatUtils.format(new Date(),
-						"yyyy-MM-dd"));
+				archivedLink.setAccessDate(StringUtils.trimToEmpty(sameUrl.getAccessDate()));
+				archivedLink.setAccessUrl(StringUtils.trimToEmpty(sameUrl.getUrl()));
+				archivedLink.setArchiveDate(DateFormatUtils.format(new Date(), "yyyy-MM-dd"));
 				archivedLink.setArchiveResult(StringUtils.trimToEmpty(status));
 				archivedLink.setArchiveUrl(StringUtils.trimToEmpty(archiveUrl));
 				archivedLinkDao.persist(archivedLink);

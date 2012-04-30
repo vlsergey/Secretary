@@ -20,8 +20,7 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 @Repository
 @Transactional(readOnly = false)
 public class QueuedLinkDao {
-	private static final Logger logger = LoggerFactory
-			.getLogger(QueuedLinkDao.class);
+	private static final Logger logger = LoggerFactory.getLogger(QueuedLinkDao.class);
 
 	protected HibernateTemplate template = null;
 
@@ -30,8 +29,7 @@ public class QueuedLinkDao {
 		QueuedLink prev = findLink(link.getUrl(), link.getAccessDate());
 
 		if (prev == null) {
-			logger.info("Adding link '" + link.getUrl() + "' ('"
-					+ link.getAccessDate() + "') to queue");
+			logger.info("Adding link '" + link.getUrl() + "' ('" + link.getAccessDate() + "') to queue");
 
 			link.setQueuedTimestamp(System.currentTimeMillis());
 			link.setAccessDate(StringUtils.trimToEmpty(link.getAccessDate()));
@@ -44,8 +42,7 @@ public class QueuedLinkDao {
 		}
 
 		boolean updated = false;
-		if (StringUtils.isEmpty(prev.getAuthor())
-				&& StringUtils.isNotEmpty(link.getAuthor())) {
+		if (StringUtils.isEmpty(prev.getAuthor()) && StringUtils.isNotEmpty(link.getAuthor())) {
 			prev.setAuthor(StringUtils.trimToEmpty(link.getAuthor()));
 			updated = true;
 		}
@@ -55,15 +52,13 @@ public class QueuedLinkDao {
 			updated = true;
 		}
 
-		if (StringUtils.isEmpty(prev.getTitle())
-				&& StringUtils.isNotEmpty(link.getTitle())) {
+		if (StringUtils.isEmpty(prev.getTitle()) && StringUtils.isNotEmpty(link.getTitle())) {
 			prev.setTitle(StringUtils.trimToEmpty(link.getTitle()));
 			updated = true;
 		}
 
 		if (updated) {
-			logger.info("Updating queued link '" + link.getUrl() + "' ('"
-					+ link.getAccessDate() + "')...");
+			logger.info("Updating queued link '" + link.getUrl() + "' ('" + link.getAccessDate() + "')...");
 
 			template.flush();
 		}
@@ -74,17 +69,14 @@ public class QueuedLinkDao {
 	public List<QueuedLink> findByUrl(String url) {
 		logger.debug("Selecting link by url and access date...");
 
-		return template.find("SELECT link " + "FROM QueuedLink link "
-				+ "WHERE url=?", StringUtils.trimToEmpty(url));
+		return template.find("SELECT link " + "FROM QueuedLink link " + "WHERE url=?", StringUtils.trimToEmpty(url));
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public long findCount() {
 		logger.debug("Fentching number of queued links...");
 
-		return ((Number) template.find(
-				"SELECT COUNT(links) FROM QueuedLink links").get(0))
-				.longValue();
+		return ((Number) template.find("SELECT COUNT(links) FROM QueuedLink links").get(0)).longValue();
 	}
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = true, propagation = Propagation.MANDATORY)
@@ -92,14 +84,12 @@ public class QueuedLinkDao {
 		logger.debug("Selecting link by url and access date...");
 
 		@SuppressWarnings("unchecked")
-		List<QueuedLink> result = template.find("SELECT link "
-				+ "FROM QueuedLink link " + "WHERE url=? AND accessDate=?",
-				StringUtils.trimToEmpty(url),
-				StringUtils.trimToEmpty(accessedDate));
+		List<QueuedLink> result = template.find("SELECT link " + "FROM QueuedLink link "
+				+ "WHERE url=? AND accessDate=?", StringUtils.trimToEmpty(url), StringUtils.trimToEmpty(accessedDate));
 
 		if (result.size() > 1)
-			throw new IllegalStateException("Too many links in DB with url='"
-					+ url + "' AND accessDate='" + accessedDate + "'");
+			throw new IllegalStateException("Too many links in DB with url='" + url + "' AND accessDate='"
+					+ accessedDate + "'");
 
 		if (result.isEmpty())
 			return null;
@@ -113,11 +103,9 @@ public class QueuedLinkDao {
 
 		return template.execute(new HibernateCallback<QueuedLink>() {
 			@Override
-			public QueuedLink doInHibernate(Session session)
-					throws HibernateException, SQLException {
+			public QueuedLink doInHibernate(Session session) throws HibernateException, SQLException {
 
-				Query query = session.createQuery("SELECT links "
-						+ "FROM QueuedLink links "
+				Query query = session.createQuery("SELECT links " + "FROM QueuedLink links "
 						+ "ORDER BY priority DESC, queuedTimestamp");
 				query.setMaxResults(1);
 
@@ -137,8 +125,8 @@ public class QueuedLinkDao {
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void reducePriority(QueuedLink queuedLink) {
-		logger.info("Reducing priority of queued link '" + queuedLink.getUrl()
-				+ "' ('" + queuedLink.getAccessDate() + "')...");
+		logger.info("Reducing priority of queued link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate()
+				+ "')...");
 
 		template.update(queuedLink);
 		final long oldPriority = queuedLink.getPriority();
@@ -158,8 +146,7 @@ public class QueuedLinkDao {
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void removeLinkFromQueue(QueuedLink queuedLink) {
-		logger.info("Removing link '" + queuedLink.getUrl() + "' ('"
-				+ queuedLink.getAccessDate() + "') from queue...");
+		logger.info("Removing link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate() + "') from queue...");
 
 		template.update(queuedLink);
 		template.delete(queuedLink);

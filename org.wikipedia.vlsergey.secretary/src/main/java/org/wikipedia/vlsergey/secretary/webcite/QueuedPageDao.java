@@ -20,16 +20,13 @@ public class QueuedPageDao {
 	protected HibernateTemplate template = null;
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = false, propagation = Propagation.REQUIRED)
-	public void addPageToQueue(Long pageId, long priority,
-			long lastCheckTimestamp) {
+	public void addPageToQueue(Long pageId, long priority, long lastCheckTimestamp) {
 
 		@SuppressWarnings("unchecked")
-		List<QueuedPage> previous = template.find("SELECT page "
-				+ "FROM QueuedPage page " + "WHERE id=?", pageId);
+		List<QueuedPage> previous = template.find("SELECT page " + "FROM QueuedPage page " + "WHERE id=?", pageId);
 
 		if (previous.size() > 1)
-			throw new IllegalStateException(
-					"Too many queued pages in DB with id #" + pageId);
+			throw new IllegalStateException("Too many queued pages in DB with id #" + pageId);
 
 		if (previous.isEmpty()) {
 			QueuedPage queuedPage = new QueuedPage();
@@ -42,26 +39,21 @@ public class QueuedPageDao {
 
 		QueuedPage prev = previous.get(0);
 		prev.setPriority(Long.valueOf(Math.max(prev.getPriority(), priority)));
-		prev.setLastCheckTimestamp(Long.valueOf(Math.max(
-				prev.getLastCheckTimestamp(), lastCheckTimestamp)));
+		prev.setLastCheckTimestamp(Long.valueOf(Math.max(prev.getLastCheckTimestamp(), lastCheckTimestamp)));
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public long findCount() {
-		return ((Number) template.find(
-				"SELECT COUNT(pages) FROM QueuedPage pages").get(0))
-				.longValue();
+		return ((Number) template.find("SELECT COUNT(pages) FROM QueuedPage pages").get(0)).longValue();
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public QueuedPage getPageFromQueue() {
 		return template.execute(new HibernateCallback<QueuedPage>() {
 			@Override
-			public QueuedPage doInHibernate(Session session)
-					throws HibernateException, SQLException {
+			public QueuedPage doInHibernate(Session session) throws HibernateException, SQLException {
 
-				Query query = session.createQuery("SELECT pages "
-						+ "FROM QueuedPage pages "
+				Query query = session.createQuery("SELECT pages " + "FROM QueuedPage pages "
 						+ "ORDER BY lastCheckTimestamp, priority DESC");
 				query.setMaxResults(1);
 
@@ -78,8 +70,7 @@ public class QueuedPageDao {
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public List<QueuedPage> getPagesFromQueue() {
-		return template.find("SELECT pages " + "FROM QueuedPage pages "
-				+ "ORDER BY lastCheckTimestamp, priority DESC");
+		return template.find("SELECT pages " + "FROM QueuedPage pages " + "ORDER BY lastCheckTimestamp, priority DESC");
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

@@ -14,8 +14,7 @@ import org.wikipedia.vlsergey.secretary.dom.Template;
 
 public class ArticleLinksCollector {
 
-	private static final Logger logger = LoggerFactory
-			.getLogger(ArticleLinksCollector.class);
+	private static final Logger logger = LoggerFactory.getLogger(ArticleLinksCollector.class);
 
 	static String getParameterOrEmpty(Template template, String parameterName) {
 		final Content value = template.getParameterValue(parameterName);
@@ -26,13 +25,10 @@ public class ArticleLinksCollector {
 		return StringUtils.trimToEmpty(value.toWiki());
 	}
 
-	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url,
-			String host) {
+	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url, String host) {
 
 		if (WebCiteArchiver.SKIP_ERRORS.contains(host)) {
-			logger.debug("URL "
-					+ url
-					+ " skipped due to usual errors of WebCite leading to undeadable text");
+			logger.debug("URL " + url + " skipped due to usual errors of WebCite leading to undeadable text");
 
 			if (perArticleReport != null)
 				perArticleReport.skippedIgnoreTechLimits(url);
@@ -41,8 +37,7 @@ public class ArticleLinksCollector {
 		}
 
 		if (WebCiteArchiver.SKIP_TECH_LIMITS.contains(host)) {
-			logger.debug("URL " + url
-					+ " skipped due to technical limitatios of WebCite");
+			logger.debug("URL " + url + " skipped due to technical limitatios of WebCite");
 
 			if (perArticleReport != null)
 				perArticleReport.skippedIgnoreTechLimits(url);
@@ -51,9 +46,7 @@ public class ArticleLinksCollector {
 		}
 
 		if (WebCiteArchiver.SKIP_NO_CACHE.contains(host)) {
-			logger.debug("URL "
-					+ url
-					+ " skipped because pages on this site usually have 'no-cache' tag");
+			logger.debug("URL " + url + " skipped because pages on this site usually have 'no-cache' tag");
 
 			if (perArticleReport != null)
 				perArticleReport.skippedIgnoreNoCache(url);
@@ -75,8 +68,7 @@ public class ArticleLinksCollector {
 
 	public List<ArticleLink> getAllLinks(AbstractContainer container) {
 		List<ArticleLink> links = new ArrayList<ArticleLink>();
-		List<Template> citeWebTemplates = container.getAllTemplates().get(
-				WikiConstants.TEMPLATE_CITE_WEB);
+		List<Template> citeWebTemplates = container.getAllTemplates().get(WikiConstants.TEMPLATE_CITE_WEB);
 
 		if (citeWebTemplates == null)
 			return Collections.emptyList();
@@ -86,31 +78,22 @@ public class ArticleLinksCollector {
 
 			articleLink.template = citeWebTemplate;
 
-			articleLink.accessDate = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_ACCESSDATE);
-			articleLink.archiveDate = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_ARCHIVEDATE);
-			articleLink.archiveUrl = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_ARCHIVEURL);
-			articleLink.articleDate = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_DATE);
-			articleLink.author = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_DEADLINK);
-			articleLink.title = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_TITLE);
-			articleLink.url = getParameterOrEmpty(citeWebTemplate,
-					WikiConstants.PARAMETER_URL);
+			articleLink.accessDate = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_ACCESSDATE);
+			articleLink.archiveDate = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_ARCHIVEDATE);
+			articleLink.archiveUrl = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_ARCHIVEURL);
+			articleLink.articleDate = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_DATE);
+			articleLink.author = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_DEADLINK);
+			articleLink.title = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_TITLE);
+			articleLink.url = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_URL);
 
 			// strip local refs
 			if (StringUtils.contains(articleLink.url, "#"))
-				articleLink.url = StringUtils.substringBefore(articleLink.url,
-						"#");
+				articleLink.url = StringUtils.substringBefore(articleLink.url, "#");
 
 			try {
 				URI.create(articleLink.url);
 			} catch (IllegalArgumentException exc) {
-				logger.warn("URL " + articleLink.url
-						+ " skipped due wrong format: " + exc.getMessage());
+				logger.warn("URL " + articleLink.url + " skipped due wrong format: " + exc.getMessage());
 				continue;
 			}
 
@@ -119,19 +102,15 @@ public class ArticleLinksCollector {
 		return links;
 	}
 
-	public boolean ignoreCite(PerArticleReport perArticleReport,
-			ArticleLink articleLink) {
+	public boolean ignoreCite(PerArticleReport perArticleReport, ArticleLink articleLink) {
 
 		if (StringUtils.isEmpty(articleLink.url))
 			return true;
 
 		String url = articleLink.url;
 
-		Content deadlinkParameterValue = articleLink.template
-				.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
-		if (deadlinkParameterValue != null
-				&& StringUtils.isNotEmpty(deadlinkParameterValue.toString()
-						.trim())) {
+		Content deadlinkParameterValue = articleLink.template.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
+		if (deadlinkParameterValue != null && StringUtils.isNotEmpty(deadlinkParameterValue.toString().trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedDead(url);
@@ -139,11 +118,8 @@ public class ArticleLinksCollector {
 			return true;
 		}
 
-		Content archiveurlParameterValue = articleLink.template
-				.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
-		if (archiveurlParameterValue != null
-				&& StringUtils.isNotEmpty(archiveurlParameterValue.toString()
-						.trim())) {
+		Content archiveurlParameterValue = articleLink.template.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
+		if (archiveurlParameterValue != null && StringUtils.isNotEmpty(archiveurlParameterValue.toString().trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedArchived(url);
@@ -153,23 +129,4 @@ public class ArticleLinksCollector {
 
 		return false;
 	}
-
-	public boolean ignoreUrl(PerArticleReport perArticleReport, String url) {
-		if (!url.startsWith("http://"))
-			return true;
-
-		URI uri;
-		try {
-			uri = URI.create(url);
-		} catch (IllegalArgumentException exc) {
-			logger.warn("URL " + url + " skipped due wrong format: "
-					+ exc.getMessage());
-
-			return true;
-		}
-
-		String host = uri.getHost().toLowerCase();
-		return isIgnoreHost(null, url, host);
-	}
-
 }

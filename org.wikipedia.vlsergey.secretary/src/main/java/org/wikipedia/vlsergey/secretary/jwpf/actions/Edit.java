@@ -28,11 +28,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public class Edit extends AbstractAPIAction {
 
-	public Edit(Page page, Revision revision, String token, String text,
-			String summary, boolean minor, boolean bot) {
+	public Edit(Page page, Revision revision, String token, String text, String summary, boolean minor, boolean bot) {
 		if (revision.getTimestamp() == null) {
-			throw new IllegalArgumentException(
-					"Current revision must have timestamp to prevent edit conflicts");
+			throw new IllegalArgumentException("Current revision must have timestamp to prevent edit conflicts");
 		}
 
 		HttpPost postMethod = new HttpPost("/api.php");
@@ -66,9 +64,8 @@ public class Edit extends AbstractAPIAction {
 		msgs.add(postMethod);
 	}
 
-	public Edit(String pageTitle, String token, String prependText,
-			String text, String appendText, String summary, boolean minor,
-			boolean bot, boolean nocreate) {
+	public Edit(String pageTitle, String token, String prependText, String text, String appendText, String summary,
+			boolean minor, boolean bot, boolean nocreate) {
 
 		HttpPost postMethod = new HttpPost("/api.php");
 
@@ -111,12 +108,11 @@ public class Edit extends AbstractAPIAction {
 	}
 
 	@Override
-	protected void parseAPI(Element root) throws ProcessException,
-			ParseException {
+	protected void parseAPI(Element root) throws ProcessException, ParseException {
 		String result = ((Element) root.getFirstChild()).getAttribute("result");
 
 		if (!result.equals("Success"))
-			throw new ProcessException("Review not successfull");
+			throw new ProcessException(result);
 	}
 
 }

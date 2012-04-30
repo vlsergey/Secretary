@@ -3,6 +3,8 @@
 	<session-factory>
 		<mapping class="org.wikipedia.vlsergey.secretary.cache.StoredPage" />
 		<mapping class="org.wikipedia.vlsergey.secretary.cache.StoredRevision" />
+		<mapping class="org.wikipedia.vlsergey.secretary.gost.BadLink" />
+		<mapping class="org.wikipedia.vlsergey.secretary.gost.ProtectGostRuEntry" />
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.ArchivedLink" />
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.QueuedLink" />
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.QueuedPage" />

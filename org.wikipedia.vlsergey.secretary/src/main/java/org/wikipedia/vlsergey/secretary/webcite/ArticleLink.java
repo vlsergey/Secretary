@@ -46,8 +46,7 @@ class ArticleLink {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result
-				+ ((accessDate == null) ? 0 : accessDate.hashCode());
+		result = prime * result + ((accessDate == null) ? 0 : accessDate.hashCode());
 		result = prime * result + ((url == null) ? 0 : url.hashCode());
 		return result;
 	}

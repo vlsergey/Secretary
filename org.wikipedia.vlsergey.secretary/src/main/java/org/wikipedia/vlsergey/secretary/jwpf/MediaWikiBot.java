@@ -1,6 +1,5 @@
 package org.wikipedia.vlsergey.secretary.jwpf;
 
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,8 +8,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.annotation.PostConstruct;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
@@ -27,10 +29,12 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevisionIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryUnreviewedPages;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
+import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -42,11 +46,9 @@ public class MediaWikiBot extends HttpBot {
 	public static final Charset CHARSET = Charset.forName("utf-8");
 	public static final String ENCODING = "utf-8";
 
-	private static final Logger logger = LoggerFactory
-			.getLogger(MediaWikiBot.class);
+	private static final Logger logger = LoggerFactory.getLogger(MediaWikiBot.class);
 
-	private static void addAllRevisionsToResult(final List<Page> bufferResult,
-			List<Revision> result) {
+	private static void addAllRevisionsToResult(final List<Page> bufferResult, List<Revision> result) {
 		for (Page page : bufferResult) {
 			addAllRevisionsToResult(page, result);
 		}
@@ -64,8 +66,7 @@ public class MediaWikiBot extends HttpBot {
 		}
 	}
 
-	private static void addSingleRevisionsToResult(
-			final List<Page> bufferResult, List<Revision> result) {
+	private static void addSingleRevisionsToResult(final List<Page> bufferResult, List<Revision> result) {
 		for (Page page : bufferResult) {
 			final Revision singleRevision = getSingleRevision(page);
 			if (singleRevision != null)
@@ -92,8 +93,7 @@ public class MediaWikiBot extends HttpBot {
 
 		// remove last '|'
 		if (namespaceString.endsWith("|")) {
-			namespaceString = namespaceString.substring(0,
-					namespaceString.length() - 1);
+			namespaceString = namespaceString.substring(0, namespaceString.length() - 1);
 		}
 
 		return namespaceString;
@@ -116,18 +116,32 @@ public class MediaWikiBot extends HttpBot {
 		return revisions.get(0);
 	}
 
+	@Value("false")
+	private boolean bot;
+
 	private boolean loggedIn = false;
 
-	public MediaWikiBot() throws Exception {
-		super(new URI("http://ru.wikipedia.org/w"));
+	private String login;
+
+	private String password;
+
+	public MediaWikiBot() {
 	}
 
-	public void httpLogin(final String username, final String passwd)
-			throws ActionException {
+	public String getLogin() {
+		return login;
+	}
+
+	public String getPassword() {
+		return password;
+	}
+
+	@PostConstruct
+	public void httpLogin() throws ActionException {
 		for (int i = 0; i < 5; i++) {
-			logger.info("Login as " + username);
+			logger.info("Login as " + getLogin());
 			try {
-				PostLogin postLogin = new PostLogin(username, passwd);
+				PostLogin postLogin = new PostLogin(getLogin(), getPassword());
 				performAction(postLogin);
 
 				if (postLogin.needConfirmation()) {
@@ -137,6 +151,7 @@ public class MediaWikiBot extends HttpBot {
 				e.printStackTrace();
 				return;
 			} catch (NullPointerException e) {
+				e.printStackTrace();
 				if (i < 5 - 1) {
 					logger.warn("NPE. Retry login");
 					try {
@@ -153,11 +168,8 @@ public class MediaWikiBot extends HttpBot {
 		}
 	}
 
-	protected boolean isBotRegistered() {
-		String registered = System
-				.getProperty("org.wikipedia.vlsergey.bot.registered");
-		registered = registered == null ? "" : registered;
-		return "1".equals(registered) || "true".equals(registered);
+	public boolean isBot() {
+		return bot;
 	}
 
 	public boolean isLoggedIn() {
@@ -183,8 +195,7 @@ public class MediaWikiBot extends HttpBot {
 	 *             on problems with http, cookies and io
 	 * @supportedBy MediaWiki 1.9.x API, 1.10.x API
 	 */
-	private <R> Iterable<R> performMultiAction(MultiAction<R> initialAction)
-			throws ActionException {
+	private <R> Iterable<R> performMultiAction(MultiAction<R> initialAction) throws ActionException {
 		if (!isLoggedIn())
 			throw new ActionException("Please login first");
 
@@ -208,8 +219,7 @@ public class MediaWikiBot extends HttpBot {
 				/**
 				 * constructor, relies on generatingIterable != null
 				 */
-				MultiActionResultIterator(
-						MultiActionResultIterable<R> generatingIterable) {
+				MultiActionResultIterator(MultiActionResultIterable<R> generatingIterable) {
 					this.generatingIterable = generatingIterable;
 				}
 
@@ -221,8 +231,7 @@ public class MediaWikiBot extends HttpBot {
 				 */
 				@Override
 				public boolean hasNext() {
-					while (index >= generatingIterable.knownResults.size()
-							&& generatingIterable.nextAction != null) {
+					while (index >= generatingIterable.knownResults.size() && generatingIterable.nextAction != null) {
 						generatingIterable.loadMoreResults();
 					}
 					return index < generatingIterable.knownResults.size();
@@ -236,8 +245,7 @@ public class MediaWikiBot extends HttpBot {
 				 */
 				@Override
 				public R next() {
-					while (index >= generatingIterable.knownResults.size()
-							&& generatingIterable.nextAction != null) {
+					while (index >= generatingIterable.knownResults.size() && generatingIterable.nextAction != null) {
 						generatingIterable.loadMoreResults();
 					}
 					return generatingIterable.knownResults.get(index++);
@@ -290,109 +298,88 @@ public class MediaWikiBot extends HttpBot {
 		return new MultiActionResultIterable<R>(initialAction);
 	}
 
-	public Iterable<CategoryMember> queryCategoryMembers(String categoryTitle,
-			CategoryMemberType type, int... namespaces) throws ActionException {
-		logger.info("queryCategoryMembers(" + categoryTitle + ", " + type
-				+ ", " + Arrays.toString(namespaces) + ")");
-
-		QueryCategorymembers a = new QueryCategorymembers(categoryTitle,
-				createNsString(namespaces), type.getQueryString());
-		return performMultiAction(a);
-	}
-
-	public Iterable<Long> queryEmbeddedInPageIds(String template,
+	public Iterable<CategoryMember> queryCategoryMembers(String categoryTitle, CategoryMemberType type,
 			int... namespaces) throws ActionException {
-		logger.info("queryEmbeddedInPageIds(" + template + ", "
-				+ Arrays.toString(namespaces) + ")");
+		logger.info("queryCategoryMembers(" + categoryTitle + ", " + type + ", " + Arrays.toString(namespaces) + ")");
 
-		QueryEmbeddedinPageIds a = new QueryEmbeddedinPageIds(template,
-				createNsString(namespaces));
+		QueryCategorymembers a = new QueryCategorymembers(categoryTitle, createNsString(namespaces),
+				type.getQueryString());
 		return performMultiAction(a);
 	}
 
-	public Iterable<String> queryEmbeddedInPageTitles(String template,
-			int... namespaces) throws ActionException {
-		logger.info("queryEmbeddedInPageTitles(" + template + ", "
-				+ Arrays.toString(namespaces) + ")");
+	public Iterable<Long> queryEmbeddedInPageIds(String template, int... namespaces) throws ActionException {
+		logger.info("queryEmbeddedInPageIds(" + template + ", " + Arrays.toString(namespaces) + ")");
 
-		QueryEmbeddedinTitles a = new QueryEmbeddedinTitles(template,
-				createNsString(namespaces));
+		QueryEmbeddedinPageIds a = new QueryEmbeddedinPageIds(template, createNsString(namespaces));
 		return performMultiAction(a);
 	}
 
-	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol,
-			String query, int... namespaces) throws ActionException {
-		logger.info("queryEmbeddedInPageTitles(" + protocol + ", " + query
-				+ ", " + Arrays.toString(namespaces) + ")");
+	public Iterable<String> queryEmbeddedInPageTitles(String template, int... namespaces) throws ActionException {
+		logger.info("queryEmbeddedInPageTitles(" + template + ", " + Arrays.toString(namespaces) + ")");
 
-		QueryExturlusage a = new QueryExturlusage(protocol, query,
-				createNsString(namespaces));
+		QueryEmbeddedinTitles a = new QueryEmbeddedinTitles(template, createNsString(namespaces));
 		return performMultiAction(a);
 	}
 
-	public Revision queryRevisionByPageId(Long pageId,
-			RevisionPropery[] properties) throws ActionException,
-			ProcessException {
-		logger.info("queryRevisionByPageId(" + pageId + ", "
-				+ Arrays.toString(properties) + ")");
-
-		QueryRevisionsByPageIds action = new QueryRevisionsByPageIds(
-				Collections.singleton(pageId), properties);
-		performAction(action);
-
-		return getSingleRevision(action.getResults());
-	}
-
-	public Revision queryRevisionByRevisionId(Long revisionId,
-			RevisionPropery[] properties, boolean rvgeneratexml)
-			throws ActionException, ProcessException {
-		logger.info("queryRevisionByRevisionId(" + revisionId + ", "
-				+ Arrays.toString(properties) + ", " + rvgeneratexml + ")");
-
-		QueryRevisionsByRevision action = new QueryRevisionsByRevision(
-				revisionId, properties, rvgeneratexml);
-		performAction(action);
-
-		return getSingleRevision(action.getResults());
-	}
-
-	public Revision queryRevisionLatest(String pageTitle,
-			RevisionPropery... properties) throws ActionException,
-			ProcessException {
-		logger.info("queryRevisionLatest('" + pageTitle + "', "
-				+ Arrays.toString(properties) + ")");
-
-		QueryRevisionsByPageTitles action = new QueryRevisionsByPageTitles(
-				Collections.singleton(pageTitle), properties);
-		performAction(action);
-
-		return getSingleRevision(action.getResults());
-	}
-
-	public Iterable<Revision> queryRevisionsByPageId(Long pageId,
-			Long rvstartid, Direction direction, RevisionPropery... properties)
+	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol, String query, int... namespaces)
 			throws ActionException {
-		logger.info("queryRevisionsByPageId(" + pageId + ", " + rvstartid
-				+ ", " + direction + ", " + Arrays.toString(properties));
+		logger.info("queryEmbeddedInPageTitles(" + protocol + ", " + query + ", " + Arrays.toString(namespaces) + ")");
+
+		QueryExturlusage a = new QueryExturlusage(protocol, query, createNsString(namespaces));
+		return performMultiAction(a);
+	}
+
+	public Revision queryRevisionByPageId(Long pageId, RevisionPropery[] properties) throws ActionException,
+			ProcessException {
+		logger.info("queryRevisionByPageId(" + pageId + ", " + Arrays.toString(properties) + ")");
+
+		QueryRevisionsByPageIds action = new QueryRevisionsByPageIds(Collections.singleton(pageId), properties);
+		performAction(action);
+
+		return getSingleRevision(action.getResults());
+	}
+
+	public Revision queryRevisionByRevisionId(Long revisionId, RevisionPropery[] properties, boolean rvgeneratexml)
+			throws ActionException, ProcessException {
+		logger.info("queryRevisionByRevisionId(" + revisionId + ", " + Arrays.toString(properties) + ", "
+				+ rvgeneratexml + ")");
+
+		QueryRevisionsByRevision action = new QueryRevisionsByRevision(revisionId, properties, rvgeneratexml);
+		performAction(action);
+
+		return getSingleRevision(action.getResults());
+	}
+
+	public Revision queryRevisionLatest(String pageTitle, RevisionPropery... properties) throws ActionException,
+			ProcessException {
+		logger.info("queryRevisionLatest('" + pageTitle + "', " + Arrays.toString(properties) + ")");
+
+		QueryRevisionsByPageTitles action = new QueryRevisionsByPageTitles(Collections.singleton(pageTitle), properties);
+		performAction(action);
+
+		return getSingleRevision(action.getResults());
+	}
+
+	public Iterable<Revision> queryRevisionsByPageId(Long pageId, Long rvstartid, Direction direction,
+			RevisionPropery... properties) throws ActionException {
+		logger.info("queryRevisionsByPageId(" + pageId + ", " + rvstartid + ", " + direction + ", "
+				+ Arrays.toString(properties));
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		for (Page page : performMultiAction(new QueryRevisionsByPageId(pageId,
-				rvstartid, direction, properties))) {
+		for (Page page : performMultiAction(new QueryRevisionsByPageId(pageId, rvstartid, direction, properties))) {
 			addAllRevisionsToResult(page, result);
 		}
 		return result;
 	}
 
-	public Collection<Revision> queryRevisionsByPageIds(Iterable<Long> pageIds,
-			RevisionPropery... properties) throws ActionException,
-			ProcessException {
-		logger.info("queryRevisionsByPageIds: " + pageIds + "; "
-				+ Arrays.asList(properties));
+	public Collection<Revision> queryRevisionsByPageIds(Iterable<Long> pageIds, RevisionPropery... properties)
+			throws ActionException, ProcessException {
+		logger.info("queryRevisionsByPageIds: " + pageIds + "; " + Arrays.asList(properties));
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		final int limit = isBotRegistered() ? 500 : 50;
+		final int limit = isBot() ? 500 : 50;
 		List<Long> buffer = new ArrayList<Long>(limit);
 		for (Long pageId : pageIds) {
 			buffer.add(pageId);
@@ -400,8 +387,7 @@ public class MediaWikiBot extends HttpBot {
 			if (buffer.size() == limit) {
 				logger.info("queryRevisionsByPageIds(...): " + buffer);
 
-				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(
-						buffer, properties);
+				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(buffer, properties);
 				performAction(bufferAction);
 
 				addSingleRevisionsToResult(bufferAction.getResults(), result);
@@ -420,8 +406,7 @@ public class MediaWikiBot extends HttpBot {
 		if (!buffer.isEmpty()) {
 			logger.info("queryRevisionsByPageIds(...): " + buffer);
 
-			QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(
-					buffer, properties);
+			QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(buffer, properties);
 			performAction(bufferAction);
 			addSingleRevisionsToResult(bufferAction.getResults(), result);
 			buffer.clear();
@@ -430,33 +415,29 @@ public class MediaWikiBot extends HttpBot {
 		return result;
 	}
 
-	public MultiresultFunction<Long, Revision> queryRevisionsByPageIdsF(
-			final RevisionPropery... properties) {
+	public MultiresultFunction<Long, Revision> queryRevisionsByPageIdsF(final RevisionPropery... properties) {
 		return new MultiresultFunction<Long, Revision>() {
 
 			@Override
 			public Iterable<Revision> apply(Iterable<Long> pageIds) {
 				List<Revision> result = new ArrayList<Revision>();
 
-				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(
-						pageIds, properties);
+				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(pageIds, properties);
 				performAction(bufferAction);
 
 				addSingleRevisionsToResult(bufferAction.getResults(), result);
 				return result;
 			}
-		}.batchlazy(isBotRegistered() ? 500 : 50);
+		}.batchlazy(isBot() ? 500 : 50);
 	}
 
-	public Collection<Revision> queryRevisionsByRevisionIds(
-			Iterable<Long> revisionIds, RevisionPropery... properties)
+	public Collection<Revision> queryRevisionsByRevisionIds(Iterable<Long> revisionIds, RevisionPropery... properties)
 			throws ActionException, ProcessException {
-		logger.info("queryRevisionsByRevisionIds: " + revisionIds + "; "
-				+ Arrays.asList(properties));
+		logger.info("queryRevisionsByRevisionIds: " + revisionIds + "; " + Arrays.asList(properties));
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		final int limit = isBotRegistered() ? 500 : 50;
+		final int limit = 50;
 		List<Long> buffer = new ArrayList<Long>(limit);
 		for (Long revisionId : revisionIds) {
 			buffer.add(revisionId);
@@ -464,8 +445,7 @@ public class MediaWikiBot extends HttpBot {
 			if (buffer.size() == limit) {
 				logger.info("queryRevisionsByRevisionIds(...): " + buffer);
 
-				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(
-						buffer, properties);
+				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(buffer, properties);
 				performAction(bufferAction);
 
 				addAllRevisionsToResult(bufferAction.getResults(), result);
@@ -484,8 +464,7 @@ public class MediaWikiBot extends HttpBot {
 		if (!buffer.isEmpty()) {
 			logger.info("queryRevisionsByRevisionIds(...): " + buffer);
 
-			QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(
-					buffer, properties);
+			QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(buffer, properties);
 			performAction(bufferAction);
 			addAllRevisionsToResult(bufferAction.getResults(), result);
 			buffer.clear();
@@ -494,16 +473,14 @@ public class MediaWikiBot extends HttpBot {
 		return result;
 	}
 
-	public MultiresultFunction<Long, Revision> queryRevisionsByRevisionIdsF(
-			final RevisionPropery... properties) {
+	public MultiresultFunction<Long, Revision> queryRevisionsByRevisionIdsF(final RevisionPropery... properties) {
 		return new MultiresultFunction<Long, Revision>() {
 
 			@Override
 			public Iterable<Revision> apply(Iterable<Long> revisionIds) {
 				List<Revision> result = new ArrayList<Revision>();
 
-				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(
-						revisionIds, properties);
+				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(revisionIds, properties);
 				performAction(bufferAction);
 
 				addSingleRevisionsToResult(bufferAction.getResults(), result);
@@ -512,62 +489,69 @@ public class MediaWikiBot extends HttpBot {
 		}.batchlazy(50);
 	}
 
-	public String queryTokenEdit(Revision revision) throws ActionException,
-			ProcessException {
+	public String queryTokenEdit(Revision revision) throws ActionException, ProcessException {
 		logger.info("queryTokenEdit( " + revision + " )");
 
 		QueryTokenEdit queryTokenEdit = new QueryTokenEdit(revision);
 		performAction(queryTokenEdit);
 
 		if (queryTokenEdit.getEditToken() == null)
-			throw new ActionException("Unable to obtain edit token for "
-					+ revision);
+			throw new ActionException("Unable to obtain edit token for " + revision);
 
 		return queryTokenEdit.getEditToken();
 	}
 
-	public String queryTokenEdit(String pageTitle) throws ActionException,
-			ProcessException {
+	public String queryTokenEdit(String pageTitle) throws ActionException, ProcessException {
 		logger.info("queryTokenEdit( '" + pageTitle + "' )");
 
 		QueryTokenEdit queryTokenEdit = new QueryTokenEdit(pageTitle);
 		performAction(queryTokenEdit);
 
 		if (queryTokenEdit.getEditToken() == null)
-			throw new ActionException("Unable to obtain edit token for '"
-					+ pageTitle + "'");
+			throw new ActionException("Unable to obtain edit token for '" + pageTitle + "'");
 
 		return queryTokenEdit.getEditToken();
 	}
 
-	public final void writeContent(final Page page,
-			final Revision currentRevision, final String text,
-			final String summary, final boolean minor, final boolean bot)
-			throws ActionException, ProcessException {
+	public Iterable<Page> queryUnreviewedPages(int[] namespaces, FilterRedirects filterRedirects)
+			throws ActionException {
+		return performMultiAction(new QueryUnreviewedPages(null, null, namespaces, filterRedirects));
+	}
+
+	public void setBot(boolean bot) {
+		this.bot = bot;
+	}
+
+	public void setLogin(String login) {
+		this.login = login;
+	}
+
+	public void setPassword(String password) {
+		this.password = password;
+	}
+
+	public void writeContent(final Page page, final Revision currentRevision, final String text, final String summary,
+			final boolean minor, final boolean bot) throws ActionException, ProcessException {
 		logger.info("writeContent: " + page.getTitle());
 		if (!isLoggedIn())
 			throw new ActionException("Please login first");
 
 		String editToken = queryTokenEdit(currentRevision);
 
-		Edit edit = new Edit(page, currentRevision, editToken, text, summary,
-				minor, bot);
+		Edit edit = new Edit(page, currentRevision, editToken, text, summary, minor, bot);
 		performAction(edit);
 	}
 
-	public final void writeContent(final String pageTitle,
-			final String prependText, final String text,
-			final String appendText, final String summary, final boolean minor,
-			final boolean bot, final boolean nocreate) throws ActionException,
-			ProcessException {
+	public void writeContent(final String pageTitle, final String prependText, final String text,
+			final String appendText, final String summary, final boolean minor, final boolean bot,
+			final boolean nocreate) throws ActionException, ProcessException {
 		logger.info("writeContent: " + pageTitle);
 		if (!isLoggedIn())
 			throw new ActionException("Please login first");
 
 		String editToken = queryTokenEdit(pageTitle);
 
-		Edit edit = new Edit(pageTitle, editToken, prependText, text,
-				appendText, summary, minor, bot, nocreate);
+		Edit edit = new Edit(pageTitle, editToken, prependText, text, appendText, summary, minor, bot, nocreate);
 		performAction(edit);
 	}
 

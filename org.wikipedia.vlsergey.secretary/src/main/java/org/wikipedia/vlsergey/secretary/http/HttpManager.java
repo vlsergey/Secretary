@@ -28,10 +28,10 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.AbstractHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
+import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
@@ -39,8 +39,7 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 @Transactional(propagation = Propagation.NEVER)
 public class HttpManager {
 
-	private static final class SocksClientConnManager implements
-			SchemeSocketFactory {
+	private static final class SocksClientConnManager implements SchemeSocketFactory {
 
 		private final String proxyHost;
 		private final int proxyPort;
@@ -51,18 +50,14 @@ public class HttpManager {
 		}
 
 		@Override
-		public Socket connectSocket(final Socket socket,
-				final InetSocketAddress remoteAddress,
-				final InetSocketAddress localAddress, final HttpParams params)
-				throws IOException, UnknownHostException,
-				ConnectTimeoutException {
+		public Socket connectSocket(final Socket socket, final InetSocketAddress remoteAddress,
+				final InetSocketAddress localAddress, final HttpParams params) throws IOException,
+				UnknownHostException, ConnectTimeoutException {
 			if (remoteAddress == null) {
-				throw new IllegalArgumentException(
-						"Remote address may not be null");
+				throw new IllegalArgumentException("Remote address may not be null");
 			}
 			if (params == null) {
-				throw new IllegalArgumentException(
-						"HTTP parameters may not be null");
+				throw new IllegalArgumentException("HTTP parameters may not be null");
 			}
 			Socket sock;
 			if (socket != null) {
@@ -71,16 +66,14 @@ public class HttpManager {
 				sock = createSocket(params);
 			}
 			if (localAddress != null) {
-				sock.setReuseAddress(HttpConnectionParams
-						.getSoReuseaddr(params));
+				sock.setReuseAddress(HttpConnectionParams.getSoReuseaddr(params));
 				sock.bind(localAddress);
 			}
 			int timeout = HttpConnectionParams.getConnectionTimeout(params);
 			try {
 				sock.connect(remoteAddress, timeout);
 			} catch (SocketTimeoutException ex) {
-				throw new ConnectTimeoutException("Connect to "
-						+ remoteAddress.getHostName() + "/"
+				throw new ConnectTimeoutException("Connect to " + remoteAddress.getHostName() + "/"
 						+ remoteAddress.getAddress() + " timed out");
 			}
 			return sock;
@@ -89,19 +82,16 @@ public class HttpManager {
 		@Override
 		public Socket createSocket(final HttpParams params) throws IOException {
 			if (params == null) {
-				throw new IllegalArgumentException(
-						"HTTP parameters may not be null");
+				throw new IllegalArgumentException("HTTP parameters may not be null");
 			}
 
-			InetSocketAddress socksaddr = new InetSocketAddress(proxyHost,
-					proxyPort);
+			InetSocketAddress socksaddr = new InetSocketAddress(proxyHost, proxyPort);
 			Proxy proxy = new Proxy(Proxy.Type.SOCKS, socksaddr);
 			return new Socket(proxy);
 		}
 
 		@Override
-		public boolean isSecure(final Socket sock)
-				throws IllegalArgumentException {
+		public boolean isSecure(final Socket sock) throws IllegalArgumentException {
 			return false;
 		}
 
@@ -111,7 +101,6 @@ public class HttpManager {
 
 	private final Map<String, AbstractHttpClient> clients;
 
-	@Value("")
 	private String localSocksPorts;
 
 	public HttpManager() {
@@ -123,27 +112,29 @@ public class HttpManager {
 	public void afterPropertiesSet() {
 		{
 			SchemeRegistry registry = new SchemeRegistry();
-			registry.register(new Scheme("http", 80, PlainSocketFactory
-					.getSocketFactory()));
-			registry.register(new Scheme("https", 443, SSLSocketFactory
-					.getSocketFactory()));
+			registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
+			registry.register(new Scheme("https", 443, SSLSocketFactory.getSocketFactory()));
 
-			ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(
+			HttpParams connectionParameters = new BasicHttpParams();
+			setDefaultHttpClientParams(connectionParameters);
+			ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(connectionParameters,
 					registry);
 			clientConnManager.setDefaultMaxPerRoute(2);
 			clientConnManager.setMaxTotal(10);
 
 			DefaultHttpClient client = new DefaultHttpClient(clientConnManager);
 			setDefaultHttpClientParams(client.getParams());
+
 			clients.put(DEFAULT_CLIENT, client);
 		}
 
-		for (String localpost : StringUtils.split(localSocksPorts, " \t\r\n;,")) {
+		for (String localpost : StringUtils.split(StringUtils.trimToEmpty(localSocksPorts), " \t\r\n;,")) {
 			SchemeRegistry registry = new SchemeRegistry();
-			registry.register(new Scheme("http", 80,
-					new SocksClientConnManager("localhost", 1080)));
+			registry.register(new Scheme("http", 80, new SocksClientConnManager("localhost", 1080)));
 
-			ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(
+			HttpParams connectionParameters = new BasicHttpParams();
+			setDefaultHttpClientParams(connectionParameters);
+			ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(connectionParameters,
 					registry);
 			clientConnManager.setDefaultMaxPerRoute(2);
 			clientConnManager.setMaxTotal(10);
@@ -155,25 +146,21 @@ public class HttpManager {
 		}
 	}
 
-	public HttpResponse execute(String clientCode, HttpUriRequest request)
-			throws IOException, ClientProtocolException {
+	public HttpResponse execute(String clientCode, HttpUriRequest request) throws IOException, ClientProtocolException {
 		return getClient(clientCode).execute(request);
 	}
 
-	public <T> T execute(String clientCode, HttpUriRequest request,
-			ResponseHandler<? extends T> responseHandler) throws IOException,
-			ClientProtocolException {
+	public <T> T execute(String clientCode, HttpUriRequest request, ResponseHandler<? extends T> responseHandler)
+			throws IOException, ClientProtocolException {
 		return getClient(clientCode).execute(request, responseHandler);
 	}
 
-	public HttpResponse executeFromLocalhost(HttpUriRequest request)
-			throws IOException, ClientProtocolException {
+	public HttpResponse executeFromLocalhost(HttpUriRequest request) throws IOException, ClientProtocolException {
 		return execute(DEFAULT_CLIENT, request);
 	}
 
-	public <T> T executeFromLocalhost(HttpUriRequest request,
-			ResponseHandler<? extends T> responseHandler) throws IOException,
-			ClientProtocolException {
+	public <T> T executeFromLocalhost(HttpUriRequest request, ResponseHandler<? extends T> responseHandler)
+			throws IOException, ClientProtocolException {
 		return execute(DEFAULT_CLIENT, request, responseHandler);
 	}
 
@@ -190,7 +177,7 @@ public class HttpManager {
 	}
 
 	@Transactional(propagation = Propagation.SUPPORTS)
-	public final CookieStore getLocalhostCookieStore() {
+	public CookieStore getLocalhostCookieStore() {
 		return getLocalhostClient().getCookieStore();
 	}
 
@@ -198,7 +185,7 @@ public class HttpManager {
 		return localSocksPorts;
 	}
 
-	private void setDefaultHttpClientParams(final HttpParams clientParams) {
+	public void setDefaultHttpClientParams(final HttpParams clientParams) {
 		HttpClientParams.setRedirecting(clientParams, true);
 		HttpProtocolParams.setUserAgent(clientParams, "Secretary/JWBF");
 		HttpConnectionParams.setConnectionTimeout(clientParams, 60 * 1000);

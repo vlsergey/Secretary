@@ -29,22 +29,27 @@ public class WebCiteChecker {
 	@Autowired
 	private ArticleLinksCollector articleLinksCollector;
 
-	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
 	private WebCiteArchiver webCiteArchiver;
 
-	@Autowired
 	private WikiCache wikiCache;
+
+	public MediaWikiBot getMediaWikiBot() {
+		return mediaWikiBot;
+	}
+
+	public WikiCache getWikiCache() {
+		return wikiCache;
+	}
 
 	private boolean isInvalid(String archiveUrl) {
 		List<ArchivedLink> inDb = archivedLinkDao.findByArchiveUrl(archiveUrl);
 
 		boolean invalid = false;
 		for (ArchivedLink storedLink : inDb) {
-			if (StringUtils.contains(storedLink.getArchiveResult(),
-					"Invalid snapshot ID")) {
+			if (StringUtils.contains(storedLink.getArchiveResult(), "Invalid snapshot ID")) {
 				invalid = true;
 				break;
 			}
@@ -59,42 +64,34 @@ public class WebCiteChecker {
 		ArticleFragment latestContentDom = new Parser().parse(latestContent);
 
 		boolean hasChanges = false;
-		for (ArticleLink articleLink : articleLinksCollector
-				.getAllLinks(latestContentDom)) {
+		for (ArticleLink articleLink : articleLinksCollector.getAllLinks(latestContentDom)) {
 			String archiveUrl = articleLink.archiveUrl;
 
-			if (!StringUtils.startsWith(archiveUrl,
-					"http://www.webcitation.org/"))
+			if (!StringUtils.startsWith(archiveUrl, "http://www.webcitation.org/"))
 				continue;
 
 			if (!isInvalid(archiveUrl))
 				continue;
 
-			final boolean multilineFormat = articleLink.template.toString()
-					.contains("\n");
+			final boolean multilineFormat = articleLink.template.toString().contains("\n");
 
-			articleLink.template
-					.removeParameter(WikiConstants.PARAMETER_ARCHIVEDATE);
-			articleLink.template
-					.removeParameter(WikiConstants.PARAMETER_ARCHIVEURL);
+			articleLink.template.removeParameter(WikiConstants.PARAMETER_ARCHIVEDATE);
+			articleLink.template.removeParameter(WikiConstants.PARAMETER_ARCHIVEURL);
 			articleLink.template.format(multilineFormat, multilineFormat);
 			hasChanges = true;
 
 		}
 
 		if (hasChanges) {
-			mediaWikiBot.writeContent(revision.getPage(), revision,
-					latestContentDom.toString(),
+			mediaWikiBot.writeContent(revision.getPage(), revision, latestContentDom.toString(),
 					"Removing broken WebCite links", true, true);
 		}
 	}
 
 	public void run() throws Exception {
-		for (ArchivedLink archivedLink : archivedLinkDao
-				.findByArchiveResult("")) {
+		for (ArchivedLink archivedLink : archivedLinkDao.findByArchiveResult("")) {
 			try {
-				String webCiteCode = StringUtils.substringAfter(
-						archivedLink.getArchiveUrl(),
+				String webCiteCode = StringUtils.substringAfter(archivedLink.getArchiveUrl(),
 						"http://www.webcitation.org/");
 				if (StringUtils.isEmpty(webCiteCode))
 					continue;
@@ -102,8 +99,7 @@ public class WebCiteChecker {
 				if (!StringUtils.isAlphanumeric(webCiteCode))
 					continue;
 
-				String archiveResult = webCiteArchiver.getStatus(
-						HttpManager.DEFAULT_CLIENT, webCiteCode);
+				String archiveResult = webCiteArchiver.getStatus(HttpManager.DEFAULT_CLIENT, webCiteCode);
 				archivedLink.setArchiveResult(archiveResult);
 				archivedLinkDao.setArchiveResult(archivedLink, archiveResult);
 
@@ -114,11 +110,9 @@ public class WebCiteChecker {
 		}
 
 		Set<Long> pages = new TreeSet<Long>();
-		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage(
-				"http", "www.webcitation.org", 0)) {
+		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage("http", "www.webcitation.org", 0)) {
 
-			if (!StringUtils.startsWith(externalUrl.getUrl(),
-					"http://www.webcitation.org/"))
+			if (!StringUtils.startsWith(externalUrl.getUrl(), "http://www.webcitation.org/"))
 				continue;
 
 			if (!isInvalid(externalUrl.getUrl()))
@@ -134,14 +128,19 @@ public class WebCiteChecker {
 			try {
 				processArticle(page);
 			} catch (Exception exc) {
-				logger.error("Unable to process article #" + page + ": " + exc,
-						exc);
+				logger.error("Unable to process article #" + page + ": " + exc, exc);
 			}
 			counter++;
-			long expectedEnd = start + (System.currentTimeMillis() - start)
-					* size / counter;
-			logger.info("Done " + counter + " from " + size
-					+ ". Expected finish time is " + new Date(expectedEnd));
+			long expectedEnd = start + (System.currentTimeMillis() - start) * size / counter;
+			logger.info("Done " + counter + " from " + size + ". Expected finish time is " + new Date(expectedEnd));
 		}
+	}
+
+	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
+		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	public void setWikiCache(WikiCache wikiCache) {
+		this.wikiCache = wikiCache;
 	}
 }

@@ -4,12 +4,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang.time.DateUtils;
@@ -32,17 +29,12 @@ import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class QueuedPageProcessor {
-	private static final Logger logger = LoggerFactory
-			.getLogger(QueuedPageProcessor.class);
-
-	private static final boolean WAIT_MONTH = false;
+	private static final Logger logger = LoggerFactory.getLogger(QueuedPageProcessor.class);
 
 	static boolean ignoreUrl(PerArticleReport perArticleReport, String url) {
 		if (!url.startsWith("http://"))
@@ -52,8 +44,7 @@ public class QueuedPageProcessor {
 		try {
 			uri = URI.create(url);
 		} catch (IllegalArgumentException exc) {
-			logger.warn("URL " + url + " skipped due wrong format: "
-					+ exc.getMessage());
+			logger.warn("URL " + url + " skipped due wrong format: " + exc.getMessage());
 
 			if (perArticleReport != null)
 				perArticleReport.skippedIncorrectFormat(url);
@@ -83,7 +74,6 @@ public class QueuedPageProcessor {
 	@Autowired
 	private LinksQueuer linksQueuer;
 
-	@Autowired
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
@@ -92,29 +82,24 @@ public class QueuedPageProcessor {
 	@Autowired
 	private QueuedPageDao queuedPageDao;
 
-	@Autowired
 	private WikiCache wikiCache;
 
-	private boolean archive(Long pageId, Revision latestRevision,
-			long selfPagePriority) throws Exception {
+	private boolean archive(Long pageId, Revision latestRevision, long selfPagePriority) throws Exception {
 		// linksQueuer.storeArchivedLinksFromArticle(pageId);
 
 		if (latestRevision == null)
 			return true;
 
 		if (latestRevision.getPage().getNamespace().longValue() != 0
-				&& !StringUtils.startsWithIgnoreCase(latestRevision.getPage()
-						.getTitle(), "Википедия:Пресса о Википедии")) {
-			logger.info("Skip page #" + latestRevision.getPage().getId()
-					+ " ('" + latestRevision.getPage().getTitle()
+				&& !StringUtils.startsWithIgnoreCase(latestRevision.getPage().getTitle(),
+						"Википедия:Пресса о Википедии")) {
+			logger.info("Skip page #" + latestRevision.getPage().getId() + " ('" + latestRevision.getPage().getTitle()
 					+ "') because not an article");
 			return true;
 		}
 
-		String reportPage = "User:WebCite Archiver/"
-				+ DateFormatUtils.format(new Date(), "yyyyMMddHH");
-		String reportAnchor = Long.toString(pageId.longValue(),
-				Character.MAX_RADIX);
+		String reportPage = "User:WebCite Archiver/" + DateFormatUtils.format(new Date(), "yyyyMMddHH");
+		String reportAnchor = Long.toString(pageId.longValue(), Character.MAX_RADIX);
 		String reportLink = reportPage + "#" + reportAnchor;
 
 		String latestContent = latestRevision.getContent();
@@ -125,45 +110,20 @@ public class QueuedPageProcessor {
 		try {
 			latestContentDom = new Parser().parse(latestContent);
 		} catch (ParsingException exc) {
-			logger.error("Parsing exception occur when parsing page #"
-					+ latestRevision.getPage().getId() + " ('"
+			logger.error("Parsing exception occur when parsing page #" + latestRevision.getPage().getId() + " ('"
 					+ latestRevision.getPage().getTitle() + "')");
 			throw exc;
 		}
 
-		final LinkedHashMap<String, List<Template>> templates = latestContentDom
-				.getAllTemplates();
-		long pagePriority = selfPagePriority
-				+ (templates.containsKey("Избранная статья") ? 100 : 0)
+		final LinkedHashMap<String, List<Template>> templates = latestContentDom.getAllTemplates();
+		long pagePriority = selfPagePriority + (templates.containsKey("Избранная статья") ? 100 : 0)
 				+ (templates.containsKey("Хорошая статья") ? 100 : 0);
 
 		PerArticleReport perArticleReport = new PerArticleReport();
-		Set<ArticleLink> latestLinks = getAllSupportedLinks(perArticleReport,
-				latestContentDom);
-
-		final Set<ArticleLink> linksToProcess;
-		if (WAIT_MONTH) {
-			logger.debug("Links in latest version of article: " + latestLinks);
-
-			String monthlyRevision = queryPageContentOlderThanNDays(
-					latestRevision, 30);
-			ArticleFragment monthlyContent = new Parser()
-					.parse(monthlyRevision);
-			Set<ArticleLink> monthlyLinks = getAllSupportedLinks(null,
-					monthlyContent);
-			logger.debug("Links in monthly version of article: " + monthlyLinks);
-
-			Set<ArticleLink> newLinks = new HashSet<ArticleLink>(latestLinks);
-			newLinks.removeAll(monthlyLinks);
-			linksToProcess = new HashSet<ArticleLink>(latestLinks);
-			linksToProcess.removeAll(newLinks);
-		} else {
-			linksToProcess = latestLinks;
-		}
+		List<ArticleLink> linksToProcess = getAllSupportedLinks(perArticleReport, latestContentDom);
 		logger.debug("Links to process: " + linksToProcess);
 
-		boolean complete = archive(perArticleReport, linksToProcess,
-				pagePriority);
+		boolean complete = archive(perArticleReport, linksToProcess, pagePriority);
 
 		if (!complete) {
 			return false;
@@ -189,18 +149,16 @@ public class QueuedPageProcessor {
 			commentBuilder.append("]]");
 			String comment = commentBuilder.toString();
 
-			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision,
-					latestContentDom.toString(), comment, true, false);
+			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision, latestContentDom.toString(), comment,
+					true, false);
 
-			writeReport(reportPage, reportAnchor, latestRevision.getPage()
-					.getTitle(), perArticleReport);
+			writeReport(reportPage, reportAnchor, latestRevision.getPage().getTitle(), perArticleReport);
 		}
 
 		return true;
 	}
 
-	private boolean archive(PerArticleReport perArticleReport,
-			Set<ArticleLink> linksToArchive, long pagePriority)
+	private boolean archive(PerArticleReport perArticleReport, List<ArticleLink> linksToArchive, long pagePriority)
 			throws Exception {
 		if (linksToArchive == null || linksToArchive.isEmpty())
 			return true;
@@ -212,20 +170,16 @@ public class QueuedPageProcessor {
 				continue;
 
 			if (queuedLinkDao.hasLink(articleLink.url, articleLink.accessDate)) {
-				logger.debug("Skip link '" + articleLink.url
-						+ "' because already queued");
+				logger.debug("Skip link '" + articleLink.url + "' because already queued");
 				hasUncompletedLinks = true;
 				continue;
 			}
 
-			final boolean multilineFormat = articleLink.template.toString()
-					.contains("\n");
+			final boolean multilineFormat = articleLink.template.toString().contains("\n");
 
-			ArchivedLink archivedLink = archivedLinkDao.findNonBrokenLink(
-					articleLink.url, articleLink.accessDate);
+			ArchivedLink archivedLink = archivedLinkDao.findNonBrokenLink(articleLink.url, articleLink.accessDate);
 			if (archivedLink != null) {
-				processArchivedLink(perArticleReport, articleLink,
-						multilineFormat, archivedLink);
+				processArchivedLink(perArticleReport, articleLink, multilineFormat, archivedLink);
 				continue;
 			}
 
@@ -241,13 +195,10 @@ public class QueuedPageProcessor {
 
 			logger.debug("Checking status of " + url);
 
-			if (url.startsWith("http://www.gzt.ru/")
-					|| url.startsWith("http://gzt.ru/")) {
+			if (url.startsWith("http://www.gzt.ru/") || url.startsWith("http://gzt.ru/")) {
 				logger.warn("Dead project: " + url);
 				perArticleReport.dead(url, "проект закрыт");
-				articleLink.template.setParameterValue(
-						WikiConstants.PARAMETER_DEADLINK, new Text(
-								"project-closed"));
+				articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text("project-closed"));
 
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
@@ -256,68 +207,52 @@ public class QueuedPageProcessor {
 			StatusLine statusLine;
 			try {
 				HttpGet httpGet = new HttpGet(uri);
-				httpGet.getParams().setParameter("http.socket.timeout",
-						new Integer((int) DateUtils.MILLIS_PER_MINUTE));
+				httpManager.setDefaultHttpClientParams(httpGet.getParams());
 
-				statusLine = httpManager.executeFromLocalhost(httpGet,
-						new ResponseHandler<StatusLine>() {
-							@Override
-							public StatusLine handleResponse(
-									HttpResponse response)
-									throws ClientProtocolException, IOException {
-								try {
-									return (StatusLine) ((BasicStatusLine) response
-											.getStatusLine()).clone();
-								} catch (CloneNotSupportedException e) {
-									throw new RuntimeException(e);
-								}
-							}
-						});
+				statusLine = httpManager.executeFromLocalhost(httpGet, new ResponseHandler<StatusLine>() {
+					@Override
+					public StatusLine handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+						try {
+							return (StatusLine) ((BasicStatusLine) response.getStatusLine()).clone();
+						} catch (CloneNotSupportedException e) {
+							throw new RuntimeException(e);
+						}
+					}
+				});
 
 			} catch (ClientProtocolException exc) {
 
 				if (exc.getCause() instanceof CircularRedirectException) {
 					logger.warn("Dead link: " + url + " — " + exc);
-					perArticleReport.dead(url,
-							"циклическая переадресация (circular redirect)");
+					perArticleReport.dead(url, "циклическая переадресация (circular redirect)");
 
-					articleLink.template.setParameterValue(
-							WikiConstants.PARAMETER_DEADLINK, new Text(
-									"circular-redirect"));
-					articleLink.template.format(multilineFormat,
-							multilineFormat);
+					articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text(
+							"circular-redirect"));
+					articleLink.template.format(multilineFormat, multilineFormat);
 					continue;
 				}
 
-				logger.warn("Potential dead link (unknown error): " + url
-						+ " — " + exc, exc);
+				logger.warn("Potential dead link (unknown error): " + url + " — " + exc, exc);
 				perArticleReport.potentiallyDead(url, "Неизвестная ошибка");
 				continue;
 
 			} catch (java.net.ConnectException exc) {
 
-				logger.warn("Potential dead link: " + url + " — "
-						+ exc.getMessage());
-				perArticleReport
-						.potentiallyDead(url,
-								"отсутствует соединение с сервером (unable to connect)");
+				logger.warn("Potential dead link: " + url + " — " + exc.getMessage());
+				perArticleReport.potentiallyDead(url, "отсутствует соединение с сервером (unable to connect)");
 				continue;
 
 			} catch (java.net.SocketTimeoutException exc) {
 
-				logger.warn("Potential dead link: " + url + " — "
-						+ exc.getMessage());
-				perArticleReport.potentiallyDead(url,
-						"истекло время ожидания ответа (timeout)");
+				logger.warn("Potential dead link: " + url + " — " + exc.getMessage());
+				perArticleReport.potentiallyDead(url, "истекло время ожидания ответа (timeout)");
 				continue;
 
 			} catch (java.net.UnknownHostException exc) {
 
 				logger.warn("Dead link: " + url + " — " + exc);
 				perArticleReport.dead(url, "сервер не найден (uknown host)");
-				articleLink.template.setParameterValue(
-						WikiConstants.PARAMETER_DEADLINK, new Text(
-								"unknown-host"));
+				articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text("unknown-host"));
 
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
@@ -329,18 +264,15 @@ public class QueuedPageProcessor {
 			switch (statusCode) {
 			case 200:
 				// another try?
-				archivedLink = linksQueuer.queueOrGetResult(articleLink,
-						pagePriority);
+				archivedLink = linksQueuer.queueOrGetResult(articleLink, pagePriority);
 
 				if (archivedLink == null) {
-					logger.debug("URL '" + url
-							+ "' were added to archiving queue");
+					logger.debug("URL '" + url + "' were added to archiving queue");
 					hasUncompletedLinks = true;
 					continue;
 				}
 
-				processArchivedLink(perArticleReport, articleLink,
-						multilineFormat, archivedLink);
+				processArchivedLink(perArticleReport, articleLink, multilineFormat, archivedLink);
 				break;
 			case 400:
 			case 401:
@@ -351,12 +283,9 @@ public class QueuedPageProcessor {
 				// broken link
 
 				logger.warn("Dead link: " + url + " — " + statusLine);
-				perArticleReport.dead(url, "страница недоступна (" + statusLine
-						+ ")");
+				perArticleReport.dead(url, "страница недоступна (" + statusLine + ")");
 
-				articleLink.template.setParameterValue(
-						WikiConstants.PARAMETER_DEADLINK, new Text(""
-								+ statusCode));
+				articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text("" + statusCode));
 
 				articleLink.template.format(multilineFormat, multilineFormat);
 
@@ -376,34 +305,33 @@ public class QueuedPageProcessor {
 		queuedPageDao.removeAll();
 	}
 
-	private Set<ArticleLink> getAllSupportedLinks(
-			PerArticleReport perArticleReport, ArticleFragment dom) {
-		Set<ArticleLink> links = new LinkedHashSet<ArticleLink>();
-
-		List<ArticleLink> allLinks = articleLinksCollector.getAllLinks(dom);
-		for (ArticleLink link : allLinks) {
+	private List<ArticleLink> getAllSupportedLinks(PerArticleReport perArticleReport, ArticleFragment dom) {
+		List<ArticleLink> links = new ArrayList<ArticleLink>();
+		for (ArticleLink link : articleLinksCollector.getAllLinks(dom)) {
 			if (ignoreCite(perArticleReport, link.template))
 				continue;
-
 			links.add(link);
 		}
 		return links;
 	}
 
-	boolean ignoreCite(PerArticleReport perArticleReport,
-			Template citeWebTemplate) {
+	public MediaWikiBot getMediaWikiBot() {
+		return mediaWikiBot;
+	}
 
-		Content urlParameter = citeWebTemplate
-				.getParameterValue(WikiConstants.PARAMETER_URL);
-		if (urlParameter == null
-				|| StringUtils.isEmpty(urlParameter.toString().trim()))
+	public WikiCache getWikiCache() {
+		return wikiCache;
+	}
+
+	boolean ignoreCite(PerArticleReport perArticleReport, Template citeWebTemplate) {
+
+		Content urlParameter = citeWebTemplate.getParameterValue(WikiConstants.PARAMETER_URL);
+		if (urlParameter == null || StringUtils.isEmpty(urlParameter.toString().trim()))
 			return true;
 		String url = urlParameter.toString().trim();
 
-		Content deadlinkParameter = citeWebTemplate
-				.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
-		if (deadlinkParameter != null
-				&& StringUtils.isNotEmpty(deadlinkParameter.toString().trim())) {
+		Content deadlinkParameter = citeWebTemplate.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
+		if (deadlinkParameter != null && StringUtils.isNotEmpty(deadlinkParameter.toString().trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedDead(url);
@@ -411,11 +339,8 @@ public class QueuedPageProcessor {
 			return true;
 		}
 
-		Content archiveurlParameter = citeWebTemplate
-				.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
-		if (archiveurlParameter != null
-				&& StringUtils
-						.isNotEmpty(archiveurlParameter.toString().trim())) {
+		Content archiveurlParameter = citeWebTemplate.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
+		if (archiveurlParameter != null && StringUtils.isNotEmpty(archiveurlParameter.toString().trim())) {
 
 			if (perArticleReport != null)
 				perArticleReport.skippedMarkedArchived(url);
@@ -429,17 +354,14 @@ public class QueuedPageProcessor {
 		return false;
 	}
 
-	private void processArchivedLink(PerArticleReport perArticleReport,
-			ArticleLink articleLink, final boolean multilineFormat,
-			ArchivedLink archivedLink) {
-		logger.debug("URL '" + archivedLink.getAccessUrl()
-				+ "' were archived at '" + archivedLink.getArchiveUrl() + "'");
+	private void processArchivedLink(PerArticleReport perArticleReport, ArticleLink articleLink,
+			final boolean multilineFormat, ArchivedLink archivedLink) {
+		logger.debug("URL '" + archivedLink.getAccessUrl() + "' were archived at '" + archivedLink.getArchiveUrl()
+				+ "'");
 
-		logger.debug("Status of " + archivedLink.getArchiveUrl() + " is '"
-				+ archivedLink.getArchiveResult() + "'...");
+		logger.debug("Status of " + archivedLink.getArchiveUrl() + " is '" + archivedLink.getArchiveResult() + "'...");
 
-		if (!StringUtils.equalsIgnoreCase(ArchivedLink.STATUS_SUCCESS,
-				archivedLink.getArchiveResult())) {
+		if (!StringUtils.equalsIgnoreCase(ArchivedLink.STATUS_SUCCESS, archivedLink.getArchiveResult())) {
 			return;
 		}
 
@@ -449,54 +371,28 @@ public class QueuedPageProcessor {
 		if (ArchivedLink.STATUS_SUCCESS.equals(status)) {
 			perArticleReport.archived(archivedLink.getAccessUrl(), archiveUrl);
 
-			articleLink.template.setParameterValue(
-					WikiConstants.PARAMETER_ARCHIVEURL, new Text(archiveUrl));
+			articleLink.template.setParameterValue(WikiConstants.PARAMETER_ARCHIVEURL, new Text(archiveUrl));
 
-			articleLink.template.setParameterValue(
-					WikiConstants.PARAMETER_ARCHIVEDATE,
+			articleLink.template.setParameterValue(WikiConstants.PARAMETER_ARCHIVEDATE,
 					new Text(archivedLink.getArchiveDate()));
 
 			articleLink.template.format(multilineFormat, multilineFormat);
 
 		} else {
-			logger.info("Page was queued but rejected later with status '"
-					+ status + "'");
+			logger.info("Page was queued but rejected later with status '" + status + "'");
 
-			perArticleReport.nonArchived(archivedLink.getAccessUrl(),
-					archiveUrl, status);
+			perArticleReport.nonArchived(archivedLink.getAccessUrl(), archiveUrl, status);
 		}
 	}
 
-	private String queryPageContentOlderThanNDays(Revision latestRevision,
-			int days) throws Exception {
-		for (Revision revision : mediaWikiBot
-				.queryRevisionsByPageId(latestRevision.getPage().getId(),
-						latestRevision.getId(), Direction.OLDER,
-						RevisionPropery.IDS, RevisionPropery.TIMESTAMP)) {
-
-			if ((System.currentTimeMillis() - revision.getTimestamp().getTime()) >= DateUtils.MILLIS_PER_DAY
-					* days) {
-				String content = wikiCache.queryRevisionContent(revision
-						.getId());
-
-				if (StringUtils.isNotEmpty(content))
-					return content;
-			}
-		}
-
-		return null;
-	}
-
-	public void run() throws InterruptedException {
+	public void run() {
 		while (true) {
 			try {
 				boolean completed = runImpl();
 
 				// long toSleep = queuedPageDao.findCount() / 60 / 10;
 				long toSleep = 60;
-				logger.debug("Sleeping "
-						+ toSleep
-						+ " minutes before another cycle with all queued pages...");
+				logger.debug("Sleeping " + toSleep + " minutes before another cycle with all queued pages...");
 				Thread.sleep(1000l * 60l * toSleep);
 
 				if (completed)
@@ -504,7 +400,11 @@ public class QueuedPageProcessor {
 			} catch (Exception exc) {
 				logger.error("" + exc, exc);
 
-				Thread.sleep(1000 * 60);
+				try {
+					Thread.sleep(1000 * 60);
+				} catch (InterruptedException exc2) {
+					// ?
+				}
 			}
 		}
 	}
@@ -521,50 +421,39 @@ public class QueuedPageProcessor {
 		Iterable<Long> allIds = new ArrayList<Long>(qPages.keySet());
 
 		long lastStatUpdate = 0;
-		for (Revision revision : wikiCache.queryLatestContentByPageIdsF()
-				.batchlazy(500).apply(allIds)) {
+		for (Revision revision : wikiCache.queryLatestContentByPageIdsF().batchlazy(500).apply(allIds)) {
 			QueuedPage queuedPage = qPages.get(revision.getPage().getId());
 			qPages.remove(revision.getPage().getId());
 
 			if (System.currentTimeMillis() - lastStatUpdate > DateUtils.MILLIS_PER_HOUR) {
 				final long pages = queuedPageDao.findCount();
 				final long links = queuedLinkDao.findCount();
-				mediaWikiBot
-						.writeContent(
-								"Участник:WebCite Archiver/Statistics",
-								null,
-								"На момент обновления статистики "
-										+ "({{subst:CURRENTTIME}} {{subst:CURRENTMONTHABBREV}}, {{subst:CURRENTDAY2}}) "
-										+ "в очереди находилось '''" + pages
-										+ "''' страниц и '''" + links
-										+ "''' ссылок", null,
-								"Update statistics: " + pages + " / " + links,
-								true, true, false);
+				mediaWikiBot.writeContent("Участник:WebCite Archiver/Statistics", null,
+						"На момент обновления статистики "
+								+ "({{subst:CURRENTTIME}} {{subst:CURRENTMONTHABBREV}}, {{subst:CURRENTDAY2}}) "
+								+ "в очереди находилось '''" + pages + "''' страниц и '''" + links + "''' ссылок",
+						null, "Update statistics: " + pages + " / " + links, true, true, false);
 				lastStatUpdate = System.currentTimeMillis();
 			}
 
 			boolean complete = false;
 			try {
-				complete = archive(queuedPage.getId(), revision,
-						queuedPage.getPriority());
+				complete = archive(queuedPage.getId(), revision, queuedPage.getPriority());
 			} catch (Exception exc) {
-				logger.error("Unable to process page #" + queuedPage.getId()
-						+ ": " + exc, exc);
+				logger.error("Unable to process page #" + queuedPage.getId() + ": " + exc, exc);
 			} finally {
 				if (complete) {
 					queuedPageDao.removePageFromQueue(queuedPage);
 					continue;
 				}
 
-				queuedPageDao.addPageToQueue(queuedPage.getId(),
-						queuedPage.getPriority(), System.currentTimeMillis());
+				queuedPageDao.addPageToQueue(queuedPage.getId(), queuedPage.getPriority(), System.currentTimeMillis());
 			}
 		}
 
 		for (QueuedPage queuedPage : qPages.values()) {
 			// no last revision
-			logger.info("Remove page #"
-					+ queuedPage.getId()
+			logger.info("Remove page #" + queuedPage.getId()
 					+ " from queue because no latest revision were found for it");
 			queuedPageDao.removePageFromQueue(queuedPage);
 		}
@@ -572,8 +461,15 @@ public class QueuedPageProcessor {
 		return queuedPageDao.getPagesFromQueue().isEmpty();
 	}
 
-	private void writeReport(String reportPage, String anchor,
-			String articleName, PerArticleReport perArticleReport) {
+	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
+		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	public void setWikiCache(WikiCache wikiCache) {
+		this.wikiCache = wikiCache;
+	}
+
+	private void writeReport(String reportPage, String anchor, String articleName, PerArticleReport perArticleReport) {
 		if (!perArticleReport.hasChanges())
 			return;
 
@@ -592,14 +488,12 @@ public class QueuedPageProcessor {
 		String comment = commentBuilder.toString();
 
 		try {
-			mediaWikiBot.writeContent(reportPage, null, null, perArticleReport
-					.toWiki("[[" + articleName + "]]", anchor, false), comment,
-					false, false, false);
+			mediaWikiBot.writeContent(reportPage, null, null,
+					perArticleReport.toWiki("[[" + articleName + "]]", anchor, false), comment, false, false, false);
 		} catch (ProcessException exc) {
 			// antispam?
 			mediaWikiBot.writeContent("Обсуждение:" + articleName, null, null,
-					perArticleReport.toWiki("[[" + articleName + "]]", anchor,
-							true), comment, false, false, false);
+					perArticleReport.toWiki("[[" + articleName + "]]", anchor, true), comment, false, false, false);
 		}
 
 	}

@@ -18,13 +18,7 @@
  */
 package org.wikipedia.vlsergey.secretary.cache;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Date;
-import java.util.zip.Deflater;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -33,54 +27,16 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Transient;
 
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Entity(name = "Revision")
 public class StoredRevision implements Revision {
 
 	private static final Logger logger = LoggerFactory
 			.getLogger(StoredRevision.class);
-
-	private static final String fromBinary(byte[] content) {
-		if (content == null || content.length == 0)
-			return StringUtils.EMPTY;
-
-		try {
-			final ByteArrayInputStream in = new ByteArrayInputStream(content);
-			ZipInputStream zipInputStream = new ZipInputStream(in);
-			ZipEntry zipEntry = zipInputStream.getNextEntry();
-			String string = IoUtils.readToString(zipInputStream, "utf-8");
-			return string;
-		} catch (IOException exc) {
-			throw new RuntimeException(exc);
-		}
-	}
-
-	private static final byte[] toBinary(String content) {
-		if (StringUtils.isEmpty(content)) {
-			return null;
-		}
-		try {
-			byte[] original = content.getBytes("utf-8");
-			final ByteArrayOutputStream out = new ByteArrayOutputStream();
-			ZipOutputStream zipOutputStream = new ZipOutputStream(out);
-			zipOutputStream.setLevel(Deflater.BEST_COMPRESSION);
-			zipOutputStream.putNextEntry(new ZipEntry("content"));
-			zipOutputStream.write(original);
-			zipOutputStream.close();
-			byte[] compressed = out.toByteArray();
-			logger.trace("Compressed " + original.length + " => "
-					+ compressed.length);
-			return compressed;
-		} catch (IOException exc) {
-			throw new RuntimeException(exc);
-		}
-	}
 
 	private Boolean anon;
 
@@ -127,7 +83,7 @@ public class StoredRevision implements Revision {
 	@Override
 	@Transient
 	public String getContent() {
-		return fromBinary(getBinaryContent());
+		return IoUtils.stringFromBinary(getBinaryContent());
 	}
 
 	@Override
@@ -181,7 +137,7 @@ public class StoredRevision implements Revision {
 
 	@Transient
 	public void setContent(String content) {
-		setBinaryContent(toBinary(content));
+		setBinaryContent(IoUtils.stringToBinary(content));
 	}
 
 	public void setId(Long id) {
