@@ -20,18 +20,14 @@ package org.wikipedia.vlsergey.secretary.dom;
 import java.util.Collections;
 import java.util.List;
 
-public class Comment extends AbstractContainer {
+public class Ignore extends AbstractContainer {
 
 	private static final long serialVersionUID = 1L;
 
 	private Content content;
 
-	public Comment(Content content) {
+	public Ignore(Content content) {
 		this.content = content;
-	}
-
-	public Comment(String content) {
-		this.content = new Text("<!--" + content + "-->");
 	}
 
 	@Override

@@ -36,60 +36,71 @@ public class ParsedRevisionImpl implements Revision {
 
 	private final Page page;
 
-	private String parsetree = null;
-
 	private Long size = null;
 
 	private Date timestamp = null;
 
 	private String user = null;
 
+	private String xml = null;
+
 	public ParsedRevisionImpl(Page page) {
 		this.page = page;
 	}
 
+	@Override
 	public Boolean getAnon() {
 		return anon;
 	}
 
+	@Override
 	public Boolean getBot() {
 		return bot;
 	}
 
+	@Override
 	public String getComment() {
 		return comment;
 	}
 
+	@Override
 	public String getContent() {
 		return content;
 	}
 
+	@Override
 	public Long getId() {
 		return id;
 	}
 
+	@Override
 	public Boolean getMinor() {
 		return minor;
 	}
 
+	@Override
 	public Page getPage() {
 		return page;
 	}
 
-	public String getParsetree() {
-		return parsetree;
-	}
-
+	@Override
 	public Long getSize() {
 		return size;
 	}
 
+	@Override
 	public Date getTimestamp() {
 		return timestamp;
 	}
 
+	@Override
 	public String getUser() {
 		return user;
+	}
+
+	@Override
+	public String getXml() {
+		return xml;
 	}
 
 	public void setAnon(Boolean anon) {
@@ -116,10 +127,6 @@ public class ParsedRevisionImpl implements Revision {
 		this.minor = minor;
 	}
 
-	public void setParsetree(String parsetree) {
-		this.parsetree = parsetree;
-	}
-
 	public void setSize(Long size) {
 		this.size = size;
 	}
@@ -130,6 +137,10 @@ public class ParsedRevisionImpl implements Revision {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public void setXml(String xml) {
+		this.xml = xml;
 	}
 
 	@Override

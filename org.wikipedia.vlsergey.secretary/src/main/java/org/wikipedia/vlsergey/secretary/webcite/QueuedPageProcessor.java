@@ -21,12 +21,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
+import org.wikipedia.vlsergey.secretary.diff.DiffUtils;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.Text;
-import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
+import org.wikipedia.vlsergey.secretary.dom.parser.XmlParser;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -102,16 +103,30 @@ public class QueuedPageProcessor {
 		String reportAnchor = Long.toString(pageId.longValue(), Character.MAX_RADIX);
 		String reportLink = reportPage + "#" + reportAnchor;
 
-		String latestContent = latestRevision.getContent();
-		if (StringUtils.isEmpty(latestContent))
-			return true;
-
 		ArticleFragment latestContentDom;
+		final String oldContent = latestRevision.getContent();
 		try {
-			latestContentDom = new Parser().parse(latestContent);
+			String latestContent = oldContent;
+			if (StringUtils.isEmpty(latestContent))
+				return true;
+
+			final String xml = latestRevision.getXml();
+			if (StringUtils.isEmpty(xml)) {
+				throw new Exception("XML not present for page #" + latestRevision.getPage().getId() + " ('"
+						+ latestRevision.getPage().getTitle() + "')");
+			}
+
+			latestContentDom = new XmlParser().parse(xml);
+
+			if (!StringUtils.equals(latestContent, latestContentDom.toWiki(false))) {
+				logger.warn("Parsing content not equal to stored content for page #" + latestRevision.getPage().getId()
+						+ " ('" + latestRevision.getPage().getTitle() + "')");
+			}
+
 		} catch (ParsingException exc) {
 			logger.error("Parsing exception occur when parsing page #" + latestRevision.getPage().getId() + " ('"
 					+ latestRevision.getPage().getTitle() + "')");
+
 			throw exc;
 		}
 
@@ -131,7 +146,13 @@ public class QueuedPageProcessor {
 
 		assert complete;
 
-		if (!latestRevision.getContent().equals(latestContentDom.toString())) {
+		final String newContent = latestContentDom.toWiki(false);
+		if (!oldContent.equals(latestContentDom.toWiki(false))) {
+
+			if (!perArticleReport.hasChanges()) {
+				System.out.println(DiffUtils.getDiff(oldContent, newContent));
+				throw new Exception("Article text changed, but no changes in report");
+			}
 
 			StringBuilder commentBuilder = new StringBuilder();
 			commentBuilder.append("[[");
@@ -147,10 +168,9 @@ public class QueuedPageProcessor {
 				commentBuilder.append(" marked dead;");
 			}
 			commentBuilder.append("]]");
-			String comment = commentBuilder.toString();
+			String comment = commentBuilder.toString().trim();
 
-			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision, latestContentDom.toString(), comment,
-					true, false);
+			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision, newContent, comment, true, false);
 
 			writeReport(reportPage, reportAnchor, latestRevision.getPage().getTitle(), perArticleReport);
 		}

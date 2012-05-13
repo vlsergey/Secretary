@@ -28,6 +28,7 @@ public class QueuedLinkProcessor {
 	private WebCiteLimiter webCiteLimiter;
 
 	public void clearQueue() {
+		logger.info("Removing all links from queue...");
 		queuedLinkDao.removeAll();
 	}
 

@@ -21,7 +21,7 @@ public class Text extends Content {
 	}
 
 	@Override
-	public String toWiki() {
+	public String toWiki(boolean removeComments) {
 		return text;
 	}
 

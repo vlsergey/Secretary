@@ -22,7 +22,7 @@ public class ArticleLinksCollector {
 		if (value == null)
 			return StringUtils.EMPTY;
 
-		return StringUtils.trimToEmpty(value.toWiki());
+		return StringUtils.trimToEmpty(value.toWiki(true));
 	}
 
 	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url, String host) {

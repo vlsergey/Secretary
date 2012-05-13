@@ -8,7 +8,6 @@ import java.util.TreeSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
@@ -18,7 +17,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
-@Component
+// @Component
 public class WebCiteChecker {
 
 	private static final Log logger = LogFactory.getLog(WebCiteChecker.class);

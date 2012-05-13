@@ -83,6 +83,9 @@ public class WebCiteArchiver {
 
 			"bluesnews.com",
 			"www.bluesnews.com",//
+			"chelseafc.com",
+			"www.chelseafc.com",//
+			"dlib.eastview.com",//
 			"inishturkisland.com",
 			"www.inishturkisland.com",//
 			"janes.com",
@@ -97,11 +100,18 @@ public class WebCiteArchiver {
 			"secunia.com",
 			"www.secunia.com",//
 			"securitylabs.websense.com",//
+			"whufc.com",
+			"www.whufc.com",//
 			"worldsnooker.com",
 			"www.worldsnooker.com",//
 			"x-rates.com",
 			"www.x-rates.com",//
+			"xbiz.com",
+			"www.xbiz.com", //
 
+			"ifpicr.cz",
+			"www.ifpicr.cz", //
+			"sportovci.cz",
 			"www.sportovci.cz",//
 
 			"www.nationalbanken.dk",//
@@ -113,95 +123,124 @@ public class WebCiteArchiver {
 
 			"izrus.co.il",//
 
-			"www.glossary.ru",//
 			"www.groklaw.net",//
+			"zonakz.net",
+			"www.zonakz.net",//
 
 			"antiaircraft.org",//
+			"paclii.org",
+			"www.paclii.org",//
 			"rfemmr.org",//
 
 			"www.3dnews.ru",//
 			"www.art-catalog.ru",//
 			"www.cio-world.ru",//
-			"compulenta.ru", "cult.compulenta.ru", "culture.compulenta.ru", "hard.compulenta.ru", "net.compulenta.ru",
-			"science.compulenta.ru", "soft.compulenta.ru",//
-			"computerra.ru", "offline.computerra.ru", "www.computerra.ru",//
+			"compulenta.ru", "cult.compulenta.ru", "culture.compulenta.ru", "hard.compulenta.ru",
+			"games.compulenta.ru", "net.compulenta.ru", "science.compulenta.ru",
+			"soft.compulenta.ru",//
+			"computerra.ru", "offline.computerra.ru",
+			"www.computerra.ru",//
 			"www.crpg.ru",//
 			"www.dishmodels.ru",//
 			"domtest.ru",//
 			"www.finam.ru",//
-			"finmarket.ru", "www.finmarket.ru",//
+			"finmarket.ru",
+			"www.finmarket.ru",//
+			"game-ost.ru",
 			"www.game-ost.ru",//
+			"gatchina-meria.ru",
 			"www.gatchina-meria.ru",//
-			"infuture.ru", "www.infuture.ru", //
-			"interfax.ru", "www.interfax.ru", //
-			"interfax-russia.ru", "www.interfax-russia.ru", //
-			"www.tver.izbirkom.ru",//
+			"glossary.ru",
+			"www.glossary.ru",//
+			"infuture.ru",
+			"www.infuture.ru", //
+			"interfax.ru",
+			"www.interfax.ru", //
+			"interfax-russia.ru",
+			"www.interfax-russia.ru", //
+			"tver.izbirkom.ru", "www.tver.izbirkom.ru", "vybory.izbirkom.ru", "volgograd.vybory.izbirkom.ru",
+			"www.volgograd.vybory.izbirkom.ru", "www.vybory.izbirkom.ru",//
 			"graph.document.kremlin.ru",//
+			"liveinternet.ru",//
 			"www.liveinternet.ru",//
+			"mountain.ru", "www.mountain.ru",//
 			"astro-era.narod.ru", //
 			"newsmusic.ru", "www.newsmusic.ru",//
 			"kino.otzyv.ru",//
-			"www.oval.ru",//
+			"oval.ru", "www.oval.ru",//
 			"redstar.ru", "www.redstar.ru",//
 			"render.ru", "www.render.ru", //
-			"www.rg.ru",//
+			"rg.ru", "www.rg.ru",//
 			"ruformator.ru", //
 			"scrap-info.ru", //
-			"www.systematic.ru",//
-			"www.translogist.ru",//
-			"www.webapteka.ru",//
+			"soccer.ru", "www.soccer.ru", //
+			"systematic.ru", "www.systematic.ru",//
+			"translogist.ru", "www.translogist.ru",//
+			"webapteka.ru", "www.webapteka.ru",//
 
+			"zakon.rada.gov.ua", //
 			"zakon1.rada.gov.ua", //
 			"media.mabila.ua",//
 
-			"www.cajt.pwp.blueyonder.co.uk" //
+			"nufc.co.uk", "www.nufc.co.uk", //
+			"cajt.pwp.blueyonder.co.uk", "www.cajt.pwp.blueyonder.co.uk" //
 	));
 
 	static final Set<String> SKIP_TECH_LIMITS = new HashSet<String>(Arrays.asList(
 	//
+
+			"armsport.am", "www.armsport.am", // 404
+
 			"books.google.com.br",//
 
-			"naviny.by", "www.naviny.by", // alw404
+			"naviny.by", "www.naviny.by", // 404
 
 			"www.animenewsnetwork.com",//
 			"www.azlyrics.com",//
 			"www.boston.com",//
 			"cinnamonpirate.com",//
+			"city-data.com", "www.city-data.com", // 404
 			"www.discogs.com",//
 			"dpreview.com", "www.dpreview.com", //
+			"encyclopedia.com", "www.encyclopedia.com", // 400 (bad request)
 			"www.everyculture.com",//
-			"filmreference.com", "www.filmreference.com", // alw404
+			"facebook.com", "www.facebook.com", // unknown
+			"filmreference.com", "www.filmreference.com", // 404
 			"findarticles.com",//
-			"aom.heavengames.com", // alw404
-			"historynet.com", "www.historynet.com",// alw404
+			"aom.heavengames.com", // 404
+			"historynet.com", "www.historynet.com",// 404
 			"forum.ixbt.com",//
 			"books.google.com", "news.google.com",//
 			"www.jame-world.com",//
-			"nationsencyclopedia.com", "www.nationsencyclopedia.com", // alw404
+			"nationsencyclopedia.com", "www.nationsencyclopedia.com", // 404
 			"ttcs.netfirms.com", // long timeout
-			"pqasb.pqarchiver.com", // alw404
+			"oceandots.com", "www.oceandots.com", // 404
+			"pqasb.pqarchiver.com", // 404
 			"rottentomatoes.com", "www.rottentomatoes.com",//
-			"www.sciencedirect.com", // alw404
-			"springerlink.com", "www.springerlink.com",// alw404
-			"rogerebert.suntimes.com", // alw404
+			"www.sciencedirect.com", // 404
+			"slantmagazine.com", "www.slantmagazine.com", // 404
+			"springerlink.com", "www.springerlink.com",// 404
 			"www.stpattys.com",//
+			"rogerebert.suntimes.com", // 404
 			"www.visi.com",//
 			"www.webelements.com",//
 			"www.wheresgeorge.com",//
 			"ru.youtube.com",//
 			"www.youtube.com",//
 
-			"biolib.cz", "www.biolib.cz", // alw404
+			"biolib.cz", "www.biolib.cz", // 404
 
 			"futuretrance.de",//
 			"books.google.de",//
 			"www.rfid-handbook.de",//
-			"structurae.de", "en.structurae.de", // alw404
+			"structurae.de", "en.structurae.de", // 404
 			"www.voicesfromthedarkside.de",//
 
-			"zapraudu-mirror.info", // alw404
+			"zapraudu-mirror.info", // 404
 
+			"earthobservatory.nasa.gov", // 404
 			"www.ncbi.nlm.nih.gov",//
+			"www4.ncdc.noaa.gov", // 404
 
 			"voynich.nu",//
 
@@ -210,32 +249,40 @@ public class WebCiteArchiver {
 			"file-extensions.org", "www.file-extensions.org",//
 			"globalsecurity.org", "www.globalsecurity.org",//
 			"hdot.org", "www.hdot.org", //
+			"iaea.org", "www.iaea.org", // 404
 			"mindat.org", "www.mindat.org",//
 			"spatricksf.org", "www.spatricksf.org", "wwww.spatricksf.org",//
 			"solon.org", "www.solon.org",//
+			"portal.unesco.org", //
 			"unhcr.org", "www.unhcr.org", //
 			"www.yellowribbon.org",//
 
-			"computer-museum.ru", "www.computer-museum.ru", // alw404
+			"ag.ru", "www.ag.ru", // 404
+			"championat.ru", "www.championat.ru", // 404
+			"computer-museum.ru", "www.computer-museum.ru", // 404
 			"base.consultant.ru", //
+			"encspb.ru", "www.encspb.ru", // 404
+			"gasur.ru", "www.gasur.ru", // 404
 			"books.google.ru",//
 			"video.mail.ru",//
-			"www.nkj.ru", // alw404
+			"www.nkj.ru", // 404
 			"www.ozon.ru",//
 			"really.ru",//
-			"perm.ru", "www.perm.ru", // alw404
+			"perm.ru", "www.perm.ru", // 404
 			"rutube.ru", "www.rutube.ru",// sense
-			"spartak-nalchik.ru", "www.spartak-nalchik.ru", // alw404
-			"videoguide.ru", "www.videoguide.ru", // alw404
-			"walkspb.ru", "www.walkspb.ru", // alw404
+			"spartak-nalchik.ru", "www.spartak-nalchik.ru", // 404
+			"videoguide.ru", "www.videoguide.ru", // 404
+			"walkspb.ru", "www.walkspb.ru", // 404
 			"maps.yandex.ru",//
 
 			"ati.su", "www.ati.su", //
 
 			"books.google.com.ua", "www.google.com.ua",//
 
+			"www.jl.sl.btinternet.co.uk", // 404
 			"books.google.co.uk",//
 			"thesun.co.uk", "www.thesun.co.uk", //
+			"timesonline.co.uk", "entertainment.timesonline.co.uk", "www.timesonline.co.uk", // 404
 			"www.traditionalmusic.co.uk"
 
 	));

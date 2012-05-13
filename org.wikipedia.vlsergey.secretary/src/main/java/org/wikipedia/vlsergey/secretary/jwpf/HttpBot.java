@@ -26,6 +26,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
@@ -37,6 +39,7 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.AbstractHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,6 +92,8 @@ public abstract class HttpBot {
 		return encoding;
 	}
 
+	private AbstractHttpClient httpClient;
+
 	@Autowired
 	private HttpManager httpManager;
 
@@ -100,12 +105,12 @@ public abstract class HttpBot {
 
 		getMethod.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
 
-		httpManager.executeFromLocalhost(getMethod, new ResponseHandler<Object>() {
+		httpClient.execute(getMethod, new ResponseHandler<Object>() {
 			@Override
 			public Object handleResponse(HttpResponse httpResponse) throws ClientProtocolException, IOException {
 
 				try {
-					action.validateReturningCookies(httpManager.getLocalhostCookieStore().getCookies(), getMethod);
+					action.validateReturningCookies(httpClient.getCookieStore().getCookies(), getMethod);
 
 					logger.debug("" + getMethod.getURI());
 					logger.debug("GET: " + httpResponse.getStatusLine().toString());
@@ -143,6 +148,11 @@ public abstract class HttpBot {
 		return site;
 	}
 
+	@PostConstruct
+	public void init() {
+		httpClient = httpManager.newLocalhostHttpClient();
+	}
+
 	private void onPostResponse(final ContentProcessable action, final HttpPost postMethod, HttpResponse response)
 			throws IOException {
 		try {
@@ -166,7 +176,7 @@ public abstract class HttpBot {
 					redirect.setEntity(postMethod.getEntity());
 					redirect.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
 					logger.info("GET: " + redirect.getURI());
-					httpManager.executeFromLocalhost(redirect, new ResponseHandler<Object>() {
+					httpClient.execute(redirect, new ResponseHandler<Object>() {
 						@Override
 						public Object handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
 							// no more redirects?
@@ -201,7 +211,7 @@ public abstract class HttpBot {
 
 			action.processReturningText(postMethod, out);
 
-			action.validateReturningCookies(httpManager.getLocalhostCookieStore().getCookies(), postMethod);
+			action.validateReturningCookies(httpClient.getCookieStore().getCookies(), postMethod);
 
 			logger.debug(postMethod.getURI() + " || " + "POST: " + response.getStatusLine().toString());
 		} catch (CookieException exc) {
@@ -266,14 +276,13 @@ public abstract class HttpBot {
 
 		postMethod.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
 
-		httpManager.executeFromLocalhost(postMethod, new ResponseHandler<Object>() {
+		httpClient.execute(postMethod, new ResponseHandler<Object>() {
 			@Override
 			public Object handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
 				onPostResponse(action, postMethod, response);
 				return null;
 			}
 		});
-
 	}
 
 	public void setHttpManager(HttpManager httpManager) {

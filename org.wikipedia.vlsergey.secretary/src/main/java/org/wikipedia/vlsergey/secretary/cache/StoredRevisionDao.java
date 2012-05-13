@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.SessionFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
@@ -15,8 +13,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
 @Repository
 public class StoredRevisionDao {
-	private static final Logger logger = LoggerFactory
-			.getLogger(StoredRevisionDao.class);
 
 	@Autowired
 	private StoredPageDao storedPageDao;
@@ -25,8 +21,7 @@ public class StoredRevisionDao {
 
 	@SuppressWarnings("unchecked")
 	public List<Long> getAllRevisionIds() {
-		return template
-				.find("SELECT revisions.id FROM Revision revisions ORDER BY id");
+		return template.find("SELECT revisions.id FROM Revision revisions ORDER BY id");
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -93,13 +88,16 @@ public class StoredRevisionDao {
 			revisionImpl.setSize(withContent.getSize());
 			flushRequired = true;
 		}
-		if (updateRequired(withContent.getTimestamp(),
-				revisionImpl.getTimestamp())) {
+		if (updateRequired(withContent.getTimestamp(), revisionImpl.getTimestamp())) {
 			revisionImpl.setTimestamp(withContent.getTimestamp());
 			flushRequired = true;
 		}
 		if (updateRequired(withContent.getUser(), revisionImpl.getUser())) {
 			revisionImpl.setUser(withContent.getUser());
+			flushRequired = true;
+		}
+		if (updateRequired(withContent.getXml(), revisionImpl.getXml())) {
+			revisionImpl.setXml(withContent.getXml());
 			flushRequired = true;
 		}
 

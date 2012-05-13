@@ -12,7 +12,7 @@
         http://www.springframework.org/schema/tx
         http://www.springframework.org/schema/tx/spring-tx.xsd">
 
-	<context:annotation-config />
+	<context:annotation-config  />
 	<tx:annotation-driven />
 
 	<task:annotation-driven executor="myExecutor"
@@ -22,7 +22,8 @@
 
 	<import resource="bot-context.xml" />
 	<import resource="cache-context.xml" />
-	<import resource="gost-context.xml" />
+<!-- 	<import resource="gost-context.xml" /> -->
+<!-- 	<import resource="watch-online-context.xml" /> -->
 	<import resource="patrollists-context.xml" />
 	<import resource="webcite-context.xml" />
 

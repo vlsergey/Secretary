@@ -40,16 +40,14 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	private List<Page> result;
 
-	protected AbstractQueryRevisionsAction(
-			final List<RevisionPropery> properties) {
+	protected AbstractQueryRevisionsAction(final List<RevisionPropery> properties) {
 		super();
 		this.properties = properties;
 	}
 
 	protected AbstractQueryRevisionsAction(final RevisionPropery[] properties) {
 		super();
-		this.properties = new ArrayList<RevisionPropery>(
-				Arrays.asList(properties));
+		this.properties = new ArrayList<RevisionPropery>(Arrays.asList(properties));
 	}
 
 	@Override
@@ -62,33 +60,27 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 	}
 
 	@Override
-	protected ParsedPageImpl parsePage(Element pageElement)
-			throws ProcessException {
+	protected ParsedPageImpl parsePage(Element pageElement) throws ProcessException {
 		ParsedPageImpl result = super.parsePage(pageElement);
 
-		for (Element child : new ListAdapter<Element>(
-				pageElement.getChildNodes())) {
+		for (Element child : new ListAdapter<Element>(pageElement.getChildNodes())) {
 			parsePageElement(result, child);
 		}
 
 		return result;
 	}
 
-	protected void parsePageElement(ParsedPageImpl page, Element element)
-			throws ProcessException {
+	protected void parsePageElement(ParsedPageImpl page, Element element) throws ProcessException {
 		page.setRevisions(new ArrayList<Revision>());
-		for (Element revElement : new ListAdapter<Element>(
-				element.getElementsByTagName("rev"))) {
+		for (Element revElement : new ListAdapter<Element>(element.getElementsByTagName("rev"))) {
 			ParsedRevisionImpl revisionImpl = parseRevision(page, revElement);
 			page.getRevisions().add(revisionImpl);
 		}
 	}
 
 	@Override
-	protected void parseQueryElement(Element queryElement)
-			throws ProcessException {
-		final ListAdapter<Element> pageElements = new ListAdapter<Element>(
-				queryElement.getElementsByTagName("page"));
+	protected void parseQueryElement(Element queryElement) throws ProcessException {
+		final ListAdapter<Element> pageElements = new ListAdapter<Element>(queryElement.getElementsByTagName("page"));
 		final List<Page> result = new ArrayList<Page>(pageElements.size());
 
 		for (Element pageElement : pageElements) {
@@ -99,13 +91,11 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 		this.result = result;
 	}
 
-	protected ParsedRevisionImpl parseRevision(Page page,
-			Element revisionElement) throws ProcessException {
+	protected ParsedRevisionImpl parseRevision(Page page, Element revisionElement) throws ProcessException {
 		ParsedRevisionImpl revisionImpl = new ParsedRevisionImpl(page);
 
 		if (StringUtils.isNotEmpty(revisionElement.getAttribute("parsetree"))) {
-			revisionImpl
-					.setParsetree(revisionElement.getAttribute("parsetree"));
+			revisionImpl.setXml(revisionElement.getAttribute("parsetree"));
 		}
 
 		if (properties.contains(RevisionPropery.COMMENT))
@@ -113,8 +103,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 		if (properties.contains(RevisionPropery.CONTENT)) {
 			StringBuilder content = new StringBuilder();
-			for (Node child : new ListAdapter<Node>(
-					revisionElement.getChildNodes())) {
+			for (Node child : new ListAdapter<Node>(revisionElement.getChildNodes())) {
 				if (child instanceof Text) {
 					Text text = (Text) child;
 					content.append(text.getTextContent());
@@ -133,10 +122,8 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 			revisionImpl.setId(new Long(revisionElement.getAttribute("revid")));
 		}
 
-		if (properties.contains(RevisionPropery.SIZE)
-				&& revisionElement.hasAttribute("size")) {
-			revisionImpl
-					.setSize(new Long(revisionElement.getAttribute("size")));
+		if (properties.contains(RevisionPropery.SIZE) && revisionElement.hasAttribute("size")) {
+			revisionImpl.setSize(new Long(revisionElement.getAttribute("size")));
 		}
 
 		if (properties.contains(RevisionPropery.TIMESTAMP)) {

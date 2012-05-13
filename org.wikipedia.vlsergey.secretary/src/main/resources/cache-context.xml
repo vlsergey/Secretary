@@ -1,9 +1,16 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:p="http://www.springframework.org/schema/p" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans 
-	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+	">
 
-	<bean id="ruWikipediaCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache" />
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.cache" />
+
+	<bean id="ruWikipediaCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
+		<property name="mediaWikiBot" ref="ruWikipediaBot" />
+	</bean>
 
 	<bean id="storedPageDao" class="org.wikipedia.vlsergey.secretary.cache.StoredPageDao"
 		p:sessionFactory-ref="ruWikiSessionFactory" />
@@ -35,7 +42,8 @@
 
 		<property name="hibernateProperties">
 			<props>
-				<prop key="hibernate.dialect">org.wikipedia.vlsergey.secretary.utils.ExtendedDerbyDialect</prop>
+				<prop key="hibernate.dialect">org.wikipedia.vlsergey.secretary.utils.ExtendedDerbyDialect
+				</prop>
 				<prop key="hibernate.show_sql">false</prop>
 				<prop key="hibernate.generate_statistics">false</prop>
 			</props>

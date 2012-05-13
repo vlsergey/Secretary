@@ -1,7 +1,6 @@
 package org.wikipedia.vlsergey.secretary.dom;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,122 +8,99 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class Template extends AbstractContainer {
 
-	private Content name;
+	private static final long serialVersionUID = 1L;
 
-	private ArticleFragment parameters;
+	private List<TemplatePart> parts;
 
-	public Template(final Content templateName, ArticleFragment parameters) {
-		this.name = templateName;
-		this.parameters = parameters;
+	private Content title;
+
+	public Template(final Content templateName) {
+		this.title = templateName;
+		this.parts = new ArrayList<TemplatePart>(0);
+	}
+
+	public Template(final Content templateName, List<TemplatePart> parts) {
+		this.title = templateName;
+		this.parts = new ArrayList<TemplatePart>(parts);
 	}
 
 	public boolean format(boolean multiline, boolean spaceBeforeLine) {
 
-		if (!(name instanceof Text))
+		if (!(title instanceof Text))
 			return false;
 
-		Parameter lastOne = null;
+		TemplatePart lastOne = null;
 
 		int maxParameterNameLength = -1;
-		for (Content content : parameters.getChildren()) {
-			Parameter parameter = (Parameter) content;
-			lastOne = parameter;
+		for (TemplatePart part : parts) {
+			lastOne = part;
 
-			if (parameter.getName() == null)
+			if (part.getName() == null)
 				return false;
 
-			if (!(parameter.getName() instanceof Text))
+			if (!(part.getName() instanceof Text))
 				return false;
 
-			if (!(parameter.getValue() instanceof Text))
+			if (!(part.getValue() instanceof Text))
 				return false;
 
-			maxParameterNameLength = java.lang.Math.max(maxParameterNameLength,
-					parameter.getName().toString().trim().length());
+			maxParameterNameLength = java.lang.Math.max(maxParameterNameLength, part.getName().toString().trim()
+					.length());
 		}
 
-		name = new Text(name.toString().trim() + (multiline ? "\n" : "")
-				+ (spaceBeforeLine ? " " : ""));
+		title = new Text(title.toString().trim() + (multiline ? "\n" : "") + (spaceBeforeLine ? " " : ""));
 
-		for (Content content : parameters.getChildren()) {
-			Parameter parameter = (Parameter) content;
-
+		for (TemplatePart parameter : parts) {
 			if (multiline) {
 				parameter.setName(new Text(" "
-						+ StringUtils.rightPad(parameter.getName().toString()
-								.trim(), maxParameterNameLength) + " "));
+						+ StringUtils.rightPad(parameter.getName().toString().trim(), maxParameterNameLength) + " "));
 
-				parameter
-						.setValue(new Text(
-								" "
-										+ parameter.getValue().toString()
-												.trim()
-										+ "\n"
-										+ (spaceBeforeLine
-												&& (parameter != lastOne) ? " "
-												: "")));
+				parameter.setValue(new Text(" " + parameter.getValue().toString().trim() + "\n"
+						+ (spaceBeforeLine && (parameter != lastOne) ? " " : "")));
 
 			} else {
-				parameter.setName(new Text(parameter.getName().toString()
-						.trim()));
+				parameter.setName(new Text(parameter.getName().toString().trim()));
 
-				parameter
-						.setValue(new Text(
-								parameter.getValue().toString().trim()
-										+ (spaceBeforeLine
-												&& (parameter != lastOne) ? " "
-												: "")));
+				parameter.setValue(new Text(parameter.getValue().toString().trim()
+						+ (spaceBeforeLine && (parameter != lastOne) ? " " : "")));
 			}
-
 		}
 
 		return true;
 	}
 
 	public String getCanonicalName() {
-		StringBuilder stringBuilder = new StringBuilder();
-		List<Content> children = name instanceof ArticleFragment ? ((ArticleFragment) name)
-				.getChildren() : Collections.singletonList(name);
-		for (Content content : children) {
-			if (content instanceof Comment) {
-				// ignore
-			} else {
-				stringBuilder.append(content.toWiki());
-			}
-		}
-		return stringBuilder.toString().trim().toLowerCase();
+		return title.toWiki(true).trim().toLowerCase();
 	}
 
 	@Override
 	public List<Content> getChildren() {
 		List<Content> result = new ArrayList<Content>();
 
-		addToChildren(result, name);
-		addToChildren(result, parameters);
+		addToChildren(result, title);
+		addToChildren(result, parts);
 
 		return result;
 	}
 
 	public Content getName() {
-		return name;
+		return title;
 	}
 
-	public Parameter getParameter(int index) {
-		return (Parameter) parameters.getChildren().get(index);
+	public TemplatePart getParameter(int index) {
+		return parts.get(index);
 	}
 
-	public ArticleFragment getParameters() {
-		return parameters;
+	public List<TemplatePart> getParameters() {
+		return parts;
 	}
 
-	public List<Parameter> getParameters(String name) {
-		List<Parameter> result = new LinkedList<Parameter>();
+	public List<TemplatePart> getParameters(String name) {
+		List<TemplatePart> result = new LinkedList<TemplatePart>();
 
-		for (Content content : parameters.getChildren()) {
-			Parameter parameter = (Parameter) content;
-			if (parameter.getName() != null
-					&& StringUtils.equalsIgnoreCase(name, parameter
-							.getCanonicalName().trim())) {
+		for (TemplatePart parameter : parts) {
+			final Content partName = parameter.getName();
+			if (partName != null && StringUtils.equalsIgnoreCase(name, parameter.getCanonicalName().trim())) {
 				result.add(parameter);
 			}
 		}
@@ -133,10 +109,13 @@ public class Template extends AbstractContainer {
 	}
 
 	public Content getParameterValue(String name) {
-		final List<Parameter> matchedParameters = getParameters(name);
-		for (Parameter parameter : matchedParameters) {
-			if (StringUtils.trimToNull(parameter.getValue().toWiki()) != null) {
-				return parameter.getValue();
+		final List<TemplatePart> matchedParameters = getParameters(name);
+		for (TemplatePart parameter : matchedParameters) {
+			final Content value = parameter.getValue();
+			if (value != null) {
+				if (StringUtils.trimToNull(value.toWiki(true)) != null) {
+					return value;
+				}
 			}
 		}
 		if (!matchedParameters.isEmpty())
@@ -146,53 +125,48 @@ public class Template extends AbstractContainer {
 	}
 
 	public void removeParameter(String name) {
-		final List<Content> children = parameters.getChildren();
-		for (Content content : new ArrayList<Content>(children)) {
-			Parameter parameter = (Parameter) content;
-			if (parameter.getName() != null
-					&& StringUtils.equalsIgnoreCase(name, parameter
-							.getCanonicalName().trim())) {
-				children.remove(parameter);
+		final List<TemplatePart> children = parts;
+		for (TemplatePart part : new ArrayList<TemplatePart>(parts)) {
+			if (part.getName() != null && StringUtils.equalsIgnoreCase(name, part.getCanonicalName().trim())) {
+				children.remove(part);
 			}
 		}
 	}
 
-	public void setName(Content name) {
-		this.name = name;
-	}
-
-	public void setParameters(ArticleFragment parameters) {
-		this.parameters = parameters;
-	}
-
 	public void setParameterValue(String parameterName, Content value) {
-		final List<Parameter> matchedParameters = getParameters(parameterName);
+		final List<TemplatePart> matchedParameters = getParameters(parameterName);
 
 		if (matchedParameters.isEmpty()) {
-			parameters.getChildren().add(
-					new Parameter(new Text(parameterName), value));
+			parts.add(new TemplatePart(new Text(parameterName), value));
 			return;
 		}
 
 		if (matchedParameters.size() == 1) {
-			Parameter parameter = matchedParameters.get(0);
-			parameter.setValue(value);
+			TemplatePart part = matchedParameters.get(0);
+			part.setValue(value);
 			return;
 		}
 
-		Parameter first = matchedParameters.get(0);
+		TemplatePart first = matchedParameters.get(0);
 		first.setValue(value);
 		while (getParameters(parameterName).size() > 1)
-			parameters.getChildren()
-					.remove(getParameters(parameterName).get(1));
+			parts.remove(getParameters(parameterName).get(1));
+	}
+
+	public void setParts(List<TemplatePart> parts) {
+		this.parts = parts;
+	}
+
+	public void setTitle(Content name) {
+		this.title = name;
 	}
 
 	@Override
-	public String toWiki() {
+	public String toWiki(boolean removeComments) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("{{");
-		stringBuilder.append(super.toWiki());
+		stringBuilder.append(super.toWiki(removeComments));
 		stringBuilder.append("}}");
 
 		return stringBuilder.toString();

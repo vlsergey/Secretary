@@ -8,7 +8,7 @@ public class Math extends Content {
 	}
 
 	@Override
-	public String toWiki() {
+	public String toWiki(boolean removeComments) {
 		return "<math>" + text + "</math>";
 	}
 

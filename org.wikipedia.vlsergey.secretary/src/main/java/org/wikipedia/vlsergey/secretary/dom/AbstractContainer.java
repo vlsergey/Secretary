@@ -12,25 +12,24 @@ public abstract class AbstractContainer extends Content {
 
 	protected static void addToChildren(List<Content> result, Content content) {
 		if (content != null) {
-			// if (content instanceof ArticleFragment) {
-			// result.addAll(((ArticleFragment) content).getChildren());
-			// } else {
 			result.add(content);
-			// }
 		}
 	}
 
-	protected static void addToChildren(List<Content> result,
-			List<Content> content) {
+	protected static void addToChildren(List<Content> result, List<? extends Content> content) {
 		if (content != null) {
 			result.addAll(content);
 		}
 	}
 
-	protected static String toWiki(List<? extends Content> toOutput) {
+	protected static String toWiki(List<? extends Content> toOutput, boolean removeComments) {
 		StringBuilder stringBuilder = new StringBuilder();
 		for (Content content : toOutput) {
-			stringBuilder.append(content.toWiki());
+			if (removeComments && content instanceof Comment) {
+				continue;
+			}
+
+			stringBuilder.append(content.toWiki(removeComments));
 		}
 		return stringBuilder.toString();
 	}
@@ -51,19 +50,16 @@ public abstract class AbstractContainer extends Content {
 
 			if (content instanceof AbstractContainer) {
 				AbstractContainer abstractContainer = (AbstractContainer) content;
-				final LinkedHashMap<String, List<Template>> childTemplates = abstractContainer
-						.getAllTemplates();
+				final LinkedHashMap<String, List<Template>> childTemplates = abstractContainer.getAllTemplates();
 
-				for (Entry<String, List<Template>> entry : childTemplates
-						.entrySet()) {
+				for (Entry<String, List<Template>> entry : childTemplates.entrySet()) {
 					final String templateName = entry.getKey();
 					final List<Template> templates = entry.getValue();
 
 					if (result.containsKey(templateName)) {
 						result.get(templateName).addAll(templates);
 					} else {
-						result.put(templateName, new ArrayList<Template>(
-								templates));
+						result.put(templateName, new ArrayList<Template>(templates));
 					}
 				}
 			}
@@ -94,12 +90,11 @@ public abstract class AbstractContainer extends Content {
 	public boolean hasTemplate(String templateName) {
 		templateName = templateName.toLowerCase();
 		LinkedHashMap<String, List<Template>> allTemplates = getAllTemplates();
-		return allTemplates.containsKey(templateName)
-				&& allTemplates.get(templateName).size() != 0;
+		return allTemplates.containsKey(templateName) && allTemplates.get(templateName).size() != 0;
 	}
 
 	@Override
-	public String toWiki() {
-		return toWiki(getChildren());
+	public String toWiki(boolean removeComments) {
+		return toWiki(getChildren(), removeComments);
 	}
 }

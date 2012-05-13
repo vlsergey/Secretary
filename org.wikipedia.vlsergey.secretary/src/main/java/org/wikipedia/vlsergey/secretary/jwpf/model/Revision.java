@@ -45,4 +45,6 @@ public interface Revision {
 	Date getTimestamp();
 
 	String getUser();
+
+	String getXml();
 }

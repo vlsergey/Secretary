@@ -6,21 +6,11 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByRevision extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByRevision(Long revisionId,
-			RevisionPropery[] properties) {
-		this(revisionId, properties, false);
+	public QueryRevisionsByRevision(Long revisionId, RevisionPropery[] properties) {
+		this(revisionId, false, properties);
 	}
 
-	/**
-	 * @param revisionId
-	 *            revision ID to work on
-	 * @param properties
-	 *            Which properties to get for revision
-	 * @param rvgeneratexml
-	 *            Generate XML parse tree for revision content
-	 */
-	public QueryRevisionsByRevision(Long revisionId,
-			RevisionPropery[] properties, boolean rvgeneratexml) {
+	public QueryRevisionsByRevision(Long revisionId, boolean rvgeneratexml, RevisionPropery[] properties) {
 		super(properties);
 
 		HttpPost postMethod = new HttpPost("/api.php");
@@ -32,8 +22,9 @@ public class QueryRevisionsByRevision extends AbstractQueryRevisionsAction {
 		setParameter(multipartEntity, "revids", revisionId.toString());
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
 
-		if (rvgeneratexml)
+		if (rvgeneratexml) {
 			setParameter(multipartEntity, "rvgeneratexml", "1");
+		}
 
 		setParameter(multipartEntity, "format", "xml");
 

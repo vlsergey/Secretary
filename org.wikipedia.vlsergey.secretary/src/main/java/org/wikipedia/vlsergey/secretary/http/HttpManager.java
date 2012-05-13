@@ -15,7 +15,6 @@ import javax.annotation.PostConstruct;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.CookieStore;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.HttpClientParams;
@@ -111,21 +110,8 @@ public class HttpManager {
 	@PostConstruct
 	public void afterPropertiesSet() {
 		{
-			SchemeRegistry registry = new SchemeRegistry();
-			registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
-			registry.register(new Scheme("https", 443, SSLSocketFactory.getSocketFactory()));
-
-			HttpParams connectionParameters = new BasicHttpParams();
-			setDefaultHttpClientParams(connectionParameters);
-			ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(connectionParameters,
-					registry);
-			clientConnManager.setDefaultMaxPerRoute(2);
-			clientConnManager.setMaxTotal(10);
-
-			DefaultHttpClient client = new DefaultHttpClient(clientConnManager);
-			setDefaultHttpClientParams(client.getParams());
-
-			clients.put(DEFAULT_CLIENT, client);
+			AbstractHttpClient defaultClient = newLocalhostHttpClient();
+			clients.put(DEFAULT_CLIENT, defaultClient);
 		}
 
 		for (String localpost : StringUtils.split(StringUtils.trimToEmpty(localSocksPorts), " \t\r\n;,")) {
@@ -172,17 +158,25 @@ public class HttpManager {
 		return Collections.unmodifiableSet(clients.keySet());
 	}
 
-	public AbstractHttpClient getLocalhostClient() {
-		return clients.get(DEFAULT_CLIENT);
-	}
-
-	@Transactional(propagation = Propagation.SUPPORTS)
-	public CookieStore getLocalhostCookieStore() {
-		return getLocalhostClient().getCookieStore();
-	}
-
 	public String getLocalSocksPorts() {
 		return localSocksPorts;
+	}
+
+	public AbstractHttpClient newLocalhostHttpClient() {
+		SchemeRegistry registry = new SchemeRegistry();
+		registry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory()));
+		registry.register(new Scheme("https", 443, SSLSocketFactory.getSocketFactory()));
+
+		HttpParams connectionParameters = new BasicHttpParams();
+		setDefaultHttpClientParams(connectionParameters);
+		ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(connectionParameters, registry);
+		clientConnManager.setDefaultMaxPerRoute(2);
+		clientConnManager.setMaxTotal(10);
+
+		DefaultHttpClient client = new DefaultHttpClient(clientConnManager);
+		setDefaultHttpClientParams(client.getParams());
+
+		return client;
 	}
 
 	public void setDefaultHttpClientParams(final HttpParams clientParams) {

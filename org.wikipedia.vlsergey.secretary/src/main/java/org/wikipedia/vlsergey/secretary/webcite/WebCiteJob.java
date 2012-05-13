@@ -66,6 +66,7 @@ public class WebCiteJob implements Runnable {
 			queuedPageDao.addPageToQueue(pageId, 0, pageId.longValue());
 		}
 
+		// queuedLinkProcessor.clearQueue();
 		queuedPageProcessor.run();
 	}
 

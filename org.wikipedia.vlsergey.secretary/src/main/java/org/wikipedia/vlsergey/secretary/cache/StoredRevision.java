@@ -27,16 +27,11 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Transient;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 
 @Entity(name = "Revision")
 public class StoredRevision implements Revision {
-
-	private static final Logger logger = LoggerFactory
-			.getLogger(StoredRevision.class);
 
 	private Boolean anon;
 
@@ -58,6 +53,8 @@ public class StoredRevision implements Revision {
 
 	private String user = null;
 
+	private byte[] xml = null;
+
 	@Override
 	public Boolean getAnon() {
 		return anon;
@@ -67,6 +64,12 @@ public class StoredRevision implements Revision {
 	@Column(length = 100 * 1 << 20)
 	protected byte[] getBinaryContent() {
 		return content;
+	}
+
+	@Lob
+	@Column(length = 100 * 1 << 20)
+	protected byte[] getBinaryXml() {
+		return xml;
 	}
 
 	@Override
@@ -119,12 +122,22 @@ public class StoredRevision implements Revision {
 		return user;
 	}
 
+	@Override
+	@Transient
+	public String getXml() {
+		return IoUtils.stringFromBinary(getBinaryXml());
+	}
+
 	public void setAnon(Boolean anon) {
 		this.anon = anon;
 	}
 
 	protected void setBinaryContent(byte[] content) {
 		this.content = content;
+	}
+
+	protected void setBinaryXml(byte[] xml) {
+		this.xml = xml;
 	}
 
 	public void setBot(Boolean bot) {
@@ -162,6 +175,11 @@ public class StoredRevision implements Revision {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	@Transient
+	public void setXml(String xml) {
+		setBinaryXml(IoUtils.stringToBinary(xml));
 	}
 
 	@Override

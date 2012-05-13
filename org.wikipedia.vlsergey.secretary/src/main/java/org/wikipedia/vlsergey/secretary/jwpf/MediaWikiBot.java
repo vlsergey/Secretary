@@ -339,12 +339,12 @@ public class MediaWikiBot extends HttpBot {
 		return getSingleRevision(action.getResults());
 	}
 
-	public Revision queryRevisionByRevisionId(Long revisionId, RevisionPropery[] properties, boolean rvgeneratexml)
+	public Revision queryRevisionByRevisionId(Long revisionId, boolean rvgeneratexml, RevisionPropery[] properties)
 			throws ActionException, ProcessException {
 		logger.info("queryRevisionByRevisionId(" + revisionId + ", " + Arrays.toString(properties) + ", "
 				+ rvgeneratexml + ")");
 
-		QueryRevisionsByRevision action = new QueryRevisionsByRevision(revisionId, properties, rvgeneratexml);
+		QueryRevisionsByRevision action = new QueryRevisionsByRevision(revisionId, rvgeneratexml, properties);
 		performAction(action);
 
 		return getSingleRevision(action.getResults());
@@ -431,13 +431,14 @@ public class MediaWikiBot extends HttpBot {
 		}.batchlazy(isBot() ? 500 : 50);
 	}
 
-	public Collection<Revision> queryRevisionsByRevisionIds(Iterable<Long> revisionIds, RevisionPropery... properties)
-			throws ActionException, ProcessException {
+	public Collection<Revision> queryRevisionsByRevisionIds(Iterable<Long> revisionIds, boolean generateXml,
+			RevisionPropery... properties) throws ActionException, ProcessException {
 		logger.info("queryRevisionsByRevisionIds: " + revisionIds + "; " + Arrays.asList(properties));
 
 		List<Revision> result = new ArrayList<Revision>();
 
-		final int limit = 50;
+		final int limit = isBot() ? QueryRevisionsByRevisionIds.MAX_FOR_BOTS
+				: QueryRevisionsByRevisionIds.MAX_FOR_NON_BOTS;
 		List<Long> buffer = new ArrayList<Long>(limit);
 		for (Long revisionId : revisionIds) {
 			buffer.add(revisionId);
@@ -445,7 +446,8 @@ public class MediaWikiBot extends HttpBot {
 			if (buffer.size() == limit) {
 				logger.info("queryRevisionsByRevisionIds(...): " + buffer);
 
-				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(buffer, properties);
+				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(buffer, generateXml,
+						properties);
 				performAction(bufferAction);
 
 				addAllRevisionsToResult(bufferAction.getResults(), result);
@@ -464,7 +466,7 @@ public class MediaWikiBot extends HttpBot {
 		if (!buffer.isEmpty()) {
 			logger.info("queryRevisionsByRevisionIds(...): " + buffer);
 
-			QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(buffer, properties);
+			QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(buffer, generateXml, properties);
 			performAction(bufferAction);
 			addAllRevisionsToResult(bufferAction.getResults(), result);
 			buffer.clear();
@@ -480,7 +482,8 @@ public class MediaWikiBot extends HttpBot {
 			public Iterable<Revision> apply(Iterable<Long> revisionIds) {
 				List<Revision> result = new ArrayList<Revision>();
 
-				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(revisionIds, properties);
+				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(revisionIds, false,
+						properties);
 				performAction(bufferAction);
 
 				addSingleRevisionsToResult(bufferAction.getResults(), result);

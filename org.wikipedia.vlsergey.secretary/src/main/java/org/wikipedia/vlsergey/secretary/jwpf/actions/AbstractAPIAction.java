@@ -58,8 +58,7 @@ public abstract class AbstractAPIAction extends MWAction {
 		@SuppressWarnings("unchecked")
 		public T get(int index) {
 			if (index < 0 || index >= nodeList.getLength())
-				throw new IndexOutOfBoundsException("Index: " + index
-						+ ", Size: " + size());
+				throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size());
 
 			return (T) nodeList.item(index);
 		}
@@ -73,8 +72,7 @@ public abstract class AbstractAPIAction extends MWAction {
 
 	private static final Log log = LogFactory.getLog(AbstractAPIAction.class);
 
-	private static final SimpleDateFormat timestampDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private static final SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
 	static {
 		timestampDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -84,26 +82,22 @@ public abstract class AbstractAPIAction extends MWAction {
 		return timestampDateFormat.format(date);
 	}
 
-	protected static synchronized Date parseDate(String timestamp)
-			throws ParseException {
+	protected static synchronized Date parseDate(String timestamp) throws ParseException {
 		try {
 			return timestampDateFormat.parse(timestamp);
 		} catch (NumberFormatException exc) {
-			NumberFormatException exc2 = new NumberFormatException(
-					"Unable to parse '" + timestamp + "': " + exc.getMessage());
+			NumberFormatException exc2 = new NumberFormatException("Unable to parse '" + timestamp + "': "
+					+ exc.getMessage());
 			exc2.initCause(exc);
 			throw exc2;
 		}
 	}
 
-	protected static void setParameter(MultipartEntity multipartEntity,
-			String name, Date value) {
+	protected static void setParameter(MultipartEntity multipartEntity, String name, Date value) {
 		try {
-			multipartEntity.addPart(name, new StringBody(format(value),
-					MediaWikiBot.CHARSET));
+			multipartEntity.addPart(name, new StringBody(format(value), MediaWikiBot.CHARSET));
 		} catch (UnsupportedEncodingException e) {
-			throw new Error("MediaWiki '" + MediaWikiBot.ENCODING
-					+ "' charset not supported by Java VM");
+			throw new Error("MediaWiki '" + MediaWikiBot.ENCODING + "' charset not supported by Java VM");
 		}
 	}
 
@@ -111,16 +105,14 @@ public abstract class AbstractAPIAction extends MWAction {
 		super();
 	}
 
-	protected void appendParameters(StringBuilder stringBuilder,
-			Iterable<? extends Object> parameters) {
+	protected void appendParameters(StringBuilder stringBuilder, Iterable<? extends Object> parameters) {
 		try {
 			String params = toStringParameters(parameters);
 			params = URLEncoder.encode(params, MediaWikiBot.CHARSET.name());
 
 			stringBuilder.append(params);
 		} catch (UnsupportedEncodingException exc) {
-			log.error("MediaWiki encoding not supported: '"
-					+ MediaWikiBot.CHARSET + "': " + exc.getMessage(), exc);
+			log.error("MediaWiki encoding not supported: '" + MediaWikiBot.CHARSET + "': " + exc.getMessage(), exc);
 			throw new Error(exc.getMessage(), exc);
 		}
 	}
@@ -129,23 +121,19 @@ public abstract class AbstractAPIAction extends MWAction {
 		return isBotRegistered() ? 5000 : 500;
 	}
 
-	protected abstract void parseAPI(final Element root)
-			throws ProcessException, ParseException;
+	protected abstract void parseAPI(final Element root) throws ProcessException, ParseException;
 
 	protected void parseResult(final String xml) throws ProcessException {
 		try {
-			DocumentBuilder documentBuilder = DocumentBuilderFactory
-					.newInstance().newDocumentBuilder();
-			Document document = documentBuilder.parse(new InputSource(
-					new StringReader(xml)));
+			DocumentBuilder documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+			Document document = documentBuilder.parse(new InputSource(new StringReader(xml)));
 
 			{
-				List<Element> errors = new ListAdapter<Element>(document
-						.getDocumentElement().getElementsByTagName("error"));
+				List<Element> errors = new ListAdapter<Element>(document.getDocumentElement().getElementsByTagName(
+						"error"));
 				if (!errors.isEmpty()) {
 					Element error = errors.get(0);
-					throw new ApiException(error.getAttribute("code"),
-							error.getAttribute("info"));
+					throw new ApiException(error.getAttribute("code"), error.getAttribute("info"));
 				}
 			}
 
@@ -156,8 +144,7 @@ public abstract class AbstractAPIAction extends MWAction {
 	}
 
 	@Override
-	public final void processReturningText(final HttpRequestBase hm,
-			final String s) throws ProcessException {
+	public final void processReturningText(final HttpRequestBase hm, final String s) throws ProcessException {
 		parseResult(s);
 	}
 
@@ -177,15 +164,26 @@ public abstract class AbstractAPIAction extends MWAction {
 	}
 
 	protected String toStringParameters(Iterable<? extends Object> parameters) {
+		return toStringParameters(parameters, Integer.MAX_VALUE, Integer.MAX_VALUE);
+	}
+
+	protected String toStringParameters(Iterable<? extends Object> parameters, int maxForNonBots, int maxForBots) {
 		StringBuilder stringBuilder = new StringBuilder();
 
+		int counter = 0;
 		boolean first = true;
 		for (Object l : parameters) {
+
+			if (isBotRegistered() ? (counter == maxForBots) : (counter == maxForNonBots)) {
+				throw new IllegalArgumentException("Too many values supplied");
+			}
+
 			if (!first)
 				stringBuilder.append("|");
 			stringBuilder.append(l.toString());
 
 			first = false;
+			counter++;
 		}
 
 		return stringBuilder.toString();

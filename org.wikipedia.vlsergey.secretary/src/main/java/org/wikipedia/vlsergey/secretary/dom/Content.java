@@ -7,8 +7,8 @@ public abstract class Content implements Cloneable, Serializable {
 
 	@Override
 	public String toString() {
-		return toWiki();
+		return toWiki(false);
 	}
 
-	public abstract String toWiki();
+	public abstract String toWiki(boolean removeComments);
 }
