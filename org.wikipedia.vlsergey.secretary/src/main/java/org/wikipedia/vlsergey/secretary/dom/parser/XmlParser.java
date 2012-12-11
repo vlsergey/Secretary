@@ -33,12 +33,12 @@ public class XmlParser extends AbstractParser {
 		return parseRoot(xmlDoc.getDocumentElement());
 	}
 
-	private Comment parseComment(Element commentElement) {
+	protected Comment parseComment(Element commentElement) {
 		Content content = parseContainer(commentElement);
 		return newComment(content);
 	}
 
-	private Content parseContainer(Element containerElement) {
+	protected Content parseContainer(Element containerElement) {
 
 		if (containerElement.getChildNodes().getLength() == 0) {
 			return null;
@@ -77,7 +77,12 @@ public class XmlParser extends AbstractParser {
 		return newArticleFragment(list);
 	}
 
-	private Content parseElement(Element element) {
+	public Content parseContainer(String xml) throws Exception {
+		Document xmlDoc = documentBuilderFactory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+		return parseContainer(xmlDoc.getDocumentElement());
+	}
+
+	protected Content parseElement(Element element) {
 
 		if ("comment".equals(element.getNodeName())) {
 			return parseComment(element);
@@ -106,7 +111,7 @@ public class XmlParser extends AbstractParser {
 		throw new UnsupportedOperationException("Unknown element: " + element.getNodeName());
 	}
 
-	private Extension parseExtension(Element extElement) {
+	protected Extension parseExtension(Element extElement) {
 		Content name = null;
 		Content attr = null;
 		Content inner = null;
@@ -142,7 +147,7 @@ public class XmlParser extends AbstractParser {
 		return newExtension(name, attr, inner, close);
 	}
 
-	private Content parseHeader(Element hElement) {
+	protected Content parseHeader(Element hElement) {
 		int id = Integer.parseInt(hElement.getAttribute("i"));
 		int level = Integer.parseInt(hElement.getAttribute("level"));
 		Content content = parseContainer(hElement);
@@ -150,12 +155,12 @@ public class XmlParser extends AbstractParser {
 		return newHeader(level, id, content);
 	}
 
-	private Ignore parseIgnore(Element ignoreElement) {
+	protected Ignore parseIgnore(Element ignoreElement) {
 		Content content = parseContainer(ignoreElement);
 		return newIgnore(content);
 	}
 
-	private ArticleFragment parseRoot(Element documentElement) {
+	protected ArticleFragment parseRoot(Element documentElement) {
 		if (!"root".equals(documentElement.getNodeName()))
 			throw new ParsingException("Root element name is not 'root': " + documentElement.getNodeName());
 
@@ -167,7 +172,7 @@ public class XmlParser extends AbstractParser {
 		return new ArticleFragment(Collections.singletonList(parsed));
 	}
 
-	private Content parseTemplate(Element element, boolean templateArgument) {
+	protected Content parseTemplate(Element element, boolean templateArgument) {
 		NodeList children = element.getChildNodes();
 
 		Content title = null;
@@ -199,7 +204,7 @@ public class XmlParser extends AbstractParser {
 		return newTemplate(title, parts);
 	}
 
-	private TemplatePart parseTemplatePart(Element partElement) {
+	protected TemplatePart parseTemplatePart(Element partElement) {
 		Content name = null;
 		String equals = null;
 		Content value = null;

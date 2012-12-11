@@ -71,6 +71,13 @@ public class ArchivedLinkDao {
 		template.persist(archivedLink);
 	}
 
+	public void removeByAccessUrlPrefix(String baseUrl) {
+		logger.info("Removing records of access URL started with '" + baseUrl + "'");
+		int removed = template.bulkUpdate("DELETE FROM ArchivedLink WHERE SUBSTR(accessUrl, 1, " + baseUrl.length()
+				+ ") = ?", baseUrl);
+		logger.info("Removed " + removed + " records");
+	}
+
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void setArchiveResult(ArchivedLink archivedLink, String archiveResult) {
 		ArchivedLink link = template.get(ArchivedLink.class, Long.valueOf(archivedLink.getId()));
@@ -81,4 +88,5 @@ public class ArchivedLinkDao {
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		template = new HibernateTemplate(sessionFactory);
 	}
+
 }

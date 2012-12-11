@@ -39,6 +39,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ApiException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
@@ -82,6 +83,17 @@ public abstract class AbstractAPIAction extends MWAction {
 		return timestampDateFormat.format(date);
 	}
 
+	protected static String getText(Element element) {
+		StringBuilder content = new StringBuilder();
+		for (Node child : new ListAdapter<Node>(element.getChildNodes())) {
+			if (child instanceof Text) {
+				Text text = (Text) child;
+				content.append(text.getTextContent());
+			}
+		}
+		return content.toString();
+	}
+
 	protected static synchronized Date parseDate(String timestamp) throws ParseException {
 		try {
 			return timestampDateFormat.parse(timestamp);
@@ -101,8 +113,11 @@ public abstract class AbstractAPIAction extends MWAction {
 		}
 	}
 
-	public AbstractAPIAction() {
+	protected final boolean bot;
+
+	public AbstractAPIAction(boolean bot) {
 		super();
+		this.bot = bot;
 	}
 
 	protected void appendParameters(StringBuilder stringBuilder, Iterable<? extends Object> parameters) {
@@ -117,8 +132,8 @@ public abstract class AbstractAPIAction extends MWAction {
 		}
 	}
 
-	public int getLimit() {
-		return isBotRegistered() ? 5000 : 500;
+	protected boolean isBot() {
+		return bot;
 	}
 
 	protected abstract void parseAPI(final Element root) throws ProcessException, ParseException;
@@ -174,7 +189,7 @@ public abstract class AbstractAPIAction extends MWAction {
 		boolean first = true;
 		for (Object l : parameters) {
 
-			if (isBotRegistered() ? (counter == maxForBots) : (counter == maxForNonBots)) {
+			if (isBot() ? (counter == maxForBots) : (counter == maxForNonBots)) {
 				throw new IllegalArgumentException("Too many values supplied");
 			}
 

@@ -18,8 +18,8 @@
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
 public enum RevisionPropery {
-	COMMENT("comment"), CONTENT("content"), FLAGS("flags"), IDS("ids"), SIZE(
-			"size"), TIMESTAMP("timestamp"), USER("user");
+	COMMENT("comment"), CONTENT("content"), FLAGGED("flagged"), FLAGS("flags"), IDS("ids"), SIZE("size"), TIMESTAMP(
+			"timestamp"), USER("user");
 
 	private String queryString;
 

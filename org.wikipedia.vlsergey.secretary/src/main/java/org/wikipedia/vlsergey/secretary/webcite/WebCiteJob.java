@@ -32,6 +32,9 @@ public class WebCiteJob implements Runnable {
 	@Autowired
 	private WebCiteArchiver webCiteArchiver;
 
+	@Autowired
+	private WebCiteErrorCleanup webCiteErrorCleanup;
+
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
 	}
@@ -47,26 +50,30 @@ public class WebCiteJob implements Runnable {
 	@Override
 	public void run() {
 
+		// webCiteErrorCleanup.errorCleanup("http://news.euro-coins.info/");
+		queuedPageProcessor.clearQueue();
+		queuedLinkProcessor.clearQueue();
+
 		for (Long pageId : IteratorUtils.map(mediaWikiBot.queryCategoryMembers(
 				"Категория:Википедия:Пресса о Википедии:Архив", CategoryMemberType.PAGE, Namespaces.PROJECT),
 				CategoryMember.pageIdF)) {
 			queuedPageDao.addPageToQueue(pageId, 5000, 0);
 		}
 
-		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранная статья")) {
+		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранная статья", Namespaces.MAIN)) {
 			queuedPageDao.addPageToQueue(pageId, 1000, pageId.longValue());
 		}
-		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Хорошая статья")) {
+		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Хорошая статья", Namespaces.MAIN)) {
 			queuedPageDao.addPageToQueue(pageId, 500, pageId.longValue());
 		}
-		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранный список или портал")) {
+		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранный список или портал", Namespaces.MAIN)) {
 			queuedPageDao.addPageToQueue(pageId, 500, pageId.longValue());
 		}
-		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Cite web")) {
+		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Cite web", Namespaces.MAIN)) {
 			queuedPageDao.addPageToQueue(pageId, 0, pageId.longValue());
 		}
 
-		// queuedLinkProcessor.clearQueue();
+		//
 		queuedPageProcessor.run();
 	}
 

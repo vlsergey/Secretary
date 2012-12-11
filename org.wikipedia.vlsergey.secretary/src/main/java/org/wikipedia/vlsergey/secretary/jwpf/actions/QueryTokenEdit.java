@@ -10,7 +10,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 public class QueryTokenEdit extends AbstractQueryAction {
 	String editToken;
 
-	public QueryTokenEdit(Revision revision) {
+	public QueryTokenEdit(boolean bot, Revision revision) {
+		super(bot);
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
@@ -26,7 +27,8 @@ public class QueryTokenEdit extends AbstractQueryAction {
 		msgs.add(postMethod);
 	}
 
-	public QueryTokenEdit(String pageTitle) {
+	public QueryTokenEdit(boolean bot, String pageTitle) {
+		super(bot);
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
@@ -47,12 +49,10 @@ public class QueryTokenEdit extends AbstractQueryAction {
 	}
 
 	@Override
-	protected void parseQueryElement(org.w3c.dom.Element queryElement)
-			throws ProcessException, ParseException {
+	protected void parseQueryElement(org.w3c.dom.Element queryElement) throws ProcessException, ParseException {
 		for (org.w3c.dom.Element cmPages : new ListAdapter<org.w3c.dom.Element>(
 				queryElement.getElementsByTagName("pages"))) {
-			for (org.w3c.dom.Element cmPage : new ListAdapter<org.w3c.dom.Element>(
-					cmPages.getElementsByTagName("page"))) {
+			for (org.w3c.dom.Element cmPage : new ListAdapter<org.w3c.dom.Element>(cmPages.getElementsByTagName("page"))) {
 				editToken = cmPage.getAttribute("edittoken");
 			}
 		}

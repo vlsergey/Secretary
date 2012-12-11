@@ -50,7 +50,21 @@ public class WebCiteArchiver {
 
 			"webcitation.org", "www.webcitation.org",
 
+			"en.wikisource.org", "ru.wikisource.org",
+
 			"www.peeep.us"));
+
+	/**
+	 * This URL has been archived internally and can be made available for
+	 * scholars on request, but we cannot make it accessible on the web, because
+	 * the copyright holder (...) has asked us not to display the material. If
+	 * you have concerns about this individual not being the copyright holder,
+	 * or if you require access to the material in our dark archive for
+	 * scholarly or legal purposes, please contact us.
+	 */
+	static final Set<String> SKIP_BLACKLISTED = new HashSet<String>(Arrays.asList(
+	//
+			"timeshighereducation.co.uk", "www.timeshighereducation.co.uk"));
 
 	static final Set<String> SKIP_ERRORS = new HashSet<String>(Arrays.asList(
 	//
@@ -135,8 +149,9 @@ public class WebCiteArchiver {
 			"www.3dnews.ru",//
 			"www.art-catalog.ru",//
 			"www.cio-world.ru",//
-			"compulenta.ru", "cult.compulenta.ru", "culture.compulenta.ru", "hard.compulenta.ru",
-			"games.compulenta.ru", "net.compulenta.ru", "science.compulenta.ru",
+			"compulenta.ru", "business.compulenta.ru", "cult.compulenta.ru", "culture.compulenta.ru",
+			"hard.compulenta.ru", "games.compulenta.ru", "net.compulenta.ru",
+			"science.compulenta.ru",
 			"soft.compulenta.ru",//
 			"computerra.ru", "offline.computerra.ru",
 			"www.computerra.ru",//
@@ -209,9 +224,13 @@ public class WebCiteArchiver {
 			"findarticles.com",//
 			"aom.heavengames.com", // 404
 			"historynet.com", "www.historynet.com",// 404
+			"intel.com", "www.intel.com", // 404
 			"forum.ixbt.com",//
-			"books.google.com", "news.google.com",//
+			"gamespot.com", "www.gamespot.com", // 404
+			"books.google.com", "groups.google.com", "news.google.com",//
 			"www.jame-world.com",//
+			"tests.jeuxmac.com", // incorrectly returns 404
+			"london2012.com", "www.london2012.com", // 403
 			"nationsencyclopedia.com", "www.nationsencyclopedia.com", // 404
 			"ttcs.netfirms.com", // long timeout
 			"oceandots.com", "www.oceandots.com", // 404
@@ -261,15 +280,18 @@ public class WebCiteArchiver {
 			"championat.ru", "www.championat.ru", // 404
 			"computer-museum.ru", "www.computer-museum.ru", // 404
 			"base.consultant.ru", //
+			"fantlab.ru", "www.fantlab.ru", // 404
 			"encspb.ru", "www.encspb.ru", // 404
 			"gasur.ru", "www.gasur.ru", // 404
 			"books.google.ru",//
+			"grwar.ru", "www.grwar.ru", // 404
 			"video.mail.ru",//
 			"www.nkj.ru", // 404
 			"www.ozon.ru",//
 			"really.ru",//
 			"perm.ru", "www.perm.ru", // 404
 			"rutube.ru", "www.rutube.ru",// sense
+			"zakon.scli.ru", // 404
 			"spartak-nalchik.ru", "www.spartak-nalchik.ru", // 404
 			"videoguide.ru", "www.videoguide.ru", // 404
 			"walkspb.ru", "www.walkspb.ru", // 404
@@ -435,7 +457,7 @@ public class WebCiteArchiver {
 		}
 
 		mediaWikiBot.writeContent(pageName, null, stringBuffer.toString(), null, "Update ignoring sites list", true,
-				true, false);
+				false);
 	}
 
 }

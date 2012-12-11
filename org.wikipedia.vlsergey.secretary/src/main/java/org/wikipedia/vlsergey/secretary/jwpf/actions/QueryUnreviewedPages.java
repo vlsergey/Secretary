@@ -20,15 +20,25 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 
 	private static final Log log = LogFactory.getLog(QueryUnreviewedPages.class);
 
+	public static final int URLIMIT_FOR_BOTS = 5000;
+
+	public static final int URLIMIT_FOR_NON_BOTS = 500;
+
 	private final FilterRedirects filterRedirects;
+
 	private final int[] namespaces;
+
 	private String nextStart;
+
 	private List<Page> results;
 
 	private final String urend;
+
 	private final String urstart;
 
-	public QueryUnreviewedPages(String urstart, String urend, int[] namespaces, FilterRedirects filterRedirects) {
+	public QueryUnreviewedPages(boolean bot, String urstart, String urend, int[] namespaces,
+			FilterRedirects filterRedirects) {
+		super(bot);
 		log.info("GetUnreviewedPages: " + urstart + "; " + urend + "; " + Arrays.toString(namespaces) + "; "
 				+ filterRedirects);
 
@@ -64,12 +74,16 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 
 	}
 
+	protected int getLimit() {
+		return (isBot() ? URLIMIT_FOR_BOTS : URLIMIT_FOR_NON_BOTS);
+	}
+
 	@Override
 	public MultiAction<Page> getNextAction() {
 		if (nextStart == null)
 			return null;
 
-		return new QueryUnreviewedPages(nextStart, urend, namespaces, filterRedirects);
+		return new QueryUnreviewedPages(isBot(), nextStart, urend, namespaces, filterRedirects);
 	}
 
 	@Override

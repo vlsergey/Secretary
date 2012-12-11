@@ -38,6 +38,7 @@
 		class="org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor">
 		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
 		<property name="wikiCache" ref="ruWikipediaCache" />
+		<property name="webCiteParser" ref="webCiteParser" />
 	</bean>
 
 	<bean id="webCiteArchiver"
@@ -45,11 +46,22 @@
 		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
 	</bean>
 
+	<bean id="webCiteJob" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteJob">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+	</bean>
+
 	<bean id="webCiteLimiter" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteLimiter"
 		p:sessionFactory-ref="ruWikiSessionFactory" />
 
-	<bean id="webCiteJob" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteJob">
+	<bean id="webCiteErrorCleanup"
+		class="org.wikipedia.vlsergey.secretary.webcite.WebCiteErrorCleanup">
 		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+		<property name="webCiteParser" ref="webCiteParser" />
+	</bean>
+
+	<bean id="webCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
+		<property name="xmlCache" ref="ruWikipediaXmlCache" />
 	</bean>
 
 </beans>

@@ -24,6 +24,7 @@
 	<import resource="cache-context.xml" />
 <!-- 	<import resource="gost-context.xml" /> -->
 <!-- 	<import resource="watch-online-context.xml" /> -->
+<!-- 	<import resource="patrolauto-context.xml" /> -->
 	<import resource="patrollists-context.xml" />
 	<import resource="webcite-context.xml" />
 

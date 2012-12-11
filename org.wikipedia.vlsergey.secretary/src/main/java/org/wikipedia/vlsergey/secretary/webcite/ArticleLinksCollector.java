@@ -27,6 +27,15 @@ public class ArticleLinksCollector {
 
 	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url, String host) {
 
+		if (WebCiteArchiver.SKIP_BLACKLISTED.contains(host)) {
+			logger.debug("URL " + url + " skipped because some of it's URLs are blacklisted on WebCite");
+
+			if (perArticleReport != null)
+				perArticleReport.skippedIgnoreBlacklisted(url);
+
+			return true;
+		}
+
 		if (WebCiteArchiver.SKIP_ERRORS.contains(host)) {
 			logger.debug("URL " + url + " skipped due to usual errors of WebCite leading to undeadable text");
 

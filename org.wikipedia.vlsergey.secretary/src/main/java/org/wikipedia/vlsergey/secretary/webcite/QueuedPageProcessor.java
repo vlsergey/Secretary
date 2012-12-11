@@ -27,7 +27,6 @@ import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
-import org.wikipedia.vlsergey.secretary.dom.parser.XmlParser;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -83,6 +82,8 @@ public class QueuedPageProcessor {
 	@Autowired
 	private QueuedPageDao queuedPageDao;
 
+	private WebCiteParser webCiteParser;
+
 	private WikiCache wikiCache;
 
 	private boolean archive(Long pageId, Revision latestRevision, long selfPagePriority) throws Exception {
@@ -116,7 +117,7 @@ public class QueuedPageProcessor {
 						+ latestRevision.getPage().getTitle() + "')");
 			}
 
-			latestContentDom = new XmlParser().parse(xml);
+			latestContentDom = getWebCiteParser().parse(xml);
 
 			if (!StringUtils.equals(latestContent, latestContentDom.toWiki(false))) {
 				logger.warn("Parsing content not equal to stored content for page #" + latestRevision.getPage().getId()
@@ -170,7 +171,7 @@ public class QueuedPageProcessor {
 			commentBuilder.append("]]");
 			String comment = commentBuilder.toString().trim();
 
-			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision, newContent, comment, true, false);
+			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision, newContent, comment, true);
 
 			writeReport(reportPage, reportAnchor, latestRevision.getPage().getTitle(), perArticleReport);
 		}
@@ -339,6 +340,10 @@ public class QueuedPageProcessor {
 		return mediaWikiBot;
 	}
 
+	public WebCiteParser getWebCiteParser() {
+		return webCiteParser;
+	}
+
 	public WikiCache getWikiCache() {
 		return wikiCache;
 	}
@@ -452,7 +457,7 @@ public class QueuedPageProcessor {
 						"На момент обновления статистики "
 								+ "({{subst:CURRENTTIME}} {{subst:CURRENTMONTHABBREV}}, {{subst:CURRENTDAY2}}) "
 								+ "в очереди находилось '''" + pages + "''' страниц и '''" + links + "''' ссылок",
-						null, "Update statistics: " + pages + " / " + links, true, true, false);
+						null, "Update statistics: " + pages + " / " + links, true, false);
 				lastStatUpdate = System.currentTimeMillis();
 			}
 
@@ -485,6 +490,10 @@ public class QueuedPageProcessor {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
+	public void setWebCiteParser(WebCiteParser webCiteParser) {
+		this.webCiteParser = webCiteParser;
+	}
+
 	public void setWikiCache(WikiCache wikiCache) {
 		this.wikiCache = wikiCache;
 	}
@@ -509,11 +518,11 @@ public class QueuedPageProcessor {
 
 		try {
 			mediaWikiBot.writeContent(reportPage, null, null,
-					perArticleReport.toWiki("[[" + articleName + "]]", anchor, false), comment, false, false, false);
+					perArticleReport.toWiki("[[" + articleName + "]]", anchor, false), comment, false, false);
 		} catch (ProcessException exc) {
 			// antispam?
 			mediaWikiBot.writeContent("Обсуждение:" + articleName, null, null,
-					perArticleReport.toWiki("[[" + articleName + "]]", anchor, true), comment, false, false, false);
+					perArticleReport.toWiki("[[" + articleName + "]]", anchor, true), comment, false, false);
 		}
 
 	}

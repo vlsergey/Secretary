@@ -37,7 +37,7 @@ public class FilesCategoryHelper implements Runnable {
 		}
 
 		mediaWikiBot.writeContent("Участник:Secretary/Files/" + title, null, stringBuilder.toString(), null, "update",
-				false, true, false);
+				false, false);
 	}
 
 	@Override

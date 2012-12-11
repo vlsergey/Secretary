@@ -16,7 +16,7 @@ public class PageParser {
 
 	private static final String REGEXP_SPACE = "(\\s|\u00a0|&#xA0;)*";
 
-	private static final String REGEXP_SPACE_OR_BR = "(<BR/>|\n|\\s|\u00a0|&#xA0;)*";
+	private static final String REGEXP_SPACE_OR_BR = "(<[bB][rR]\\s*/>|\n|\\s|\u00a0|&#xA0;)*";
 
 	public static void main(String[] args) throws Exception {
 		final PageParser pageParser = new PageParser();
@@ -48,6 +48,7 @@ public class PageParser {
 		httpManager.afterPropertiesSet();
 		this.mediaWikiBot = new MediaWikiBot();
 		mediaWikiBot.setHttpManager(httpManager);
+		mediaWikiBot.init();
 
 		mediaWikiBot.setSite(new URI("http://ru.wikisource.org/w"));
 		mediaWikiBot.setLogin(System.getProperty("org.wikipedia.vlsergey.bot.login"));
@@ -201,13 +202,14 @@ public class PageParser {
 
 		html = html.replaceAll(REGEXP_SPACE + "<br ", "<br ");
 		html = html.replaceAll(REGEXP_SPACE + "<BR/>" + REGEXP_SPACE, "<BR/>");
+		html = html.replaceAll(REGEXP_SPACE + "<br/>" + REGEXP_SPACE, "<br/>");
 
 		html = html.replaceAll(REGEXP_SPACE + "<dt>" + REGEXP_SPACE, "<dt>");
 		html = html.replaceAll(REGEXP_SPACE + "</dt>" + REGEXP_SPACE, "</dt>");
 		html = html.replaceAll(REGEXP_SPACE + "<dd>" + REGEXP_SPACE, "<dd>");
 		html = html.replaceAll(REGEXP_SPACE + "</dd>" + REGEXP_SPACE, "</dd>");
 
-		String title = StringUtils.substringBetween(html, "<dt>Название документа:</dt><dd>", "</dd>");
+		String title = StringUtils.substringBetween(html, "<dt>Название документа:</dt><dd>", "<br/></dd>");
 		final String number = StringUtils.substringBetween(html, "<dt>Номер документа:</dt><dd>", "</dd>");
 
 		html = StringUtils.replace(html, "&nbsp;", "&#xA0;");
@@ -215,17 +217,21 @@ public class PageParser {
 
 		// System.out.println(html);
 
-		html = StringUtils.substringBetween(html, "<!-- Собственно документ-->", "<!---->");
+		html = StringUtils.substringBetween(html, "<a name=\"beginoftext\"></a>", "<div class=\"social_view\">");
 		String wiki = html;
 
+		// remove header
+		wiki = StringUtils.substringAfter(wiki, "<P ID=\"P0005\" CLASS=\"formattext topleveltext\" ALIGN=\"justify\">");
+
 		// mix cleanup
-		wiki = wiki.replaceAll("</A>", "");
+		wiki = wiki.replaceAll("<a href=\"/document//1\">", "");
+		wiki = wiki.replaceAll("<a href=\"/document//1\" CONTEXT=\"[0-9A-Z]*\">", "");
+		wiki = wiki.replaceAll("<a name=\"[0-9A-Z]*\" id=\"[0-9A-Z]*\" style=\"color:white\">якорь</a>", "");
+		wiki = wiki.replaceAll("</[aA]>", "");
 		if (wiki.contains("</TD></TR></TABLE>") && !wiki.contains("<TABLE")) {
 			wiki = wiki.replaceAll("</TD></TR></TABLE>", "");
 		}
-
-		// skip title
-		wiki = StringUtils.substringAfter(wiki, "</h1>");
+		wiki = wiki.replaceAll("<span class='date'>([0-9а-я\\s]*)</span>", "$1");
 
 		// well-known patterns
 		wiki = wiki.replaceAll("<P ID=\"P[0-9A-F]*\" CLASS=\"[a-z ]*\"( ALIGN=\"[a-z]*\")*>" + "(\\s|\u00a0)*Президент"
@@ -313,10 +319,12 @@ public class PageParser {
 		wiki = wiki.replaceAll(
 				"<P ID=\"P[0-9A-F]*\" CLASS=\"headertext topleveltext centertext\" ALIGN=\"center\">([^<]*)</P>",
 				"\n\n<center>'''$1'''</center>\n\n");
-		wiki = wiki.replaceAll("<P ID=\"P[0-9A-F]*\" CLASS=\"formattext\" ALIGN=\"center\">'''([^<]*)'''"
+		wiki = wiki.replaceAll("<P ID=\"P[0-9A-Z]*\" CLASS=\"formattext\" ALIGN=\"center\">'''([^<]*)'''"
 				+ REGEXP_SPACE_OR_BR + "</P>", "\n\n<center>'''$1'''</center>\n\n");
+		wiki = wiki.replaceAll(REGEXP_SPACE_OR_BR + "<h2 id=\"h_[0-9A-Z]*\">([^<]*)" + REGEXP_SPACE_OR_BR + "</h2>",
+				"\n\n== $2 ==\n\n");
 
-		wiki = wiki.replaceAll("<P ID=\"P[0-9A-F]*\" CLASS=\"formattext topleveltext\" ALIGN=\"right\">([^<]*)</P>",
+		wiki = wiki.replaceAll("<P ID=\"P[0-9A-Z]*\" CLASS=\"formattext topleveltext\" ALIGN=\"right\">([^<]*)</P>",
 				"\n\n{{right|$1}}\n\n");
 
 		wiki = wiki.replaceAll("<P [^>]*>", "\n\n");
@@ -410,7 +418,7 @@ public class PageParser {
 	}
 
 	private void save(String url, final String pageTitle, String wiki) throws Exception, URISyntaxException {
-		mediaWikiBot.writeContent(pageTitle, null, wiki, null, "Import from " + url, false, false, false);
+		mediaWikiBot.writeContent(pageTitle, null, wiki, null, "Import from " + url, false, false);
 	}
 
 	private String toDate(String dateLetters) throws ParseException {

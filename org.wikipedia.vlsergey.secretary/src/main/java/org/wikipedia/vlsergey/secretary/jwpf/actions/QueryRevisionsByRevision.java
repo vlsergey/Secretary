@@ -6,12 +6,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByRevision extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByRevision(Long revisionId, RevisionPropery[] properties) {
-		this(revisionId, false, properties);
-	}
-
-	public QueryRevisionsByRevision(Long revisionId, boolean rvgeneratexml, RevisionPropery[] properties) {
-		super(properties);
+	public QueryRevisionsByRevision(boolean bot, Long revisionId, boolean rvgeneratexml, RevisionPropery[] properties) {
+		super(bot, properties);
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
@@ -30,6 +26,10 @@ public class QueryRevisionsByRevision extends AbstractQueryRevisionsAction {
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);
+	}
+
+	public QueryRevisionsByRevision(boolean bot, Long revisionId, RevisionPropery[] properties) {
+		this(bot, revisionId, false, properties);
 	}
 
 }

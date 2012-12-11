@@ -7,8 +7,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
-public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction
-		implements MultiAction<Page> {
+public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction implements MultiAction<Page> {
 
 	private final Direction direction;
 
@@ -18,9 +17,9 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction
 
 	private final RevisionPropery[] properties;
 
-	public QueryRevisionsByPageId(Long pageId, Long rvstartid,
-			Direction direction, RevisionPropery[] properties) {
-		super(properties);
+	public QueryRevisionsByPageId(boolean bot, Long pageId, Long rvstartid, Direction direction,
+			RevisionPropery[] properties) {
+		super(bot, properties);
 
 		this.pageId = pageId;
 		this.direction = direction;
@@ -47,18 +46,17 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction
 		msgs.add(postMethod);
 	}
 
+	@Override
 	public MultiAction<Page> getNextAction() {
 		if (nextRevision == null)
 			return null;
 
-		return new QueryRevisionsByPageId(pageId, nextRevision, direction,
-				properties);
+		return new QueryRevisionsByPageId(isBot(), pageId, nextRevision, direction, properties);
 	}
 
 	@Override
 	protected void parseQueryContinue(Element queryContinueElement) {
-		Element revisionsElement = (Element) queryContinueElement
-				.getElementsByTagName("revisions").item(0);
+		Element revisionsElement = (Element) queryContinueElement.getElementsByTagName("revisions").item(0);
 		nextRevision = new Long(revisionsElement.getAttribute("rvstartid"));
 	}
 

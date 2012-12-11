@@ -22,13 +22,14 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 
 	private Long rvcontinue;
 
-	public QueryRevisionsByRevisionIds(Iterable<Long> revids, boolean generateXml, RevisionPropery[] properties) {
-		this(revids, generateXml, properties, null);
+	public QueryRevisionsByRevisionIds(boolean bot, Iterable<Long> revids, boolean generateXml,
+			RevisionPropery[] properties) {
+		this(bot, revids, generateXml, properties, null);
 	}
 
-	protected QueryRevisionsByRevisionIds(Iterable<Long> revids, boolean generateXml, RevisionPropery[] properties,
-			Long rvcontinue) {
-		super(properties);
+	protected QueryRevisionsByRevisionIds(boolean bot, Iterable<Long> revids, boolean generateXml,
+			RevisionPropery[] properties, Long rvcontinue) {
+		super(bot, properties);
 
 		this.revids = revids;
 		this.generateXml = generateXml;
@@ -62,13 +63,16 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 
 	@Override
 	public MultiAction<Page> getNextAction() {
-		return new QueryRevisionsByRevisionIds(revids, generateXml, properties, rvcontinue);
+		if (rvcontinue == null)
+			return null;
+
+		return new QueryRevisionsByRevisionIds(isBot(), revids, generateXml, properties, rvcontinue);
 	}
 
 	@Override
 	protected void parseQueryContinue(Element queryContinueElement) throws ParseException {
 		Element revisionsElement = (Element) queryContinueElement.getElementsByTagName("revisions").item(0);
-		rvcontinue = new Long(revisionsElement.getAttribute("rvstartid"));
+		rvcontinue = new Long(revisionsElement.getAttribute("rvcontinue"));
 	}
 
 }

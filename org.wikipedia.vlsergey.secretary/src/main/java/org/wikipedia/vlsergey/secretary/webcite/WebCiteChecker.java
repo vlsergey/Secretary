@@ -83,7 +83,7 @@ public class WebCiteChecker {
 
 		if (hasChanges) {
 			mediaWikiBot.writeContent(revision.getPage(), revision, latestContentDom.toString(),
-					"Removing broken WebCite links", true, true);
+					"Removing broken WebCite links", true);
 		}
 	}
 

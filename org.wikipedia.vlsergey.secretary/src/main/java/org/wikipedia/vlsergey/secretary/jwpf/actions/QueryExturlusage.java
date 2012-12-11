@@ -11,8 +11,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
-public class QueryExturlusage extends AbstractQueryAction implements
-		MultiAction<ExternalUrl> {
+public class QueryExturlusage extends AbstractQueryAction implements MultiAction<ExternalUrl> {
 
 	private final String namespaces;
 
@@ -24,12 +23,13 @@ public class QueryExturlusage extends AbstractQueryAction implements
 
 	private List<ExternalUrl> result;
 
-	public QueryExturlusage(String protocol, String query, String namespaces) {
-		this(protocol, query, namespaces, null);
+	public QueryExturlusage(boolean bot, String protocol, String query, String namespaces) {
+		this(bot, protocol, query, namespaces, null);
 	}
 
-	private QueryExturlusage(String protocol, String query, String namespaces,
-			String offset) {
+	private QueryExturlusage(boolean bot, String protocol, String query, String namespaces, String offset) {
+		super(bot);
+
 		this.protocol = protocol;
 		this.query = query;
 		this.namespaces = namespaces;
@@ -49,7 +49,7 @@ public class QueryExturlusage extends AbstractQueryAction implements
 		if (offset != null)
 			setParameter(multipartEntity, "euoffset", offset);
 
-		if (isBotRegistered()) {
+		if (isBot()) {
 			setParameter(multipartEntity, "eulimit", "5000");
 		} else {
 			setParameter(multipartEntity, "eulimit", "500");
@@ -64,7 +64,7 @@ public class QueryExturlusage extends AbstractQueryAction implements
 		if (nextOffset == null)
 			return null;
 
-		return new QueryExturlusage(protocol, query, namespaces, nextOffset);
+		return new QueryExturlusage(isBot(), protocol, query, namespaces, nextOffset);
 	}
 
 	@Override
@@ -92,18 +92,14 @@ public class QueryExturlusage extends AbstractQueryAction implements
 
 	@Override
 	protected void parseQueryContinue(Element queryContinueElement) {
-		Element exturlusage = (Element) queryContinueElement
-				.getElementsByTagName("exturlusage").item(0);
+		Element exturlusage = (Element) queryContinueElement.getElementsByTagName("exturlusage").item(0);
 		this.nextOffset = exturlusage.getAttribute("euoffset");
 	}
 
 	@Override
-	protected void parseQueryElement(Element queryElement)
-			throws ProcessException {
-		final ListAdapter<Element> euElements = new ListAdapter<Element>(
-				queryElement.getElementsByTagName("eu"));
-		final List<ExternalUrl> result = new ArrayList<ExternalUrl>(
-				euElements.size());
+	protected void parseQueryElement(Element queryElement) throws ProcessException {
+		final ListAdapter<Element> euElements = new ListAdapter<Element>(queryElement.getElementsByTagName("eu"));
+		final List<ExternalUrl> result = new ArrayList<ExternalUrl>(euElements.size());
 
 		for (Element euElement : euElements) {
 			ExternalUrl pageImpl = parseExternalUrl(euElement);

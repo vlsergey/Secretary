@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 
 public class BuildUnreviewedLists implements Runnable {
@@ -47,10 +48,11 @@ public class BuildUnreviewedLists implements Runnable {
 	public void run() {
 		try {
 
-			runImpl1(0, "Articles", "статьи", false);
-			runImpl1(6, "Files", "файлы", true);
-			runImpl1(10, "Templates", "шаблоны", true);
-			runImpl1(14, "Categories", "категории", true);
+			runImpl1(Namespaces.MAIN, "Articles", "статьи", false);
+			runImpl1(Namespaces.FILE, "Files", "файлы", true);
+			runImpl1(Namespaces.TEMPLATE, "Templates", "шаблоны", true);
+			runImpl1(Namespaces.CATEGORY, "Categories", "категории", true);
+			runImpl1(100, "Portals", "порталы", true);
 
 			updateStatistics(
 					"Непроверенные (неотпатрулированные) страницы (без перенаправлений), отсортированные по времени создания",
@@ -164,7 +166,6 @@ public class BuildUnreviewedLists implements Runnable {
 				break;
 		}
 
-		mediaWikiBot.writeContent(statisticsPage, null, article, null, "Update unreviewed pages list", false, true,
-				false);
+		mediaWikiBot.writeContent(statisticsPage, null, article, null, "Update unreviewed pages list", false, false);
 	}
 }

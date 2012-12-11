@@ -32,39 +32,25 @@ import org.w3c.dom.Element;
  * @author Tobias Knerr
  * @since MediaWiki 1.9.0
  */
-public class QueryEmbeddedinTitles extends AbstractQueryAction implements
-		MultiAction<String> {
+public class QueryEmbeddedinTitles extends AbstractQueryEmbeddedIn implements MultiAction<String> {
 
 	private String namespaces;
 
-	/**
-	 * information necessary to get the next api page.
-	 */
 	private String nextPageInfo = null;
 
 	private String title;
 
-	/**
-	 * Collection that will contain the result (titles of articles using the
-	 * template) after performing the action has finished.
-	 */
 	private Collection<String> titleCollection = new ArrayList<String>();
 
-	/**
-	 * The public constructor. It will have an MediaWiki-request generated,
-	 * which is then added to msgs. When it is answered, the method
-	 * processAllReturningText will be called (from outside this class). For the
-	 * parameters, see
-	 * {@link QueryEmbeddedinTitles#generateRequest(String, String, String)}
-	 */
-	public QueryEmbeddedinTitles(String title, String namespaces) {
+	public QueryEmbeddedinTitles(boolean bot, String title, String namespaces) {
+		super(bot);
+
 		this.title = title;
 		this.namespaces = namespaces;
 
-		String query = "/api.php?action=query&list=embeddedin" + "&eititle="
-				+ encode(title)
-				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "")
-				+ "&eilimit=" + getLimit() + "&format=xml";
+		String query = "/api.php?action=query&list=embeddedin" + "&eititle=" + encode(title)
+				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "") + "&eilimit=" + getLimit()
+				+ "&format=xml";
 
 		msgs.add(new HttpGet(query));
 	}
@@ -72,16 +58,15 @@ public class QueryEmbeddedinTitles extends AbstractQueryAction implements
 	/**
 	 * The private constructor, which is used to create follow-up actions.
 	 */
-	private QueryEmbeddedinTitles(String title, String namespaces,
-			String nextPageInfo) {
+	private QueryEmbeddedinTitles(boolean bot, String title, String namespaces, String nextPageInfo) {
+		super(bot);
+
 		this.title = title;
 		this.namespaces = namespaces;
 
-		String query = "/api.php?action=query&list=embeddedin" + "&eititle="
-				+ encode(title)
-				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "")
-				+ "&eilimit=" + getLimit() + "&format=xml" + "&eicontinue="
-				+ encode(nextPageInfo);
+		String query = "/api.php?action=query&list=embeddedin" + "&eititle=" + encode(title)
+				+ ((namespaces != null) ? ("&einamespace=" + namespaces) : "") + "&eilimit=" + getLimit()
+				+ "&format=xml" + "&eicontinue=" + encode(nextPageInfo);
 
 		msgs.add(new HttpGet(query));
 	}
@@ -90,32 +75,31 @@ public class QueryEmbeddedinTitles extends AbstractQueryAction implements
 	 * @return necessary information for the next action or null if no next api
 	 *         page exists
 	 */
+	@Override
 	public QueryEmbeddedinTitles getNextAction() {
-		if (nextPageInfo == null) {
+		if (nextPageInfo == null)
 			return null;
-		} else {
-			return new QueryEmbeddedinTitles(title, namespaces, nextPageInfo);
-		}
+
+		return new QueryEmbeddedinTitles(isBot(), title, namespaces, nextPageInfo);
 	}
 
 	/**
 	 * @return the collected article names
 	 */
+	@Override
 	public Collection<String> getResults() {
 		return titleCollection;
 	}
 
 	@Override
 	protected void parseQueryContinue(Element queryContinueElement) {
-		Element categorymembersElement = (Element) queryContinueElement
-				.getElementsByTagName("embeddedin").item(0);
+		Element categorymembersElement = (Element) queryContinueElement.getElementsByTagName("embeddedin").item(0);
 		nextPageInfo = categorymembersElement.getAttribute("eicontinue");
 	}
 
 	@Override
 	protected void parseQueryElement(Element queryElement) {
-		for (Element eiElement : new ListAdapter<Element>(
-				queryElement.getElementsByTagName("ei"))) {
+		for (Element eiElement : new ListAdapter<Element>(queryElement.getElementsByTagName("ei"))) {
 			titleCollection.add(eiElement.getAttribute("title"));
 		}
 	}

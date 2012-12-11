@@ -48,7 +48,28 @@ public class UpdateWatchOnline implements Runnable {
 
 	private Map<String, String> loadIvi() throws Exception {
 		Map<String, String> result = new HashMap<String, String>();
-		result.put("Вой: Перерождение", "http://www.ivi.ru/watch/71438");
+		String data = IoUtils.readToString(UpdateWatchOnline.class.getResourceAsStream("ivi.csv"), "utf-8");
+
+		CSVReader csvReader = new CSVReader(new StringReader(data));
+		for (String[] line : csvReader.readAll()) {
+			if (line.length < 6)
+				continue;
+
+			final String externalUriStr = StringUtils.trim(line[4]);
+			if (!externalUriStr.startsWith("http://www.ivi.ru/"))
+				continue;
+
+			final URI external = new URI(externalUriStr);
+			final String wikiUriStr = StringUtils.trim(line[6]);
+
+			if (!wikiUriStr.startsWith("http://ru.wikipedia.org/wiki/"))
+				continue;
+
+			URI wiki = new URI(wikiUriStr);
+			String articleName = wiki.getPath().substring(6).replace("_", " ");
+
+			result.put(articleName, external.toString());
+		}
 		return result;
 	}
 
@@ -157,7 +178,7 @@ public class UpdateWatchOnline implements Runnable {
 
 			if (!StringUtils.equals(oldText, newText)) {
 				getMediaWikiBot().writeContent(pageTitle, null, newText, null,
-						"Обновление списка сайтов просмотра фильма online", false, true, false);
+						"Обновление списка сайтов просмотра фильма online", false, false);
 			}
 		}
 	}

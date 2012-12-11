@@ -12,8 +12,14 @@
 		<property name="mediaWikiBot" ref="ruWikipediaBot" />
 	</bean>
 
+	<bean id="ruWikipediaXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
+		p:sessionFactory-ref="ruWikiSessionFactory">
+		<property name="mediaWikiBot" ref="ruWikipediaBot" />
+	</bean>
+
 	<bean id="storedPageDao" class="org.wikipedia.vlsergey.secretary.cache.StoredPageDao"
 		p:sessionFactory-ref="ruWikiSessionFactory" />
+
 	<bean id="storedRevisionDao"
 		class="org.wikipedia.vlsergey.secretary.cache.StoredRevisionDao"
 		p:sessionFactory-ref="ruWikiSessionFactory" />

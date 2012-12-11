@@ -38,24 +38,19 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 public abstract class MWAction implements ContentProcessable {
 	protected static String encode(String string) {
 		try {
-			String result = URLEncoder.encode(string,
-					MediaWikiBot.CHARSET.name());
+			String result = URLEncoder.encode(string, MediaWikiBot.CHARSET.name());
 			return result;
 		} catch (UnsupportedEncodingException e) {
-			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name()
-					+ "' charset not supported by Java VM");
+			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
 		}
 
 	}
 
-	protected static void setParameter(MultipartEntity multipartEntity,
-			String name, String value) {
+	protected static void setParameter(MultipartEntity multipartEntity, String name, String value) {
 		try {
-			multipartEntity.addPart(name, new StringBody(value,
-					MediaWikiBot.CHARSET));
+			multipartEntity.addPart(name, new StringBody(value, MediaWikiBot.CHARSET));
 		} catch (UnsupportedEncodingException e) {
-			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name()
-					+ "' charset not supported by Java VM");
+			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
 		}
 	}
 
@@ -65,28 +60,23 @@ public abstract class MWAction implements ContentProcessable {
 		msgs = new Vector<HttpRequestBase>();
 	}
 
+	@Override
 	public boolean followRedirects() {
 		return true;
 	}
 
+	@Override
 	public final List<HttpRequestBase> getMessages() {
 		return msgs;
 	}
 
-	protected boolean isBotRegistered() {
-		String registered = System
-				.getProperty("org.wikipedia.vlsergey.bot.registered");
-		registered = registered == null ? "" : registered;
-		return "1".equals(registered) || "true".equals(registered);
-	}
-
-	public void processReturningText(final HttpRequestBase hm, final String s)
-			throws ProcessException {
+	@Override
+	public void processReturningText(final HttpRequestBase hm, final String s) throws ProcessException {
 		// no op
 	}
 
-	public void validateReturningCookies(List<Cookie> cs, HttpRequestBase hm)
-			throws CookieException {
+	@Override
+	public void validateReturningCookies(List<Cookie> cs, HttpRequestBase hm) throws CookieException {
 		// no op
 	}
 

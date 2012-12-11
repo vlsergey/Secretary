@@ -6,9 +6,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByPageTitles extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByPageTitles(Iterable<String> pageTitles,
-			RevisionPropery[] properties) {
-		super(properties);
+	public QueryRevisionsByPageTitles(boolean bot, Iterable<String> pageTitles, RevisionPropery[] properties) {
+		super(bot, properties);
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();

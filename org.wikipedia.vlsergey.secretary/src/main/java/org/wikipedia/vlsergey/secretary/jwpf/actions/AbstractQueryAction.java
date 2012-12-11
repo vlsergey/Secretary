@@ -25,20 +25,20 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public abstract class AbstractQueryAction extends AbstractAPIAction {
 
+	public AbstractQueryAction(boolean bot) {
+		super(bot);
+	}
+
 	@Override
-	protected void parseAPI(final Element root) throws ProcessException,
-			ParseException {
+	protected void parseAPI(final Element root) throws ProcessException, ParseException {
 		final ListAdapter<Element> queryContinueElements = new ListAdapter<Element>(
 				root.getElementsByTagName("query-continue"));
 		if (queryContinueElements.size() > 1)
-			throw new IllegalArgumentException(
-					"Too many query-continue elements: "
-							+ queryContinueElements.size());
+			throw new IllegalArgumentException("Too many query-continue elements: " + queryContinueElements.size());
 		else if (queryContinueElements.size() == 1)
 			parseQueryContinue(queryContinueElements.get(0));
 
-		final ListAdapter<Element> queryElements = new ListAdapter<Element>(
-				root.getElementsByTagName("query"));
+		final ListAdapter<Element> queryElements = new ListAdapter<Element>(root.getElementsByTagName("query"));
 		if (queryElements.size() < 1)
 			throw new IllegalArgumentException("No query elements");
 		if (!queryElements.isEmpty()) {
@@ -47,8 +47,7 @@ public abstract class AbstractQueryAction extends AbstractAPIAction {
 		}
 	}
 
-	protected ParsedPageImpl parsePage(Element pageElement)
-			throws ProcessException {
+	protected ParsedPageImpl parsePage(Element pageElement) throws ProcessException {
 		ParsedPageImpl pageImpl = new ParsedPageImpl();
 
 		pageImpl.setMissing(pageElement.hasAttribute("missing"));
@@ -65,14 +64,10 @@ public abstract class AbstractQueryAction extends AbstractAPIAction {
 		return pageImpl;
 	}
 
-	protected void parseQueryContinue(Element queryContinueElement)
-			throws ParseException {
-		throw new UnsupportedOperationException(
-				"This is not multiaction operation: "
-						+ this.getClass().getName());
+	protected void parseQueryContinue(Element queryContinueElement) throws ParseException {
+		throw new UnsupportedOperationException("This is not multiaction operation: " + this.getClass().getName());
 	}
 
-	protected abstract void parseQueryElement(Element queryElement)
-			throws ProcessException, ParseException;
+	protected abstract void parseQueryElement(Element queryElement) throws ProcessException, ParseException;
 
 }

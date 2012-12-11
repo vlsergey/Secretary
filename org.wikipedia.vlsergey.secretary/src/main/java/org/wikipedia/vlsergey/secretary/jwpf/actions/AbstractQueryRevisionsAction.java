@@ -25,8 +25,7 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.Text;
+import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionFlagged;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPageImpl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevisionImpl;
@@ -36,23 +35,26 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
+	public static final int MAX_FOR_BOTS = 5000;
+
+	public static final int MAX_FOR_NON_BOTS = 500;
+
 	private final List<RevisionPropery> properties;
 
 	private List<Page> result;
 
-	protected AbstractQueryRevisionsAction(final List<RevisionPropery> properties) {
-		super();
+	protected AbstractQueryRevisionsAction(boolean bot, final List<RevisionPropery> properties) {
+		super(bot);
 		this.properties = properties;
 	}
 
-	protected AbstractQueryRevisionsAction(final RevisionPropery[] properties) {
-		super();
+	protected AbstractQueryRevisionsAction(boolean bot, final RevisionPropery[] properties) {
+		super(bot);
 		this.properties = new ArrayList<RevisionPropery>(Arrays.asList(properties));
 	}
 
-	@Override
-	public int getLimit() {
-		return super.getLimit() / 10;
+	protected int getLimit() {
+		return (isBot() ? MAX_FOR_BOTS : MAX_FOR_NON_BOTS);
 	}
 
 	public List<Page> getResults() {
@@ -102,14 +104,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 			revisionImpl.setComment(revisionElement.getAttribute("comment"));
 
 		if (properties.contains(RevisionPropery.CONTENT)) {
-			StringBuilder content = new StringBuilder();
-			for (Node child : new ListAdapter<Node>(revisionElement.getChildNodes())) {
-				if (child instanceof Text) {
-					Text text = (Text) child;
-					content.append(text.getTextContent());
-				}
-			}
-			revisionImpl.setContent(content.toString());
+			revisionImpl.setContent(getText(revisionElement));
 		}
 
 		if (properties.contains(RevisionPropery.FLAGS)) {
@@ -140,7 +135,74 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 			revisionImpl.setUser(revisionElement.getAttribute("user"));
 		}
 
+		if (properties.contains(RevisionPropery.FLAGGED)) {
+			for (Element revElement : new ListAdapter<Element>(revisionElement.getElementsByTagName("flagged"))) {
+				RevisionFlagged revisionFlagged = parseRevisionFlagged(revisionImpl, revElement);
+
+				if (revisionImpl.getFlagged() == null) {
+					revisionImpl.setFlagged(new ArrayList<RevisionFlagged>(1));
+				}
+				revisionImpl.getFlagged().add(revisionFlagged);
+			}
+		}
+
 		return revisionImpl;
+	}
+
+	protected RevisionFlagged parseRevisionFlagged(ParsedRevisionImpl revision, Element flaggedElement) {
+		/*
+		 * <flagged user="Klip game" timestamp="2012-05-04T17:01:13Z" level="0"
+		 * level_text="stable">
+		 * 
+		 * <tags accuracy="1" />
+		 * 
+		 * </flagged>
+		 */
+		RevisionFlagged revisionFlagged = new RevisionFlagged();
+
+		if (flaggedElement.hasAttribute("user")) {
+			revisionFlagged.setUser(flaggedElement.getAttribute("user"));
+		}
+
+		if (flaggedElement.hasAttribute("timestamp")) {
+			try {
+				String timestamp = flaggedElement.getAttribute("timestamp");
+				Date date = parseDate(timestamp);
+				revisionFlagged.setTimestamp(date);
+			} catch (ParseException exc) {
+				throw new ProcessException(exc.getMessage(), exc);
+			}
+		}
+
+		if (flaggedElement.hasAttribute("level")) {
+			try {
+				String level = flaggedElement.getAttribute("level");
+				Integer integer = Integer.valueOf(level);
+				revisionFlagged.setLevel(integer);
+			} catch (NumberFormatException exc) {
+				throw new ProcessException(exc.getMessage(), exc);
+			}
+		}
+
+		if (flaggedElement.hasAttribute("level_text")) {
+			revisionFlagged.setLevelText(flaggedElement.getAttribute("level_text"));
+		}
+
+		List<Integer> tagsAccuracy = new ArrayList<Integer>(1);
+		for (Element tagsElement : new ListAdapter<Element>(flaggedElement.getElementsByTagName("tags"))) {
+			if (tagsElement.hasAttribute("accuracy")) {
+				try {
+					String accuracy = tagsElement.getAttribute("accuracy");
+					Integer integer = Integer.valueOf(accuracy);
+					tagsAccuracy.add(integer);
+				} catch (NumberFormatException exc) {
+					throw new ProcessException(exc.getMessage(), exc);
+				}
+			}
+		}
+		revisionFlagged.setTagsAccuracy(tagsAccuracy);
+
+		return revisionFlagged;
 	}
 
 }

@@ -29,6 +29,7 @@ public class PerArticleReport {
 	public final Map<String, String> potentiallyDead = new LinkedHashMap<String, String>();
 	public final Map<String, String> skipped = new LinkedHashMap<String, String>();
 
+	public final Set<String> skippedIgnoreBlacklisted = new LinkedHashSet<String>();
 	public final Set<String> skippedIgnoreNoCache = new LinkedHashSet<String>();
 	public final Set<String> skippedIgnoreSence = new LinkedHashSet<String>();
 	public final Set<String> skippedIgnoreTechLimit = new LinkedHashSet<String>();
@@ -131,6 +132,10 @@ public class PerArticleReport {
 		skipped.put(url, reason);
 	}
 
+	void skippedIgnoreBlacklisted(String url) {
+		skippedIgnoreBlacklisted.add(url);
+	}
+
 	void skippedIgnoreNoCache(String url) {
 		skippedIgnoreNoCache.add(url);
 	}
@@ -210,16 +215,23 @@ public class PerArticleReport {
 			appendLinks(stringBuilder, skippedIgnoreSence, noWikiLinks);
 		}
 
-		if (!skippedIgnoreTechLimit.isEmpty()) {
-			stringBuilder.append("Следующие ссылки были пропущены, так как они указывают на сайты, "
-					+ "архивирование которых службой WebCite имеет технические сложности:\n");
-			appendLinks(stringBuilder, skippedIgnoreTechLimit, noWikiLinks);
+		if (!skippedIgnoreBlacklisted.isEmpty()) {
+			stringBuilder
+					.append("Следующие ссылки были пропущены, "
+							+ "так как они указывают на сайты, которые часто запрещены к показу на WebCite правообладателем:\n");
+			appendLinks(stringBuilder, skippedIgnoreBlacklisted, noWikiLinks);
 		}
 
 		if (!skippedIgnoreNoCache.isEmpty()) {
 			stringBuilder.append("Следующие ссылки были пропущены, "
 					+ "так как они указывают на сайты, которые часто используют тег no-cache:\n");
 			appendLinks(stringBuilder, skippedIgnoreNoCache, noWikiLinks);
+		}
+
+		if (!skippedIgnoreTechLimit.isEmpty()) {
+			stringBuilder.append("Следующие ссылки были пропущены, так как они указывают на сайты, "
+					+ "архивирование которых службой WebCite имеет технические сложности:\n");
+			appendLinks(stringBuilder, skippedIgnoreTechLimit, noWikiLinks);
 		}
 
 		if (!skippedTooYoung.isEmpty()) {

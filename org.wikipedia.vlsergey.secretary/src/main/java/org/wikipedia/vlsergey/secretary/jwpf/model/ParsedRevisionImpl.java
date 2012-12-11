@@ -19,6 +19,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
 import java.util.Date;
+import java.util.List;
 
 public class ParsedRevisionImpl implements Revision {
 
@@ -35,6 +36,8 @@ public class ParsedRevisionImpl implements Revision {
 	private Boolean minor;
 
 	private final Page page;
+
+	private List<RevisionFlagged> flagged = null;
 
 	private Long size = null;
 
@@ -66,6 +69,10 @@ public class ParsedRevisionImpl implements Revision {
 	@Override
 	public String getContent() {
 		return content;
+	}
+
+	public List<RevisionFlagged> getFlagged() {
+		return flagged;
 	}
 
 	@Override
@@ -117,6 +124,10 @@ public class ParsedRevisionImpl implements Revision {
 
 	public void setContent(String content) {
 		this.content = content;
+	}
+
+	public void setFlagged(List<RevisionFlagged> flagged) {
+		this.flagged = flagged;
 	}
 
 	public void setId(Long revisionID) {

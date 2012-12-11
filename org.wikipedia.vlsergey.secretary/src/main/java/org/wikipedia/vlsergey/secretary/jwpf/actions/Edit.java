@@ -28,7 +28,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public class Edit extends AbstractAPIAction {
 
-	public Edit(Page page, Revision revision, String token, String text, String summary, boolean minor, boolean bot) {
+	public Edit(boolean bot, Page page, Revision revision, String token, String text, String summary, boolean minor) {
+		super(bot);
 		if (revision.getTimestamp() == null) {
 			throw new IllegalArgumentException("Current revision must have timestamp to prevent edit conflicts");
 		}
@@ -48,7 +49,7 @@ public class Edit extends AbstractAPIAction {
 			setParameter(multipartEntity, "minor", "0");
 		}
 
-		if (bot) {
+		if (isBot()) {
 			setParameter(multipartEntity, "bot", "1");
 		} else {
 			setParameter(multipartEntity, "bot", "0");
@@ -64,8 +65,9 @@ public class Edit extends AbstractAPIAction {
 		msgs.add(postMethod);
 	}
 
-	public Edit(String pageTitle, String token, String prependText, String text, String appendText, String summary,
-			boolean minor, boolean bot, boolean nocreate) {
+	public Edit(boolean bot, String pageTitle, String token, String prependText, String text, String appendText,
+			String summary, boolean minor, boolean nocreate) {
+		super(bot);
 
 		HttpPost postMethod = new HttpPost("/api.php");
 
