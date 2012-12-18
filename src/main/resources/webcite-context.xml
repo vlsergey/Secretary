@@ -1,0 +1,67 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	   	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+	   					   ">
+
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.webcite" />
+
+	<bean id="archivedLinkDao"
+		class="org.wikipedia.vlsergey.secretary.webcite.ArchivedLinkDao"
+		p:sessionFactory-ref="ruWikiSessionFactory" />
+	<bean id="queuedLinkDao" class="org.wikipedia.vlsergey.secretary.webcite.QueuedLinkDao"
+		p:sessionFactory-ref="ruWikiSessionFactory" />
+	<bean id="queuedPageDao" class="org.wikipedia.vlsergey.secretary.webcite.QueuedPageDao"
+		p:sessionFactory-ref="ruWikiSessionFactory" />
+
+	<bean id="articleLinksCollector"
+		class="org.wikipedia.vlsergey.secretary.webcite.ArticleLinksCollector" />
+
+	<bean id="ruWikipediaWebCiteBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot">
+		<property name="bot" value="1" />
+		<property name="login" value="WebCite Archiver" />
+		<property name="password" value="#{systemProperties.WebCiteArchiverPassword}" />
+		<property name="site" value="http://ru.wikipedia.org/w" />
+	</bean>
+
+	<bean id="linksQueuer" class="org.wikipedia.vlsergey.secretary.webcite.LinksQueuer">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+	</bean>
+
+	<bean id="queuedLinkProcessor"
+		class="org.wikipedia.vlsergey.secretary.webcite.QueuedLinkProcessor" />
+
+	<bean id="queuedPageProcessor"
+		class="org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+		<property name="webCiteParser" ref="webCiteParser" />
+	</bean>
+
+	<bean id="webCiteArchiver"
+		class="org.wikipedia.vlsergey.secretary.webcite.WebCiteArchiver">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+	</bean>
+
+	<bean id="webCiteJob" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteJob">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+	</bean>
+
+	<bean id="webCiteLimiter" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteLimiter"
+		p:sessionFactory-ref="ruWikiSessionFactory" />
+
+	<bean id="webCiteErrorCleanup"
+		class="org.wikipedia.vlsergey.secretary.webcite.WebCiteErrorCleanup">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+		<property name="webCiteParser" ref="webCiteParser" />
+	</bean>
+
+	<bean id="webCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
+		<property name="xmlCache" ref="ruWikipediaXmlCache" />
+	</bean>
+
+</beans>
