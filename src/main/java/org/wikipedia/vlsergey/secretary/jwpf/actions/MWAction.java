@@ -23,6 +23,8 @@ import java.net.URLEncoder;
 import java.util.List;
 import java.util.Vector;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.mime.MultipartEntity;
@@ -36,6 +38,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
  * 
  */
 public abstract class MWAction implements ContentProcessable {
+
+	protected static Log log = LogFactory.getLog(MWAction.class);
+
 	protected static String encode(String string) {
 		try {
 			String result = URLEncoder.encode(string, MediaWikiBot.CHARSET.name());

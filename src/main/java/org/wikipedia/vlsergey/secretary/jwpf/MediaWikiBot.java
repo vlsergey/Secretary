@@ -349,16 +349,12 @@ public class MediaWikiBot extends HttpBot {
 
 	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol, String query, int... namespaces)
 			throws ActionException {
-		logger.info("queryEmbeddedInPageTitles(" + protocol + ", " + query + ", " + Arrays.toString(namespaces) + ")");
-
 		QueryExturlusage a = new QueryExturlusage(isBot(), protocol, query, createNsString(namespaces));
 		return performMultiAction(a);
 	}
 
 	public Iterable<Page> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, int[] namespaces,
 			RevisionPropery[] properties) throws ActionException, ProcessException {
-		logger.info("queryPagesWithRevisionByEmbeddedIn: " + embeddedIn + "; " + Arrays.toString(namespaces) + " ;"
-				+ Arrays.toString(properties));
 
 		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn,
 				createNsString(namespaces), properties);
@@ -458,6 +454,8 @@ public class MediaWikiBot extends HttpBot {
 
 			@Override
 			public Iterable<Revision> apply(Iterable<Long> pageIds) {
+				logger.info("queryRevisionsByPageIdsF( " + properties + " ): <batch> " + pageIds);
+
 				List<Revision> result = new ArrayList<Revision>();
 
 				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(isBot(), pageIds, properties);
@@ -466,65 +464,27 @@ public class MediaWikiBot extends HttpBot {
 				addSingleRevisionsToResult(bufferAction.getResults(), result);
 				return result;
 			}
-		}.batchlazy(isBot() ? 500 : 50);
+		}.makeBatched(isBot() ? 500 : 50);
 	}
 
-	public Collection<Revision> queryRevisionsByRevisionIds(Iterable<Long> revisionIds, boolean generateXml,
-			RevisionPropery... properties) throws ActionException, ProcessException {
-		logger.info("queryRevisionsByRevisionIds: " + revisionIds + "; " + Arrays.asList(properties));
-
-		List<Revision> result = new ArrayList<Revision>();
-
-		final int limit = isBot() ? QueryRevisionsByRevisionIds.MAX_FOR_BOTS
+	public MultiresultFunction<Long, Revision> queryRevisionsByRevisionIdsF(final boolean generateXml,
+			final RevisionPropery... properties) {
+		final int batchLimit = isBot() ? QueryRevisionsByRevisionIds.MAX_FOR_BOTS
 				: QueryRevisionsByRevisionIds.MAX_FOR_NON_BOTS;
-		List<Long> buffer = new ArrayList<Long>(limit);
-		for (Long revisionId : revisionIds) {
-			buffer.add(revisionId);
 
-			if (buffer.size() == limit) {
-				logger.info("queryRevisionsByRevisionIds(...): " + buffer);
-
-				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(isBot(), buffer,
-						generateXml, properties);
-				addSingleRevisionsToResult(performMultiAction(bufferAction), result);
-
-				buffer.clear();
-				synchronized (this) {
-					try {
-						this.wait(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
-
-		if (!buffer.isEmpty()) {
-			logger.info("queryRevisionsByRevisionIds(...): " + buffer);
-
-			QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(isBot(), buffer, generateXml,
-					properties);
-			addSingleRevisionsToResult(performMultiAction(bufferAction), result);
-			buffer.clear();
-		}
-
-		return result;
-	}
-
-	public MultiresultFunction<Long, Revision> queryRevisionsByRevisionIdsF(final RevisionPropery... properties) {
 		return new MultiresultFunction<Long, Revision>() {
 
 			@Override
 			public Iterable<Revision> apply(Iterable<Long> revisionIds) {
 				List<Revision> result = new ArrayList<Revision>();
 
-				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(isBot(), revisionIds, false,
-						properties);
+				QueryRevisionsByRevisionIds bufferAction = new QueryRevisionsByRevisionIds(isBot(), revisionIds,
+						generateXml, properties);
 				addSingleRevisionsToResult(performMultiAction(bufferAction), result);
 
 				return result;
 			}
-		}.batchlazy(50);
+		}.makeBatched(batchLimit);
 	}
 
 	public String queryTokenEdit(Revision revision) throws ActionException, ProcessException {

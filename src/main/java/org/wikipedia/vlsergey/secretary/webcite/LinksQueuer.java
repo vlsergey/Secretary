@@ -224,7 +224,7 @@ public class LinksQueuer {
 		pageIds = new ArrayList<Long>(pageIds);
 		Collections.sort((List<Long>) pageIds);
 
-		for (Revision revision : wikiCache.queryLatestContentByPageIdsF().batchlazy(50).apply(pageIds)) {
+		for (Revision revision : wikiCache.queryLatestContentByPageIdsF().makeBatched(50).apply(pageIds)) {
 			logger.debug("Processing links from revision #" + revision.getId() + " of article #"
 					+ revision.getPage().getId() + " ('" + revision.getPage().getTitle() + "')");
 

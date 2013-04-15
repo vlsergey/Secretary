@@ -6,9 +6,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-public abstract class MultiresultFunction<A, B> extends
-		Function<Iterable<A>, Iterable<B>> {
-	public MultiresultFunction<A, B> batchlazy(final int batchSize) {
+public abstract class MultiresultFunction<A, B> extends Function<Iterable<A>, Iterable<B>> {
+
+	public MultiresultFunction<A, B> makeBatched(final int batchSize) {
 		final MultiresultFunction<A, B> sourceFunction = this;
 		return new MultiresultFunction<A, B>() {
 			@Override
@@ -17,16 +17,13 @@ public abstract class MultiresultFunction<A, B> extends
 					@Override
 					public Iterator<B> iterator() {
 						return new Iterator<B>() {
-							private Iterator<B> curentResult = Collections
-									.<B> emptyList().iterator();
+							private Iterator<B> curentResult = Collections.<B> emptyList().iterator();
 
-							private final Iterator<A> sourceIterator = a
-									.iterator();
+							private final Iterator<A> sourceIterator = a.iterator();
 
 							@Override
 							public boolean hasNext() {
-								return curentResult.hasNext()
-										|| sourceIterator.hasNext();
+								return curentResult.hasNext() || sourceIterator.hasNext();
 							}
 
 							@Override
@@ -36,12 +33,10 @@ public abstract class MultiresultFunction<A, B> extends
 
 								if (sourceIterator.hasNext()) {
 									List<A> batch = new ArrayList<A>(batchSize);
-									while (batch.size() < batchSize
-											&& sourceIterator.hasNext()) {
+									while (batch.size() < batchSize && sourceIterator.hasNext()) {
 										batch.add(sourceIterator.next());
 									}
-									this.curentResult = sourceFunction.apply(
-											batch).iterator();
+									this.curentResult = sourceFunction.apply(batch).iterator();
 									return curentResult.next();
 								}
 

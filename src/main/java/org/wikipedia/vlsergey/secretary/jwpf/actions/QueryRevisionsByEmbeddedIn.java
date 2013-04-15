@@ -1,5 +1,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
+import java.util.Arrays;
+
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
@@ -23,6 +25,9 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 	private QueryRevisionsByEmbeddedIn(boolean bot, String embeddedIn, String namespaces, RevisionPropery[] properties,
 			String geicontinue) {
 		super(bot, properties);
+
+		log.info("queryRevisionsByEmbeddedIn(" + embeddedIn + "; " + namespaces + " ;" + Arrays.toString(properties)
+				+ "; " + geicontinue + ")");
 
 		this.embeddedIn = embeddedIn;
 		this.namespaces = namespaces;

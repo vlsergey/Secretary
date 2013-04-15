@@ -21,8 +21,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,7 +52,7 @@ public class CountBooks {
 
 	private WikiCache wikiCache;
 
-	private void addAuthor(Map<String, List<Page>> byAuthor, Page page, String title, Content parameter) {
+	private void addAuthor(Map<String, Set<Long>> byAuthor, Page page, String title, Content parameter) {
 		if (parameter == null)
 			return;
 
@@ -64,15 +66,15 @@ public class CountBooks {
 		log.info(title + ": " + author);
 
 		if (byAuthor.containsKey(author)) {
-			byAuthor.get(author).add(page);
+			byAuthor.get(author).add(page.getId());
 		} else {
-			List<Page> list = new ArrayList<Page>();
-			list.add(page);
-			byAuthor.put(author, list);
+			Set<Long> set = new HashSet<Long>();
+			set.add(page.getId());
+			byAuthor.put(author, set);
 		}
 	}
 
-	private void addBookTitle(Map<String, List<Page>> byTitle, Page page, String pageTitle, Content parameter) {
+	private void addBookTitle(Map<String, Set<Long>> byTitle, Page page, String pageTitle, Content parameter) {
 		if (parameter == null)
 			return;
 
@@ -86,15 +88,15 @@ public class CountBooks {
 		log.info(pageTitle + ": " + bookTitle);
 
 		if (byTitle.containsKey(bookTitle)) {
-			byTitle.get(bookTitle).add(page);
+			byTitle.get(bookTitle).add(page.getId());
 		} else {
-			List<Page> list = new ArrayList<Page>();
-			list.add(page);
-			byTitle.put(bookTitle, list);
+			Set<Long> set = new HashSet<Long>();
+			set.add(page.getId());
+			byTitle.put(bookTitle, set);
 		}
 	}
 
-	private void addISBN(Map<String, List<Page>> byISBN, Page page, String title, Content parameter) {
+	private void addISBN(Map<String, Set<Long>> byISBN, Page page, String title, Content parameter) {
 		if (parameter == null)
 			return;
 
@@ -111,11 +113,11 @@ public class CountBooks {
 		log.info(title + ": " + isbn);
 
 		if (byISBN.containsKey(isbn)) {
-			byISBN.get(isbn).add(page);
+			byISBN.get(isbn).add(page.getId());
 		} else {
-			List<Page> list = new ArrayList<Page>();
-			list.add(page);
-			byISBN.put(isbn, list);
+			Set<Long> set = new HashSet<Long>();
+			set.add(page.getId());
+			byISBN.put(isbn, set);
 		}
 	}
 
@@ -132,9 +134,9 @@ public class CountBooks {
 	}
 
 	public void run() {
-		final Map<String, List<Page>> byISBN = new HashMap<String, List<Page>>();
-		final Map<String, List<Page>> byAuthor = new HashMap<String, List<Page>>();
-		final Map<String, List<Page>> byBookTitle = new HashMap<String, List<Page>>();
+		final Map<String, Set<Long>> byISBN = new HashMap<String, Set<Long>>();
+		final Map<String, Set<Long>> byAuthor = new HashMap<String, Set<Long>>();
+		final Map<String, Set<Long>> byBookTitle = new HashMap<String, Set<Long>>();
 
 		// for (Revision revision :
 		// wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(

@@ -30,6 +30,8 @@ public class QueryExturlusage extends AbstractQueryAction implements MultiAction
 	private QueryExturlusage(boolean bot, String protocol, String query, String namespaces, String offset) {
 		super(bot);
 
+		log.info("queryExturlusage(" + protocol + "; " + query + "; " + namespaces + "; " + offset + ")");
+
 		this.protocol = protocol;
 		this.query = query;
 		this.namespaces = namespaces;

@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.text.ParseException;
+import java.util.Arrays;
 
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
@@ -31,6 +32,9 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 			RevisionPropery[] properties, Long rvcontinue) {
 		super(bot, properties);
 
+		log.info("queryRevisionsByRevisionIds( " + generateXml + ", " + Arrays.toString(properties) + ", " + rvcontinue
+				+ " ): " + revids);
+
 		this.revids = revids;
 		this.generateXml = generateXml;
 		this.properties = properties;
@@ -58,6 +62,7 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
+
 		msgs.add(postMethod);
 	}
 

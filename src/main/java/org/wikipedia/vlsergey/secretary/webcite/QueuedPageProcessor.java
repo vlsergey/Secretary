@@ -446,7 +446,7 @@ public class QueuedPageProcessor {
 		Iterable<Long> allIds = new ArrayList<Long>(qPages.keySet());
 
 		long lastStatUpdate = 0;
-		for (Revision revision : wikiCache.queryLatestContentByPageIdsF().batchlazy(500).apply(allIds)) {
+		for (Revision revision : wikiCache.queryLatestContentByPageIdsF().makeBatched(500).apply(allIds)) {
 			QueuedPage queuedPage = qPages.get(revision.getPage().getId());
 			qPages.remove(revision.getPage().getId());
 
