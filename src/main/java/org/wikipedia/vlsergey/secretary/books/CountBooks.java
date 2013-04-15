@@ -35,6 +35,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 import org.wikipedia.vlsergey.secretary.webcite.WebCiteParser;
 
@@ -135,8 +136,13 @@ public class CountBooks {
 		final Map<String, List<Page>> byAuthor = new HashMap<String, List<Page>>();
 		final Map<String, List<Page>> byBookTitle = new HashMap<String, List<Page>>();
 
-		for (Revision revision : wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(
-				"Template:Книга", Namespaces.MAIN))) {
+		// for (Revision revision :
+		// wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(
+		// "Template:Книга", Namespaces.MAIN))) {
+
+		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
+				.queryPagesWithRevisionByEmbeddedIn("Template:Книга", new int[] { Namespaces.MAIN },
+						new RevisionPropery[] { RevisionPropery.IDS }))) {
 
 			final Page page = revision.getPage();
 			final String title = page.getTitle();

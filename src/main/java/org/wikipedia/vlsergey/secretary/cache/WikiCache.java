@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ActionException;
@@ -35,6 +36,58 @@ public class WikiCache {
 
 	private boolean isCacheRecordValid(Revision stored) {
 		return stored != null && StringUtils.isNotEmpty(stored.getContent()) && StringUtils.isNotEmpty(stored.getXml());
+	}
+
+	public List<Revision> queryContentByPagesAndRevisions(Iterable<Page> pagesWithLatestsRevisions)
+			throws ActionException, ProcessException {
+		logger.info("getLatestContent: " + pagesWithLatestsRevisions);
+
+		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
+		for (Page page : pagesWithLatestsRevisions) {
+			if (page.getRevisions() == null || page.getRevisions().isEmpty()) {
+				continue;
+			}
+
+			Revision revision = page.getRevisions().get(0);
+			pageIdToLatestRevision.put(page.getId(), revision.getId());
+		}
+
+		Map<Long, Revision> resultMap = new LinkedHashMap<Long, Revision>(pageIdToLatestRevision.size());
+		List<Long> toLoad = new ArrayList<Long>(pageIdToLatestRevision.size());
+
+		for (Long pageId : pageIdToLatestRevision.keySet()) {
+			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
+
+			Revision stored = storedRevisionDao.getRevisionById(latestRevisionId);
+			if (isCacheRecordValid(stored)) {
+				resultMap.put(latestRevisionId, stored);
+			} else {
+				toLoad.add(latestRevisionId);
+			}
+		}
+
+		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIds(toLoad, true, RevisionPropery.IDS,
+				RevisionPropery.TIMESTAMP, RevisionPropery.CONTENT)) {
+			// update cache
+			revision = storedRevisionDao.getOrCreate(revision);
+			resultMap.put(revision.getId(), revision);
+		}
+
+		List<Revision> result = new ArrayList<Revision>();
+		for (Long pageId : pageIdToLatestRevision.keySet()) {
+			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
+			if (latestRevisionId == null)
+				continue;
+
+			Revision revision = resultMap.get(latestRevisionId);
+			if (revision == null) {
+				logger.warn("Page #" + pageId + " has no revisions");
+				continue;
+			}
+
+			result.add(revision);
+		}
+		return result;
 	}
 
 	public List<Revision> queryLatestContentByPageIds(Iterable<Long> pageIds) throws ActionException, ProcessException {

@@ -25,6 +25,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryCategorymembers;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryExturlusage;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByEmbeddedIn;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageId;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageTitles;
@@ -352,6 +353,16 @@ public class MediaWikiBot extends HttpBot {
 
 		QueryExturlusage a = new QueryExturlusage(isBot(), protocol, query, createNsString(namespaces));
 		return performMultiAction(a);
+	}
+
+	public Iterable<Page> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, int[] namespaces,
+			RevisionPropery[] properties) throws ActionException, ProcessException {
+		logger.info("queryPagesWithRevisionByEmbeddedIn: " + embeddedIn + "; " + Arrays.toString(namespaces) + " ;"
+				+ Arrays.toString(properties));
+
+		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn,
+				createNsString(namespaces), properties);
+		return performMultiAction(query);
 	}
 
 	public Revision queryRevisionByPageId(Long pageId, RevisionPropery[] properties) throws ActionException,
