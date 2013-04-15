@@ -75,6 +75,9 @@ public class WebCiteArchiver {
 			// http://content.yudu.com/Library/A1ntfz/ITFAnnualReportAccou/resources/index.htm?referrerUrl=
 			"content.yudu.com",
 
+			// circular redirects at http://mob.hu/noc-history-1
+			"mob.hu",
+
 			// http://www.webcitation.org/5wAZdFTwc
 			"beyond2020.cso.ie",
 
