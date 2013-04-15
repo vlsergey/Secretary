@@ -60,8 +60,4 @@
 		<property name="webCiteParser" ref="webCiteParser" />
 	</bean>
 
-	<bean id="webCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
-		<property name="xmlCache" ref="ruWikipediaXmlCache" />
-	</bean>
-
 </beans>

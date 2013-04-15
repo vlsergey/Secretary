@@ -1,0 +1,18 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<bean class="org.wikipedia.vlsergey.secretary.books.CountBooks">
+		<property name="mediaWikiBot" ref="ruWikipediaBot" />
+		<property name="webCiteParser" ref="webCiteParser" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+	</bean>
+
+	<bean class="org.wikipedia.vlsergey.secretary.books.ReplaceCiteBookWithSpecificTemplate">
+		<property name="mediaWikiBot" ref="ruWikipediaBot" />
+		<property name="webCiteParser" ref="webCiteParser" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+	</bean>
+
+</beans>
