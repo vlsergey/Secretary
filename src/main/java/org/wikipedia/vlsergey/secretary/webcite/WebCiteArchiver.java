@@ -52,6 +52,8 @@ public class WebCiteArchiver {
 
 			"en.wikisource.org", "ru.wikisource.org",
 
+			"dic.academic.ru",
+
 			"www.peeep.us"));
 
 	/**

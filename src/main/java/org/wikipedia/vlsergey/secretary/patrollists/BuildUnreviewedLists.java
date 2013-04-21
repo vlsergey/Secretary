@@ -8,13 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.annotation.PostConstruct;
-
-import org.apache.commons.lang.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.TaskScheduler;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
@@ -32,16 +27,8 @@ public class BuildUnreviewedLists implements Runnable {
 
 	private final Set<Long> redirects = new HashSet<Long>();
 
-	@Autowired
-	private TaskScheduler taskScheduler;
-
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
-	}
-
-	@PostConstruct
-	public void init() {
-		taskScheduler.scheduleWithFixedDelay(this, DateUtils.MILLIS_PER_HOUR);
 	}
 
 	@Override

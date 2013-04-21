@@ -40,7 +40,7 @@ public class WikiCache {
 
 	public Iterable<Revision> queryContentByPagesAndRevisions(Iterable<Page> pagesWithLatestsRevisions)
 			throws ActionException, ProcessException {
-		return queryContentByPagesAndRevisionsF().makeBatched(10000).apply(pagesWithLatestsRevisions);
+		return queryContentByPagesAndRevisionsF().makeBatched(2048).apply(pagesWithLatestsRevisions);
 	}
 
 	public MultiresultFunction<Page, Revision> queryContentByPagesAndRevisionsF() throws ActionException,

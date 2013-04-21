@@ -32,6 +32,7 @@ import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 import org.wikipedia.vlsergey.secretary.webcite.WebCiteParser;
 
@@ -68,6 +69,10 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	static {
 		replaceByISBN = new ArrayList<ReplaceByISBN>();
+
+		/* G */
+		replaceByISBN.add(new ReplaceByISBN("Книга:Gajl T.: Polish Armorial Middle Ages to 20th Century", null, true,
+				-1, null, "978-83-60597-10-1"));
 
 		/* А */
 		replaceByISBN.add(new ReplaceByISBN("Книга:Атлас пресмыкающихся Северной Евразии", null, false, 232, null,
@@ -329,16 +334,18 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	@Override
 	public void run() {
-		for (Revision revision : wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(
-				"Template:Книга", Namespaces.MAIN))) {
+		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
+				.queryPagesWithRevisionByEmbeddedIn("Template:Книга", new int[] { Namespaces.MAIN },
+						new RevisionPropery[] { RevisionPropery.IDS }))) {
 			try {
 				process(revision);
 			} catch (Exception exc) {
 				log.error("Unable to process with " + revision + ": " + exc, exc);
 			}
 		}
-		for (Revision revision : wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(
-				"Template:Cite book", Namespaces.MAIN))) {
+		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
+				.queryPagesWithRevisionByEmbeddedIn("Template:Cite book", new int[] { Namespaces.MAIN },
+						new RevisionPropery[] { RevisionPropery.IDS }))) {
 			try {
 				process(revision);
 			} catch (Exception exc) {

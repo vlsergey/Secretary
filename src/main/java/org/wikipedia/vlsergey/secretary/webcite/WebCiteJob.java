@@ -2,9 +2,7 @@ package org.wikipedia.vlsergey.secretary.webcite;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.commons.lang.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.functions.IteratorUtils;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
@@ -27,9 +25,6 @@ public class WebCiteJob implements Runnable {
 	private QueuedPageProcessor queuedPageProcessor;
 
 	@Autowired
-	private TaskScheduler taskScheduler;
-
-	@Autowired
 	private WebCiteArchiver webCiteArchiver;
 
 	@Autowired
@@ -43,8 +38,6 @@ public class WebCiteJob implements Runnable {
 	public void init() throws Exception {
 		webCiteArchiver.updateIgnoringList();
 		queuedLinkProcessor.start();
-
-		taskScheduler.scheduleWithFixedDelay(this, DateUtils.MILLIS_PER_DAY);
 	}
 
 	@Override

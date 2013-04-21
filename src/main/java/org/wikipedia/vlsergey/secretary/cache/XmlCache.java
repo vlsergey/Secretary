@@ -26,8 +26,8 @@ public class XmlCache {
 	}
 
 	public String getXml(String content) throws Exception {
-		if (StringUtils.isEmpty(StringUtils.trimToEmpty(content)))
-			return content;
+		if (StringUtils.isBlank(content) || StringUtils.isWhitespace(content))
+			return "<root>" + content + "</root>";
 
 		MessageDigest md = MessageDigest.getInstance("SHA-512");
 		byte[] digest = md.digest(content.getBytes("utf-8"));
@@ -35,11 +35,9 @@ public class XmlCache {
 
 		XmlCacheItem cacheItem = template.get(XmlCacheItem.class, hash);
 		if (cacheItem != null) {
-			log.info("XML for string with hash '" + hash + "' found");
+			log.trace("XML for string with hash '" + hash + "' found");
 			return cacheItem.getXml();
 		}
-
-		log.info("XML for string with hash '" + hash + "' not found. Asking MediaWiki to parse");
 
 		ExpandTemplates expandTemplates = mediaWikiBot.expandTemplates(content, null, true, false);
 		final String xml = expandTemplates.getParsetree();

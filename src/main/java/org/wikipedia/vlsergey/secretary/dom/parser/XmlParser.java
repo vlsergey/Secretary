@@ -5,8 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.xml.parsers.DocumentBuilderFactory;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -18,18 +17,19 @@ import org.wikipedia.vlsergey.secretary.dom.Extension;
 import org.wikipedia.vlsergey.secretary.dom.Ignore;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.dom.Text;
+import org.wikipedia.vlsergey.secretary.utils.DocumentBuilderPool;
 import org.xml.sax.InputSource;
 
 public class XmlParser extends AbstractParser {
 
-	private final DocumentBuilderFactory documentBuilderFactory;
+	@Autowired
+	private DocumentBuilderPool documentBuilderPool;
 
 	public XmlParser() {
-		documentBuilderFactory = DocumentBuilderFactory.newInstance();
 	}
 
 	public ArticleFragment parse(String xml) throws Exception {
-		Document xmlDoc = documentBuilderFactory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+		Document xmlDoc = documentBuilderPool.parse(new InputSource(new StringReader(xml)));
 		return parseRoot(xmlDoc.getDocumentElement());
 	}
 
@@ -78,7 +78,7 @@ public class XmlParser extends AbstractParser {
 	}
 
 	public Content parseContainer(String xml) throws Exception {
-		Document xmlDoc = documentBuilderFactory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
+		Document xmlDoc = documentBuilderPool.parse(new InputSource(new StringReader(xml)));
 		return parseContainer(xmlDoc.getDocumentElement());
 	}
 

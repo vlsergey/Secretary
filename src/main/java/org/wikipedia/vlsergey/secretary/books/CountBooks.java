@@ -17,14 +17,15 @@
  */
 package org.wikipedia.vlsergey.secretary.books;
 
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -42,7 +43,7 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 import org.wikipedia.vlsergey.secretary.webcite.WebCiteParser;
 
 @Component
-public class CountBooks {
+public class CountBooks implements Runnable {
 
 	private static final Log log = LogFactory.getLog(CountBooks.class);
 
@@ -52,7 +53,7 @@ public class CountBooks {
 
 	private WikiCache wikiCache;
 
-	private void addAuthor(Map<String, Set<Long>> byAuthor, Page page, String title, Content parameter) {
+	private void addAuthor(Map<String, TLongSet> byAuthor, Page page, String title, Content parameter) {
 		if (parameter == null)
 			return;
 
@@ -63,18 +64,16 @@ public class CountBooks {
 		if (author == null)
 			return;
 
-		log.info(title + ": " + author);
-
 		if (byAuthor.containsKey(author)) {
 			byAuthor.get(author).add(page.getId());
 		} else {
-			Set<Long> set = new HashSet<Long>();
+			TLongSet set = new TLongHashSet();
 			set.add(page.getId());
 			byAuthor.put(author, set);
 		}
 	}
 
-	private void addBookTitle(Map<String, Set<Long>> byTitle, Page page, String pageTitle, Content parameter) {
+	private void addBookTitle(Map<String, TLongSet> byTitle, Page page, String pageTitle, Content parameter) {
 		if (parameter == null)
 			return;
 
@@ -85,18 +84,16 @@ public class CountBooks {
 		if (bookTitle == null)
 			return;
 
-		log.info(pageTitle + ": " + bookTitle);
-
 		if (byTitle.containsKey(bookTitle)) {
 			byTitle.get(bookTitle).add(page.getId());
 		} else {
-			Set<Long> set = new HashSet<Long>();
+			TLongSet set = new TLongHashSet();
 			set.add(page.getId());
 			byTitle.put(bookTitle, set);
 		}
 	}
 
-	private void addISBN(Map<String, Set<Long>> byISBN, Page page, String title, Content parameter) {
+	private void addISBN(Map<String, TLongSet> byISBN, Page page, String title, Content parameter) {
 		if (parameter == null)
 			return;
 
@@ -110,12 +107,10 @@ public class CountBooks {
 		if (isbn == null)
 			return;
 
-		log.info(title + ": " + isbn);
-
 		if (byISBN.containsKey(isbn)) {
 			byISBN.get(isbn).add(page.getId());
 		} else {
-			Set<Long> set = new HashSet<Long>();
+			TLongSet set = new TLongHashSet();
 			set.add(page.getId());
 			byISBN.put(isbn, set);
 		}
@@ -133,10 +128,11 @@ public class CountBooks {
 		return wikiCache;
 	}
 
+	@Override
 	public void run() {
-		final Map<String, Set<Long>> byISBN = new HashMap<String, Set<Long>>();
-		final Map<String, Set<Long>> byAuthor = new HashMap<String, Set<Long>>();
-		final Map<String, Set<Long>> byBookTitle = new HashMap<String, Set<Long>>();
+		final Map<String, TLongSet> byISBN = new HashMap<String, TLongSet>();
+		final Map<String, TLongSet> byAuthor = new HashMap<String, TLongSet>();
+		final Map<String, TLongSet> byBookTitle = new HashMap<String, TLongSet>();
 
 		// for (Revision revision :
 		// wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(
@@ -150,6 +146,13 @@ public class CountBooks {
 			final String title = page.getTitle();
 			try {
 				final String xmlContent = revision.getXml();
+				{
+					final String lowerCaseXml = xmlContent.toLowerCase();
+					if (!lowerCaseXml.contains("книга") && !lowerCaseXml.contains("cite book")) {
+						continue;
+					}
+				}
+
 				ArticleFragment article = getWebCiteParser().parse(xmlContent);
 
 				Map<String, List<Template>> allTemplates = article.getAllTemplates();
@@ -176,7 +179,7 @@ public class CountBooks {
 		}
 
 		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append("__TOCHERE__\n");
+		stringBuilder.append("__TOC__\n");
 
 		{
 			stringBuilder.append("== By ISBN ==\n");
@@ -218,7 +221,7 @@ public class CountBooks {
 				int count = byAuthor.get(author).size();
 				if (count < 10)
 					break;
-				stringBuilder.append("* " + author + " — " + count + " articles");
+				stringBuilder.append("* " + author + " — " + count + " articles\n");
 			}
 		}
 
@@ -240,7 +243,7 @@ public class CountBooks {
 				int count = byBookTitle.get(bookTitle).size();
 				if (count < 10)
 					break;
-				stringBuilder.append("* " + bookTitle + " — " + count + " articles");
+				stringBuilder.append("* " + bookTitle + " — " + count + " articles\n");
 			}
 		}
 

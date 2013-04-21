@@ -1,8 +1,7 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
-    xmlns:task="http://www.springframework.org/schema/task"
-    	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:tx="http://www.springframework.org/schema/tx"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans
 	   	http://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context
@@ -12,8 +11,10 @@
         http://www.springframework.org/schema/tx
         http://www.springframework.org/schema/tx/spring-tx.xsd">
 
-	<context:annotation-config  />
+	<context:annotation-config />
 	<tx:annotation-driven />
+
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.utils" />
 
 	<task:annotation-driven executor="myExecutor"
 		scheduler="myScheduler" />
@@ -23,11 +24,11 @@
 	<import resource="books-context.xml" />
 	<import resource="bot-context.xml" />
 	<import resource="cache-context.xml" />
-<!-- 	<import resource="gost-context.xml" /> -->
-<!-- 	<import resource="watch-online-context.xml" /> -->
-<!-- 	<import resource="patrolauto-context.xml" /> -->
-<!-- 	<import resource="patrollists-context.xml" /> -->
-<!-- 	<import resource="webcite-context.xml" /> -->
+	<!-- <import resource="gost-context.xml" /> -->
+	<!-- <import resource="watch-online-context.xml" /> -->
+	<!-- <import resource="patrolauto-context.xml" /> -->
+	<import resource="patrollists-context.xml" />
+	<import resource="webcite-context.xml" />
 
 
 	<bean id="webCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">

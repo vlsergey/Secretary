@@ -6,6 +6,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class ExpandTemplates extends AbstractAPIAction {
 
@@ -26,6 +27,9 @@ public class ExpandTemplates extends AbstractAPIAction {
 	 */
 	public ExpandTemplates(boolean bot, String text, String title, boolean generatexml, boolean includecomments) {
 		super(bot);
+
+		log.info("expandTemplates( '" + StringUtils.substring(text, 0, 16) + "...' ; " + title + "; " + generatexml
+				+ "; " + includecomments + ")");
 
 		HttpPost postMethod = new HttpPost("/api.php");
 
