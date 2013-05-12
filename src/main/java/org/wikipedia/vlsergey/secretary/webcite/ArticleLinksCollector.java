@@ -9,9 +9,11 @@ import java.util.Locale;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.dom.AbstractContainer;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
+import org.wikipedia.vlsergey.secretary.utils.DateNormalizer;
 
 public class ArticleLinksCollector {
 
@@ -82,6 +84,9 @@ public class ArticleLinksCollector {
 		return false;
 	}
 
+	@Autowired
+	private DateNormalizer dateNormalizer;
+
 	private Locale locale;
 
 	private WikiConstants wikiConstants;
@@ -98,10 +103,13 @@ public class ArticleLinksCollector {
 
 			articleLink.template = citeWebTemplate;
 
-			articleLink.accessDate = getParameterOrEmpty(citeWebTemplate, wikiConstants.accessDate());
-			articleLink.archiveDate = getParameterOrEmpty(citeWebTemplate, wikiConstants.archiveDate());
+			articleLink.accessDate = dateNormalizer.normalizeDate(getParameterOrEmpty(citeWebTemplate,
+					wikiConstants.accessDate()));
+			articleLink.archiveDate = dateNormalizer.normalizeDate(getParameterOrEmpty(citeWebTemplate,
+					wikiConstants.archiveDate()));
 			articleLink.archiveUrl = getParameterOrEmpty(citeWebTemplate, wikiConstants.archiveUrl());
-			articleLink.articleDate = getParameterOrEmpty(citeWebTemplate, wikiConstants.date());
+			articleLink.articleDate = dateNormalizer.normalizeDate(getParameterOrEmpty(citeWebTemplate,
+					wikiConstants.date()));
 			articleLink.author = getParameterOrEmpty(citeWebTemplate, wikiConstants.deadlink());
 			articleLink.title = getParameterOrEmpty(citeWebTemplate, wikiConstants.title());
 			articleLink.url = getParameterOrEmpty(citeWebTemplate, wikiConstants.url());

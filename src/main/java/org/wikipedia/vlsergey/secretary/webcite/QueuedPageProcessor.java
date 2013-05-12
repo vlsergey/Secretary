@@ -26,12 +26,14 @@ import org.wikipedia.vlsergey.secretary.diff.DiffUtils;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
+import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
+import org.wikipedia.vlsergey.secretary.utils.DateNormalizer;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class QueuedPageProcessor {
@@ -68,6 +70,9 @@ public class QueuedPageProcessor {
 	private ArchivedLinkDao archivedLinkDao;
 
 	private ArticleLinksCollector articleLinksCollector;
+
+	@Autowired
+	private DateNormalizer dateNormalizer;
 
 	@Autowired
 	private HttpManager httpManager;
@@ -227,6 +232,7 @@ public class QueuedPageProcessor {
 				logger.warn("Dead project: " + url);
 				perArticleReport.dead(url, "проект закрыт");
 				setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("project-closed"));
+				normilizeDates(articleLink.template);
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
 			}
@@ -253,6 +259,7 @@ public class QueuedPageProcessor {
 					logger.warn("Dead link: " + url + " — " + exc);
 					perArticleReport.dead(url, "циклическая переадресация (circular redirect)");
 					setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("circular-redirect"));
+					normilizeDates(articleLink.template);
 					articleLink.template.format(multilineFormat, multilineFormat);
 					continue;
 				}
@@ -278,7 +285,7 @@ public class QueuedPageProcessor {
 				logger.warn("Dead link: " + url + " — " + exc);
 				perArticleReport.dead(url, "сервер не найден (uknown host)");
 				setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("unknown-host"));
-
+				normilizeDates(articleLink.template);
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
 
@@ -311,7 +318,7 @@ public class QueuedPageProcessor {
 				perArticleReport.dead(url, "страница недоступна (" + statusLine + ")");
 
 				setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("" + statusCode));
-
+				normilizeDates(articleLink.template);
 				articleLink.template.format(multilineFormat, multilineFormat);
 
 				break;
@@ -391,6 +398,26 @@ public class QueuedPageProcessor {
 		return false;
 	}
 
+	private void normilizeDates(Template citeWebTemplate) {
+		normilizeDates(citeWebTemplate, wikiConstants.accessDate());
+		normilizeDates(citeWebTemplate, wikiConstants.archiveDate());
+		normilizeDates(citeWebTemplate, wikiConstants.date());
+	}
+
+	private void normilizeDates(Template citeWebTemplate, final String[] parameterNames) {
+		for (String parameterName : parameterNames) {
+			for (TemplatePart templatePart : citeWebTemplate.getParameters(parameterName)) {
+				if (templatePart.getValue() != null) {
+					String nonNormilized = templatePart.getValue().toWiki(true);
+					String normilized = dateNormalizer.normalizeDate(nonNormilized);
+					if (!StringUtils.equals(nonNormilized, normilized)) {
+						templatePart.setValue(new Text(normilized));
+					}
+				}
+			}
+		}
+	}
+
 	private void processArchivedLink(PerArticleReport perArticleReport, ArticleLink articleLink,
 			final boolean multilineFormat, ArchivedLink archivedLink) {
 		logger.debug("URL '" + archivedLink.getAccessUrl() + "' were archived at '" + archivedLink.getArchiveUrl()
@@ -411,7 +438,7 @@ public class QueuedPageProcessor {
 			setParameterValue(articleLink.template, wikiConstants.archiveUrl(), new Text(archiveUrl));
 			setParameterValue(articleLink.template, wikiConstants.archiveDate(),
 					new Text(archivedLink.getArchiveDate()));
-
+			normilizeDates(articleLink.template);
 			articleLink.template.format(multilineFormat, multilineFormat);
 
 		} else {

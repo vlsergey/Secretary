@@ -6,6 +6,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import org.hibernate.annotations.Index;
+
 @Entity
 public class ArchivedLink {
 
@@ -25,6 +27,7 @@ public class ArchivedLink {
 
 	private long id;
 
+	@Index(name = "indxAccessDate")
 	@Column(length = (1 << 14) - 2)
 	public String getAccessDate() {
 		return accessDate;
@@ -35,6 +38,7 @@ public class ArchivedLink {
 		return accessUrl;
 	}
 
+	@Index(name = "indxArchiveDate")
 	@Column(length = (1 << 14) - 2)
 	public String getArchiveDate() {
 		return archiveDate;

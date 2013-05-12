@@ -20,7 +20,7 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 @Repository
 @Transactional(readOnly = false)
 public class QueuedLinkDao {
-	private static final Logger logger = LoggerFactory.getLogger(QueuedLinkDao.class);
+	private static final Logger log = LoggerFactory.getLogger(QueuedLinkDao.class);
 
 	protected HibernateTemplate template = null;
 
@@ -29,7 +29,7 @@ public class QueuedLinkDao {
 		QueuedLink prev = findLink(link.getUrl(), link.getAccessDate());
 
 		if (prev == null) {
-			logger.info("Adding link '" + link.getUrl() + "' ('" + link.getAccessDate() + "') to queue");
+			log.info("Adding link '" + link.getUrl() + "' ('" + link.getAccessDate() + "') to queue");
 
 			link.setQueuedTimestamp(System.currentTimeMillis());
 			link.setAccessDate(StringUtils.trimToEmpty(link.getAccessDate()));
@@ -58,7 +58,7 @@ public class QueuedLinkDao {
 		}
 
 		if (updated) {
-			logger.info("Updating queued link '" + link.getUrl() + "' ('" + link.getAccessDate() + "')...");
+			log.info("Updating queued link '" + link.getUrl() + "' ('" + link.getAccessDate() + "')...");
 
 			template.flush();
 		}
@@ -67,21 +67,21 @@ public class QueuedLinkDao {
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public List<QueuedLink> findByUrl(String url) {
-		logger.debug("Selecting link by url and access date...");
+		log.debug("Selecting link by url and access date...");
 
 		return template.find("SELECT link " + "FROM QueuedLink link " + "WHERE url=?", StringUtils.trimToEmpty(url));
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public long findCount() {
-		logger.debug("Fentching number of queued links...");
+		log.debug("Fentching number of queued links...");
 
 		return ((Number) template.find("SELECT COUNT(links) FROM QueuedLink links").get(0)).longValue();
 	}
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = true, propagation = Propagation.MANDATORY)
 	public QueuedLink findLink(String url, String accessedDate) {
-		logger.debug("Selecting link by url and access date...");
+		log.debug("Selecting link by url and access date...");
 
 		@SuppressWarnings("unchecked")
 		List<QueuedLink> result = template.find("SELECT link " + "FROM QueuedLink link "
@@ -99,7 +99,7 @@ public class QueuedLinkDao {
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public QueuedLink getLinkFromQueue() {
-		logger.debug("Selecting link to process...");
+		log.debug("Selecting link to process...");
 
 		return template.execute(new HibernateCallback<QueuedLink>() {
 			@Override
@@ -125,7 +125,7 @@ public class QueuedLinkDao {
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void reducePriority(QueuedLink queuedLink) {
-		logger.info("Reducing priority of queued link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate()
+		log.info("Reducing priority of queued link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate()
 				+ "')...");
 
 		template.update(queuedLink);
@@ -146,7 +146,7 @@ public class QueuedLinkDao {
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void removeLinkFromQueue(QueuedLink queuedLink) {
-		logger.info("Removing link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate() + "') from queue...");
+		log.info("Removing link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate() + "') from queue...");
 
 		template.update(queuedLink);
 		template.delete(queuedLink);
