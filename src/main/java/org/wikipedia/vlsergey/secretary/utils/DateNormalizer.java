@@ -49,6 +49,8 @@ public class DateNormalizer {
 		}
 
 		nonNormilizedDate = StringUtils.trimToEmpty(nonNormilizedDate);
+		nonNormilizedDate = nonNormilizedDate.replaceAll("\\[", "");
+		nonNormilizedDate = nonNormilizedDate.replaceAll("\\]", "");
 		nonNormilizedDate = nonNormilizedDate.replaceAll("\t", " ");
 		nonNormilizedDate = nonNormilizedDate.replaceAll("\r", " ");
 		nonNormilizedDate = nonNormilizedDate.replaceAll("\n", " ");
@@ -108,6 +110,6 @@ public class DateNormalizer {
 		}
 
 		log.warn("Unable to normilize date: " + nonNormilizedDate);
-		return nonNormilizedDate;
+		return originalNormilizedDate;
 	}
 }
