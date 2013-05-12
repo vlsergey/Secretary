@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.webcite;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Query;
@@ -17,20 +18,24 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Transactional(readOnly = false)
 public class QueuedPageDao {
+
 	protected HibernateTemplate template = null;
 
 	@Transactional(isolation = Isolation.SERIALIZABLE, readOnly = false, propagation = Propagation.REQUIRED)
-	public void addPageToQueue(Long pageId, long priority, long lastCheckTimestamp) {
+	public void addPageToQueue(Locale locale, Long pageId, long priority, long lastCheckTimestamp) {
+
+		QueuedPagePk key = new QueuedPagePk(locale, pageId);
 
 		@SuppressWarnings("unchecked")
-		List<QueuedPage> previous = template.find("SELECT page " + "FROM QueuedPage page " + "WHERE id=?", pageId);
+		List<QueuedPage> previous = template.find("SELECT page " + "FROM QueuedPage page "
+				+ "WHERE lang=? AND pageId=?", key.getLang(), key.getPageId());
 
 		if (previous.size() > 1)
-			throw new IllegalStateException("Too many queued pages in DB with id #" + pageId);
+			throw new IllegalStateException("Too many queued pages in DB with id #" + key);
 
 		if (previous.isEmpty()) {
 			QueuedPage queuedPage = new QueuedPage();
-			queuedPage.setId(pageId);
+			queuedPage.setKey(key);
 			queuedPage.setLastCheckTimestamp(lastCheckTimestamp);
 			queuedPage.setPriority(priority);
 			template.save(queuedPage);
@@ -43,18 +48,20 @@ public class QueuedPageDao {
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public long findCount() {
-		return ((Number) template.find("SELECT COUNT(pages) FROM QueuedPage pages").get(0)).longValue();
+	public long findCount(Locale locale) {
+		return ((Number) template.find("SELECT COUNT(pageId) FROM QueuedPage pages WHERE lang=?", locale.getLanguage())
+				.get(0)).longValue();
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public QueuedPage getPageFromQueue() {
+	public QueuedPage getPageFromQueue(final Locale locale) {
 		return template.execute(new HibernateCallback<QueuedPage>() {
 			@Override
 			public QueuedPage doInHibernate(Session session) throws HibernateException, SQLException {
 
-				Query query = session.createQuery("SELECT pages " + "FROM QueuedPage pages "
+				Query query = session.createQuery("SELECT pages " + "FROM QueuedPage pages " + "WHERE lang=? "
 						+ "ORDER BY lastCheckTimestamp, priority DESC");
+				query.setParameter(1, locale.getLanguage());
 				query.setMaxResults(1);
 
 				@SuppressWarnings("unchecked")
@@ -69,13 +76,14 @@ public class QueuedPageDao {
 
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public List<QueuedPage> getPagesFromQueue() {
-		return template.find("SELECT pages " + "FROM QueuedPage pages " + "ORDER BY lastCheckTimestamp, priority DESC");
+	public List<QueuedPage> getPagesFromQueue(final Locale locale) {
+		return template.find("SELECT pages " + "FROM QueuedPage pages " + "WHERE lang=? "
+				+ "ORDER BY lastCheckTimestamp, priority DESC", locale.getLanguage());
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
-	public void removeAll() {
-		template.bulkUpdate("DELETE FROM QueuedPage");
+	public void removeAll(final Locale locale) {
+		template.bulkUpdate("DELETE FROM QueuedPage " + "WHERE lang=?", locale.getLanguage());
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)

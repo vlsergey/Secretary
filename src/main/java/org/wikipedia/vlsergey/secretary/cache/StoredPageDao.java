@@ -1,5 +1,7 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
+import java.util.Locale;
+
 import org.hibernate.SessionFactory;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
@@ -10,44 +12,42 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Repository
 public class StoredPageDao {
+
 	protected HibernateTemplate template = null;
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	public StoredPage getById(Long pageId) {
-		return template.get(StoredPage.class, pageId);
+	public StoredPage getByKey(Locale locale, Long pageId) {
+		return template.get(StoredPage.class, new StoredPagePk(locale, pageId));
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	public StoredPage getByKey(StoredPagePk key) {
+		return template.get(StoredPage.class, key);
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = false)
-	public StoredPage getOrCreate(Page withContent) {
-		final Long id = withContent.getId();
-		// boolean flushRequired = false;
+	public StoredPage getOrCreate(Locale locale, Page withContent) {
 
-		StoredPage stored = getById(id);
+		final StoredPagePk key = new StoredPagePk(locale, withContent.getId());
+		StoredPage stored = getByKey(key);
 		if (stored == null) {
 			stored = new StoredPage();
-			stored.setId(id);
+			stored.setKey(key);
 			template.persist(stored);
-			stored = template.get(StoredPage.class, id);
-			// flushRequired = true;
+			stored = template.get(StoredPage.class, key);
 		}
 
 		if (updateRequired(withContent.getTitle(), stored.getTitle())) {
 			stored.setTitle(withContent.getTitle());
-			// flushRequired = true;
 		}
 
 		if (updateRequired(withContent.getNamespace(), stored.getNamespace())) {
 			stored.setNamespace(withContent.getNamespace());
-			// flushRequired = true;
 		}
 
 		if (updateRequired(withContent.getMissing(), stored.getMissing())) {
 			stored.setMissing(withContent.getMissing());
-			// flushRequired = true;
 		}
-
-		// if (flushRequired)
-		// template.flush();
 
 		return stored;
 	}
@@ -56,18 +56,15 @@ public class StoredPageDao {
 		template = new HibernateTemplate(sessionFactory);
 	}
 
-	private boolean updateRequired(final Boolean newValue,
-			final Boolean oldValue) {
+	private boolean updateRequired(final Boolean newValue, final Boolean oldValue) {
 		return newValue != null && !newValue.equals(oldValue);
 	}
 
-	private boolean updateRequired(final Integer newValue,
-			final Integer oldValue) {
+	private boolean updateRequired(final Integer newValue, final Integer oldValue) {
 		return newValue != null && !newValue.equals(oldValue);
 	}
 
 	private boolean updateRequired(final String newValue, final String oldValue) {
-		return StringUtils.isNotEmpty(newValue)
-				&& !StringUtils.equals(oldValue, newValue);
+		return StringUtils.isNotEmpty(newValue) && !StringUtils.equals(oldValue, newValue);
 	}
 }

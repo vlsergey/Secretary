@@ -20,17 +20,18 @@ package org.wikipedia.vlsergey.secretary.cache;
 import java.util.List;
 import java.util.Set;
 
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
 import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
+import javax.persistence.Transient;
 
 import org.wikipedia.vlsergey.secretary.jwpf.model.AbstractPage;
 
 @Entity(name = "Page")
 public class StoredPage extends AbstractPage {
 
-	private Long id;
+	private StoredPagePk key;
 
 	private Set<StoredPage> links;
 
@@ -43,9 +44,14 @@ public class StoredPage extends AbstractPage {
 	private String title;
 
 	@Override
-	@Id
+	@Transient
 	public Long getId() {
-		return id;
+		return getKey().getPageId();
+	}
+
+	@EmbeddedId
+	public StoredPagePk getKey() {
+		return key;
 	}
 
 	@Override
@@ -75,8 +81,8 @@ public class StoredPage extends AbstractPage {
 		return title;
 	}
 
-	public void setId(Long pageID) {
-		this.id = pageID;
+	public void setKey(StoredPagePk key) {
+		this.key = key;
 	}
 
 	public void setLinks(Set<StoredPage> links) {

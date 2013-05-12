@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -16,8 +17,14 @@ public class ArticleLinksCollector {
 
 	private static final Logger logger = LoggerFactory.getLogger(ArticleLinksCollector.class);
 
-	static String getParameterOrEmpty(Template template, String parameterName) {
-		final Content value = template.getParameterValue(parameterName);
+	static String getParameterOrEmpty(Template template, String[] parameterNames) {
+		Content value = null;
+		for (String possibleParameterName : parameterNames) {
+			value = template.getParameterValue(possibleParameterName);
+			if (value != null) {
+				break;
+			}
+		}
 
 		if (value == null)
 			return StringUtils.EMPTY;
@@ -75,6 +82,10 @@ public class ArticleLinksCollector {
 		return false;
 	}
 
+	private Locale locale;
+
+	private WikiConstants wikiConstants;
+
 	public List<ArticleLink> getAllLinks(AbstractContainer container) {
 		List<ArticleLink> links = new ArrayList<ArticleLink>();
 		List<Template> citeWebTemplates = container.getAllTemplates().get(WikiConstants.TEMPLATE_CITE_WEB);
@@ -87,13 +98,13 @@ public class ArticleLinksCollector {
 
 			articleLink.template = citeWebTemplate;
 
-			articleLink.accessDate = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_ACCESSDATE);
-			articleLink.archiveDate = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_ARCHIVEDATE);
-			articleLink.archiveUrl = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_ARCHIVEURL);
-			articleLink.articleDate = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_DATE);
-			articleLink.author = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_DEADLINK);
-			articleLink.title = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_TITLE);
-			articleLink.url = getParameterOrEmpty(citeWebTemplate, WikiConstants.PARAMETER_URL);
+			articleLink.accessDate = getParameterOrEmpty(citeWebTemplate, wikiConstants.accessDate());
+			articleLink.archiveDate = getParameterOrEmpty(citeWebTemplate, wikiConstants.archiveDate());
+			articleLink.archiveUrl = getParameterOrEmpty(citeWebTemplate, wikiConstants.archiveUrl());
+			articleLink.articleDate = getParameterOrEmpty(citeWebTemplate, wikiConstants.date());
+			articleLink.author = getParameterOrEmpty(citeWebTemplate, wikiConstants.deadlink());
+			articleLink.title = getParameterOrEmpty(citeWebTemplate, wikiConstants.title());
+			articleLink.url = getParameterOrEmpty(citeWebTemplate, wikiConstants.url());
 
 			// strip local refs
 			if (StringUtils.contains(articleLink.url, "#"))
@@ -111,6 +122,10 @@ public class ArticleLinksCollector {
 		return links;
 	}
 
+	public Locale getLocale() {
+		return locale;
+	}
+
 	public boolean ignoreCite(PerArticleReport perArticleReport, ArticleLink articleLink) {
 
 		if (StringUtils.isEmpty(articleLink.url))
@@ -118,7 +133,7 @@ public class ArticleLinksCollector {
 
 		String url = articleLink.url;
 
-		Content deadlinkParameterValue = articleLink.template.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
+		Content deadlinkParameterValue = wikiConstants.deadlink(articleLink.template);
 		if (deadlinkParameterValue != null && StringUtils.isNotEmpty(deadlinkParameterValue.toString().trim())) {
 
 			if (perArticleReport != null)
@@ -127,7 +142,7 @@ public class ArticleLinksCollector {
 			return true;
 		}
 
-		Content archiveurlParameterValue = articleLink.template.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
+		Content archiveurlParameterValue = wikiConstants.archiveUrl(articleLink.template);
 		if (archiveurlParameterValue != null && StringUtils.isNotEmpty(archiveurlParameterValue.toString().trim())) {
 
 			if (perArticleReport != null)
@@ -137,5 +152,10 @@ public class ArticleLinksCollector {
 		}
 
 		return false;
+	}
+
+	public void setLocale(Locale locale) {
+		this.locale = locale;
+		this.wikiConstants = WikiConstants.get(locale);
 	}
 }

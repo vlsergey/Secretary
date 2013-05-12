@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.cache;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +26,15 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public StoredRevision getOrCreate(Revision withContent) {
-		final Long id = withContent.getId();
+	public StoredRevision getOrCreate(Locale locale, Revision withContent) {
 
-		StoredRevision revisionImpl = getRevisionById(id);
+		final StoredRevisionPk key = new StoredRevisionPk(locale, withContent.getId());
+		StoredRevision revisionImpl = getRevisionById(key);
 		if (revisionImpl == null) {
 			revisionImpl = new StoredRevision();
-			revisionImpl.setId(id);
+			revisionImpl.setKey(key);
 			template.persist(revisionImpl);
-			revisionImpl = template.get(StoredRevision.class, id);
+			revisionImpl = template.get(StoredRevision.class, key);
 			// template.flush();
 		}
 
@@ -42,7 +43,7 @@ public class StoredRevisionDao {
 
 			StoredPage storedPage;
 			if (revisionImpl.getPage() == null) {
-				storedPage = storedPageDao.getOrCreate(withContent.getPage());
+				storedPage = storedPageDao.getOrCreate(locale, withContent.getPage());
 				revisionImpl.setPage(storedPage);
 				flushRequired = true;
 			} else {
@@ -107,9 +108,14 @@ public class StoredRevisionDao {
 		return revisionImpl;
 	}
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public StoredRevision getRevisionById(Locale locale, Long revisionId) {
+		return getRevisionById(new StoredRevisionPk(locale, revisionId));
+	}
+
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
-	public StoredRevision getRevisionById(Long revisionId) {
-		return template.get(StoredRevision.class, revisionId);
+	public StoredRevision getRevisionById(StoredRevisionPk key) {
+		return template.get(StoredRevision.class, key);
 	}
 
 	public void setSessionFactory(SessionFactory sessionFactory) {
@@ -117,8 +123,8 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateCache(Revision withContent) {
-		getOrCreate(withContent);
+	public void updateCache(Locale locale, Revision withContent) {
+		getOrCreate(locale, withContent);
 	}
 
 	private boolean updateRequired(final Object newValue, final Object oldValue) {

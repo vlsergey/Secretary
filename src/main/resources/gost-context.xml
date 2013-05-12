@@ -4,10 +4,10 @@
 	   					   http://www.springframework.org/schema/beans/spring-beans.xsd">
 
 	<bean id="badLinkDao" class="org.wikipedia.vlsergey.secretary.gost.BadLinkDao"
-		p:sessionFactory-ref="ruWikiSessionFactory" />
+		p:sessionFactory-ref="sessionFactory" />
 
 	<bean id="protectGostRuEntryDao"
 		class="org.wikipedia.vlsergey.secretary.gost.ProtectGostRuEntryDao"
-		p:sessionFactory-ref="ruWikiSessionFactory" />
+		p:sessionFactory-ref="sessionFactory" />
 
 </beans>

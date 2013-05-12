@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.text.ParseException;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
@@ -28,8 +29,8 @@ public class ExpandTemplates extends AbstractAPIAction {
 	public ExpandTemplates(boolean bot, String text, String title, boolean generatexml, boolean includecomments) {
 		super(bot);
 
-		log.info("expandTemplates( '" + StringUtils.substring(text, 0, 16) + "...' ; " + title + "; " + generatexml
-				+ "; " + includecomments + ")");
+		log.info("expandTemplates( '" + StringEscapeUtils.escapeJava(StringUtils.substring(text, 0, 32)) + "...' ; "
+				+ title + "; " + generatexml + "; " + includecomments + ")");
 
 		HttpPost postMethod = new HttpPost("/api.php");
 

@@ -4,17 +4,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpEntity;
@@ -29,7 +24,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
-import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 
 public class WebCiteArchiver {
@@ -338,8 +332,6 @@ public class WebCiteArchiver {
 	@Autowired
 	private HttpManager httpManager;
 
-	private MediaWikiBot mediaWikiBot;
-
 	public String archive(final String httpClientCode, final String url, final String title, final String author,
 			final String date) throws Exception {
 
@@ -377,10 +369,6 @@ public class WebCiteArchiver {
 		});
 	}
 
-	public MediaWikiBot getMediaWikiBot() {
-		return mediaWikiBot;
-	}
-
 	public String getStatus(final String httpClientCode, final String webCiteId) throws ClientProtocolException,
 			IOException {
 		HttpGet getMethod = new HttpGet("http://www.webcitation.org/query?returnxml=true&id=" + webCiteId);
@@ -414,55 +402,6 @@ public class WebCiteArchiver {
 			}
 		});
 
-	}
-
-	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
-		this.mediaWikiBot = mediaWikiBot;
-	}
-
-	public void updateIgnoringList() throws Exception {
-		updateIgnoringList(SKIP_ERRORS, "Участник:WebCite Archiver/IgnoreErrors");
-		updateIgnoringList(SKIP_NO_CACHE, "Участник:WebCite Archiver/IgnoreNoCache");
-		updateIgnoringList(SKIP_ARCHIVES, "Участник:WebCite Archiver/IgnoreSence");
-		updateIgnoringList(SKIP_TECH_LIMITS, "Участник:WebCite Archiver/IgnoreTechLimits");
-	}
-
-	private void updateIgnoringList(Set<String> hostsToIgnore, String pageName) throws Exception {
-		StringBuffer stringBuffer = new StringBuffer();
-
-		List<String> hosts = new ArrayList<String>(hostsToIgnore);
-		Collections.sort(hosts, new Comparator<String>() {
-
-			final Map<String, String> cache = new HashMap<String, String>();
-
-			@Override
-			public int compare(String o1, String o2) {
-
-				String s1 = inverse(o1);
-				String s2 = inverse(o2);
-
-				return s1.compareToIgnoreCase(s2);
-			}
-
-			private String inverse(String direct) {
-				String result = cache.get(direct);
-				if (result != null)
-					return result;
-
-				String[] splitted = StringUtils.split(direct, ".");
-				Collections.reverse(Arrays.asList(splitted));
-				result = StringUtils.join(splitted, ".");
-				cache.put(direct, result);
-				return result;
-			}
-		});
-
-		for (String hostName : hosts) {
-			stringBuffer.append("* " + hostName + "\n");
-		}
-
-		mediaWikiBot.writeContent(pageName, null, stringBuffer.toString(), null, "Update ignoring sites list", true,
-				false);
 	}
 
 }

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.time.DateFormatUtils;
@@ -34,6 +35,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class QueuedPageProcessor {
+
 	private static final Logger logger = LoggerFactory.getLogger(QueuedPageProcessor.class);
 
 	static boolean ignoreUrl(PerArticleReport perArticleReport, String url) {
@@ -65,7 +67,6 @@ public class QueuedPageProcessor {
 	@Autowired
 	private ArchivedLinkDao archivedLinkDao;
 
-	@Autowired
 	private ArticleLinksCollector articleLinksCollector;
 
 	@Autowired
@@ -73,6 +74,8 @@ public class QueuedPageProcessor {
 
 	@Autowired
 	private LinksQueuer linksQueuer;
+
+	private Locale locale;
 
 	private MediaWikiBot mediaWikiBot;
 
@@ -86,21 +89,25 @@ public class QueuedPageProcessor {
 
 	private WikiCache wikiCache;
 
+	private WikiConstants wikiConstants;
+
 	private boolean archive(Long pageId, Revision latestRevision, long selfPagePriority) throws Exception {
 		// linksQueuer.storeArchivedLinksFromArticle(pageId);
 
 		if (latestRevision == null)
 			return true;
 
-		if (latestRevision.getPage().getNamespace().longValue() != 0
-				&& !StringUtils.startsWithIgnoreCase(latestRevision.getPage().getTitle(),
-						"Википедия:Пресса о Википедии")) {
-			logger.info("Skip page #" + latestRevision.getPage().getId() + " ('" + latestRevision.getPage().getTitle()
-					+ "') because not an article");
-			return true;
+		if (latestRevision.getPage().getNamespace().longValue() != 0) {
+			if (!StringUtils.startsWithIgnoreCase(latestRevision.getPage().getTitle(), "Википедия:Пресса о Википедии")
+					&& !StringUtils.startsWithIgnoreCase(latestRevision.getPage().getTitle(),
+							"Вікіпедія:Публікації про Вікіпедію")) {
+				logger.info("Skip page #" + latestRevision.getPage().getId() + " ('"
+						+ latestRevision.getPage().getTitle() + "') because not an article");
+				return true;
+			}
 		}
 
-		String reportPage = "User:WebCite Archiver/" + DateFormatUtils.format(new Date(), "yyyyMMddHH");
+		String reportPage = "User:" + mediaWikiBot.getLogin() + "/" + DateFormatUtils.format(new Date(), "yyyyMMddHH");
 		String reportAnchor = Long.toString(pageId.longValue(), Character.MAX_RADIX);
 		String reportLink = reportPage + "#" + reportAnchor;
 
@@ -219,8 +226,7 @@ public class QueuedPageProcessor {
 			if (url.startsWith("http://www.gzt.ru/") || url.startsWith("http://gzt.ru/")) {
 				logger.warn("Dead project: " + url);
 				perArticleReport.dead(url, "проект закрыт");
-				articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text("project-closed"));
-
+				setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("project-closed"));
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
 			}
@@ -246,9 +252,7 @@ public class QueuedPageProcessor {
 				if (exc.getCause() instanceof CircularRedirectException) {
 					logger.warn("Dead link: " + url + " — " + exc);
 					perArticleReport.dead(url, "циклическая переадресация (circular redirect)");
-
-					articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text(
-							"circular-redirect"));
+					setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("circular-redirect"));
 					articleLink.template.format(multilineFormat, multilineFormat);
 					continue;
 				}
@@ -273,7 +277,7 @@ public class QueuedPageProcessor {
 
 				logger.warn("Dead link: " + url + " — " + exc);
 				perArticleReport.dead(url, "сервер не найден (uknown host)");
-				articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text("unknown-host"));
+				setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("unknown-host"));
 
 				articleLink.template.format(multilineFormat, multilineFormat);
 				continue;
@@ -306,7 +310,7 @@ public class QueuedPageProcessor {
 				logger.warn("Dead link: " + url + " — " + statusLine);
 				perArticleReport.dead(url, "страница недоступна (" + statusLine + ")");
 
-				articleLink.template.setParameterValue(WikiConstants.PARAMETER_DEADLINK, new Text("" + statusCode));
+				setParameterValue(articleLink.template, wikiConstants.deadlink(), new Text("" + statusCode));
 
 				articleLink.template.format(multilineFormat, multilineFormat);
 
@@ -323,7 +327,7 @@ public class QueuedPageProcessor {
 	}
 
 	public void clearQueue() {
-		queuedPageDao.removeAll();
+		queuedPageDao.removeAll(getLocale());
 	}
 
 	private List<ArticleLink> getAllSupportedLinks(PerArticleReport perArticleReport, ArticleFragment dom) {
@@ -334,6 +338,14 @@ public class QueuedPageProcessor {
 			links.add(link);
 		}
 		return links;
+	}
+
+	public ArticleLinksCollector getArticleLinksCollector() {
+		return articleLinksCollector;
+	}
+
+	public Locale getLocale() {
+		return locale;
 	}
 
 	public MediaWikiBot getMediaWikiBot() {
@@ -350,12 +362,12 @@ public class QueuedPageProcessor {
 
 	boolean ignoreCite(PerArticleReport perArticleReport, Template citeWebTemplate) {
 
-		Content urlParameter = citeWebTemplate.getParameterValue(WikiConstants.PARAMETER_URL);
+		Content urlParameter = wikiConstants.url(citeWebTemplate);
 		if (urlParameter == null || StringUtils.isEmpty(urlParameter.toString().trim()))
 			return true;
 		String url = urlParameter.toString().trim();
 
-		Content deadlinkParameter = citeWebTemplate.getParameterValue(WikiConstants.PARAMETER_DEADLINK);
+		Content deadlinkParameter = wikiConstants.deadlink(citeWebTemplate);
 		if (deadlinkParameter != null && StringUtils.isNotEmpty(deadlinkParameter.toString().trim())) {
 
 			if (perArticleReport != null)
@@ -364,7 +376,7 @@ public class QueuedPageProcessor {
 			return true;
 		}
 
-		Content archiveurlParameter = citeWebTemplate.getParameterValue(WikiConstants.PARAMETER_ARCHIVEURL);
+		Content archiveurlParameter = WikiConstants.getParameterValue(citeWebTemplate, wikiConstants.archiveUrl());
 		if (archiveurlParameter != null && StringUtils.isNotEmpty(archiveurlParameter.toString().trim())) {
 
 			if (perArticleReport != null)
@@ -396,9 +408,8 @@ public class QueuedPageProcessor {
 		if (ArchivedLink.STATUS_SUCCESS.equals(status)) {
 			perArticleReport.archived(archivedLink.getAccessUrl(), archiveUrl);
 
-			articleLink.template.setParameterValue(WikiConstants.PARAMETER_ARCHIVEURL, new Text(archiveUrl));
-
-			articleLink.template.setParameterValue(WikiConstants.PARAMETER_ARCHIVEDATE,
+			setParameterValue(articleLink.template, wikiConstants.archiveUrl(), new Text(archiveUrl));
+			setParameterValue(articleLink.template, wikiConstants.archiveDate(),
 					new Text(archivedLink.getArchiveDate()));
 
 			articleLink.template.format(multilineFormat, multilineFormat);
@@ -435,13 +446,13 @@ public class QueuedPageProcessor {
 	}
 
 	private boolean runImpl() throws Exception {
-		List<QueuedPage> queuedPages = queuedPageDao.getPagesFromQueue();
+		List<QueuedPage> queuedPages = queuedPageDao.getPagesFromQueue(getLocale());
 		if (queuedPages == null || queuedPages.isEmpty())
 			return true;
 
 		Map<Long, QueuedPage> qPages = new LinkedHashMap<Long, QueuedPage>();
 		for (QueuedPage queuedPage : queuedPages) {
-			qPages.put(queuedPage.getId(), queuedPage);
+			qPages.put(queuedPage.getPageId(), queuedPage);
 		}
 		Iterable<Long> allIds = new ArrayList<Long>(qPages.keySet());
 
@@ -451,9 +462,9 @@ public class QueuedPageProcessor {
 			qPages.remove(revision.getPage().getId());
 
 			if (System.currentTimeMillis() - lastStatUpdate > DateUtils.MILLIS_PER_HOUR) {
-				final long pages = queuedPageDao.findCount();
+				final long pages = queuedPageDao.findCount(getLocale());
 				final long links = queuedLinkDao.findCount();
-				mediaWikiBot.writeContent("Участник:WebCite Archiver/Statistics", null,
+				mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/Statistics", null,
 						"На момент обновления статистики "
 								+ "({{subst:CURRENTTIME}} {{subst:CURRENTMONTHABBREV}}, {{subst:CURRENTDAY2}}) "
 								+ "в очереди находилось '''" + pages + "''' страниц и '''" + links + "''' ссылок",
@@ -463,31 +474,57 @@ public class QueuedPageProcessor {
 
 			boolean complete = false;
 			try {
-				complete = archive(queuedPage.getId(), revision, queuedPage.getPriority());
+				complete = archive(queuedPage.getPageId(), revision, queuedPage.getPriority());
 			} catch (Exception exc) {
-				logger.error("Unable to process page #" + queuedPage.getId() + ": " + exc, exc);
+				logger.error("Unable to process page #" + queuedPage.getKey() + ": " + exc, exc);
 			} finally {
 				if (complete) {
 					queuedPageDao.removePageFromQueue(queuedPage);
 					continue;
 				}
 
-				queuedPageDao.addPageToQueue(queuedPage.getId(), queuedPage.getPriority(), System.currentTimeMillis());
+				queuedPageDao.addPageToQueue(getLocale(), queuedPage.getPageId(), queuedPage.getPriority(),
+						System.currentTimeMillis());
 			}
 		}
 
 		for (QueuedPage queuedPage : qPages.values()) {
 			// no last revision
-			logger.info("Remove page #" + queuedPage.getId()
+			logger.info("Remove page #" + queuedPage.getKey()
 					+ " from queue because no latest revision were found for it");
 			queuedPageDao.removePageFromQueue(queuedPage);
 		}
 
-		return queuedPageDao.getPagesFromQueue().isEmpty();
+		return queuedPageDao.getPagesFromQueue(getLocale()).isEmpty();
+	}
+
+	public void setArticleLinksCollector(ArticleLinksCollector articleLinksCollector) {
+		this.articleLinksCollector = articleLinksCollector;
+	}
+
+	public void setLocale(Locale locale) {
+		this.locale = locale;
+		this.wikiConstants = WikiConstants.get(locale);
 	}
 
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
 		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	private void setParameterValue(Template template, String[] parameterNames, Content content) {
+		if (parameterNames.length == 0) {
+			throw new UnsupportedOperationException("Not supported parameter");
+		}
+
+		for (String possibleParameterName : parameterNames) {
+			Content oldValue = template.getParameterValue(possibleParameterName);
+			if (oldValue != null) {
+				template.setParameterValue(possibleParameterName, content);
+				return;
+			}
+		}
+
+		template.setParameterValue(parameterNames[0], content);
 	}
 
 	public void setWebCiteParser(WebCiteParser webCiteParser) {

@@ -21,8 +21,8 @@ package org.wikipedia.vlsergey.secretary.cache;
 import java.util.Date;
 
 import javax.persistence.Column;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
 import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Transient;
@@ -41,7 +41,7 @@ public class StoredRevision implements Revision {
 
 	private byte[] content = null;
 
-	private Long id = null;
+	private StoredRevisionPk key;
 
 	private Boolean minor;
 
@@ -90,9 +90,14 @@ public class StoredRevision implements Revision {
 	}
 
 	@Override
-	@Id
+	@Transient
 	public Long getId() {
-		return id;
+		return getKey().getRevisionId();
+	}
+
+	@EmbeddedId
+	public StoredRevisionPk getKey() {
+		return key;
 	}
 
 	@Override
@@ -153,8 +158,8 @@ public class StoredRevision implements Revision {
 		setBinaryContent(IoUtils.stringToBinary(content));
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public void setKey(StoredRevisionPk key) {
+		this.key = key;
 	}
 
 	public void setMinor(Boolean minor) {

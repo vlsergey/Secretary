@@ -3,6 +3,7 @@ package org.wikipedia.vlsergey.secretary.cache;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -25,10 +26,16 @@ public class WikiCache {
 
 	private static final Logger logger = LoggerFactory.getLogger(WikiCache.class);
 
+	private Locale locale;
+
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
 	private StoredRevisionDao storedRevisionDao;
+
+	public Locale getLocale() {
+		return locale;
+	}
 
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
@@ -67,7 +74,7 @@ public class WikiCache {
 				for (Long pageId : pageIdToLatestRevision.keySet()) {
 					Long latestRevisionId = pageIdToLatestRevision.get(pageId);
 
-					Revision stored = storedRevisionDao.getRevisionById(latestRevisionId);
+					Revision stored = storedRevisionDao.getRevisionById(getLocale(), latestRevisionId);
 					if (isCacheRecordValid(stored)) {
 						resultMap.put(latestRevisionId, stored);
 					} else {
@@ -78,7 +85,7 @@ public class WikiCache {
 				for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, RevisionPropery.IDS,
 						RevisionPropery.TIMESTAMP, RevisionPropery.CONTENT).apply(toLoad)) {
 					// update cache
-					revision = storedRevisionDao.getOrCreate(revision);
+					revision = storedRevisionDao.getOrCreate(getLocale(), revision);
 					resultMap.put(revision.getId(), revision);
 				}
 
@@ -108,7 +115,7 @@ public class WikiCache {
 		for (Revision revision : mediaWikiBot.queryRevisionsByPageIds(pageIds, RevisionPropery.IDS,
 				RevisionPropery.TIMESTAMP)) {
 			// update info in DB
-			revision = storedRevisionDao.getOrCreate(revision);
+			revision = storedRevisionDao.getOrCreate(getLocale(), revision);
 
 			pageIdToLatestRevision.put(revision.getPage().getId(), revision.getId());
 		}
@@ -123,7 +130,7 @@ public class WikiCache {
 				continue;
 			}
 
-			Revision stored = storedRevisionDao.getRevisionById(latestRevisionId);
+			Revision stored = storedRevisionDao.getRevisionById(getLocale(), latestRevisionId);
 			if (isCacheRecordValid(stored)) {
 				resultMap.put(latestRevisionId, stored);
 			} else {
@@ -134,7 +141,7 @@ public class WikiCache {
 		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, RevisionPropery.IDS,
 				RevisionPropery.TIMESTAMP, RevisionPropery.CONTENT).apply(toLoad)) {
 			// update cache
-			revision = storedRevisionDao.getOrCreate(revision);
+			revision = storedRevisionDao.getOrCreate(getLocale(), revision);
 			resultMap.put(revision.getId(), revision);
 		}
 
@@ -174,7 +181,7 @@ public class WikiCache {
 		if (latest == null)
 			return null;
 
-		Revision stored = storedRevisionDao.getOrCreate(latest);
+		Revision stored = storedRevisionDao.getOrCreate(getLocale(), latest);
 		if (isCacheRecordValid(stored))
 			return stored;
 
@@ -185,7 +192,7 @@ public class WikiCache {
 			// deleted
 			return null;
 
-		storedRevisionDao.getOrCreate(withContent);
+		storedRevisionDao.getOrCreate(getLocale(), withContent);
 		return withContent;
 	}
 
@@ -198,7 +205,7 @@ public class WikiCache {
 		if (latest == null)
 			return null;
 
-		Revision stored = storedRevisionDao.getOrCreate(latest);
+		Revision stored = storedRevisionDao.getOrCreate(getLocale(), latest);
 		if (isCacheRecordValid(stored))
 			return stored;
 
@@ -228,7 +235,7 @@ public class WikiCache {
 			// deleted or not found
 			return null;
 
-		Revision stored = storedRevisionDao.getOrCreate(latest);
+		Revision stored = storedRevisionDao.getOrCreate(getLocale(), latest);
 		return stored.getContent();
 	}
 
@@ -236,7 +243,7 @@ public class WikiCache {
 	public String queryRevisionContent(Long revisionId) throws JwbfException {
 		logger.debug("queryLatestRevisionContent(" + revisionId + ")");
 
-		Revision stored = storedRevisionDao.getRevisionById(revisionId);
+		Revision stored = storedRevisionDao.getRevisionById(getLocale(), revisionId);
 		if (stored != null && StringUtils.isNotEmpty(stored.getContent()))
 			return stored.getContent();
 
@@ -247,8 +254,12 @@ public class WikiCache {
 			// deleted
 			return null;
 
-		storedRevisionDao.getOrCreate(withContent);
+		storedRevisionDao.getOrCreate(getLocale(), withContent);
 		return withContent.getContent();
+	}
+
+	public void setLocale(Locale locale) {
+		this.locale = locale;
 	}
 
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {

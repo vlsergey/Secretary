@@ -1,0 +1,53 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	   	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+	   					   ">
+
+	<bean id="ukWikipediaWebCiteBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot">
+		<property name="bot" value="1" />
+		<property name="login" value="WebCite Archiver" />
+		<property name="password" value="#{systemProperties.WebCiteArchiverPassword}" />
+		<property name="site" value="http://uk.wikipedia.org/w" />
+	</bean>
+
+	<bean id="ukLinksQueuer" class="org.wikipedia.vlsergey.secretary.webcite.LinksQueuer">
+		<property name="articleLinksCollector" ref="ukArticleLinksCollector" />
+		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
+		<property name="webCiteParser" ref="ukWebCiteParser" />
+		<property name="wikiCache" ref="ukWikipediaCache" />
+	</bean>
+
+	<bean id="ukWebCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
+		<property name="xmlCache" ref="ukWikipediaXmlCache" />
+	</bean>
+
+	<bean id="ukArticleLinksCollector"
+		class="org.wikipedia.vlsergey.secretary.webcite.ArticleLinksCollector">
+		<property name="locale" value="uk" />
+	</bean>
+
+	<bean id="ukQueuedPageProcessor"
+		class="org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor">
+		<property name="articleLinksCollector" ref="ukArticleLinksCollector" />
+		<property name="locale" value="uk" />
+		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
+		<property name="wikiCache" ref="ukWikipediaCache" />
+		<property name="webCiteParser" ref="ukWebCiteParser" />
+	</bean>
+
+	<bean id="ukWebCiteJob" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteJob">
+		<property name="locale" value="uk" />
+		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
+	</bean>
+
+	<!-- <bean id="ruWebCiteErrorCleanup" -->
+	<!-- class="org.wikipedia.vlsergey.secretary.webcite.WebCiteErrorCleanup"> -->
+	<!-- <property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" /> -->
+	<!-- <property name="wikiCache" ref="ruWikipediaCache" /> -->
+	<!-- <property name="webCiteParser" ref="webCiteParser" /> -->
+	<!-- </bean> -->
+
+</beans>

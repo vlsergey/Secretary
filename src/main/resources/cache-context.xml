@@ -8,41 +8,31 @@
 
 	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.cache" />
 
-	<bean id="ruWikipediaCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
-		<property name="mediaWikiBot" ref="ruWikipediaBot" />
-	</bean>
-
-	<bean id="ruWikipediaXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
-		p:sessionFactory-ref="ruWikiSessionFactory">
-		<property name="mediaWikiBot" ref="ruWikipediaBot" />
-	</bean>
-
 	<bean id="storedPageDao" class="org.wikipedia.vlsergey.secretary.cache.StoredPageDao"
-		p:sessionFactory-ref="ruWikiSessionFactory" />
+		p:sessionFactory-ref="sessionFactory" />
 
 	<bean id="storedRevisionDao"
 		class="org.wikipedia.vlsergey.secretary.cache.StoredRevisionDao"
-		p:sessionFactory-ref="ruWikiSessionFactory" />
-
+		p:sessionFactory-ref="sessionFactory" />
 
 	<bean id="transactionManager"
 		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
-		<property name="sessionFactory" ref="ruWikiSessionFactory" />
+		<property name="sessionFactory" ref="sessionFactory" />
 	</bean>
 
 	<bean id="hibernateInterceptor" class="org.springframework.orm.hibernate3.HibernateInterceptor">
-		<property name="sessionFactory" ref="ruWikiSessionFactory" />
+		<property name="sessionFactory" ref="sessionFactory" />
 	</bean>
 
-	<bean id="ruWikiCacheDataSource"
+	<bean id="dataSource"
 		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
 		<property name="driverClassName" value="org.apache.derby.jdbc.EmbeddedDriver" />
 		<property name="url" value="jdbc:derby:secretarydb;create=true" />
 	</bean>
 
-	<bean id="ruWikiSessionFactory"
+	<bean id="sessionFactory"
 		class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
-		<property name="dataSource" ref="ruWikiCacheDataSource" />
+		<property name="dataSource" ref="dataSource" />
 		<property name="schemaUpdate" value="true" />
 		<property name="configLocation" value="hibernate.cfg.xml" />
 
@@ -59,8 +49,7 @@
 	</bean>
 
 	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
-		<property name="sessionFactory" ref="ruWikiSessionFactory" />
+		<property name="sessionFactory" ref="sessionFactory" />
 	</bean>
-
 
 </beans>

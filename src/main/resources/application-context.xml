@@ -21,18 +21,16 @@
 	<task:executor id="myExecutor" pool-size="5" />
 	<task:scheduler id="myScheduler" pool-size="10" />
 
-	<import resource="books-context.xml" />
+	<!-- <import resource="books-context.xml" /> -->
 	<import resource="bot-context.xml" />
+	<import resource="bot-uk-context.xml" />
 	<import resource="cache-context.xml" />
+	<import resource="cache-uk-context.xml" />
 	<!-- <import resource="gost-context.xml" /> -->
 	<!-- <import resource="watch-online-context.xml" /> -->
 	<!-- <import resource="patrolauto-context.xml" /> -->
-	<import resource="patrollists-context.xml" />
+	<!-- <import resource="patrollists-context.xml" /> -->
 	<import resource="webcite-context.xml" />
-
-
-	<bean id="webCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
-		<property name="xmlCache" ref="ruWikipediaXmlCache" />
-	</bean>
+	<import resource="webcite-uk-context.xml" />
 
 </beans>

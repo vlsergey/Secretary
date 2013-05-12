@@ -1,43 +1,54 @@
 package org.wikipedia.vlsergey.secretary.webcite;
 
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.Transient;
 
 import org.wikipedia.vlsergey.secretary.functions.Function;
 
 @Entity
 public class QueuedPage {
 
-	public static Function<QueuedPage, Long> getIdF() {
+	public static Function<QueuedPage, Long> getPageIdF() {
 		return new Function<QueuedPage, Long>() {
 			@Override
 			public Long apply(QueuedPage a) {
-				return a.getId();
+				return a.getKey().getPageId();
 			}
 		};
 	}
 
-	private Long id;
+	private QueuedPagePk key;
 
 	private long lastCheckTimestamp;
 
 	private long priority;
 
-	@Id
-	public Long getId() {
-		return id;
+	@EmbeddedId
+	public QueuedPagePk getKey() {
+		return key;
+	}
+
+	@Transient
+	public String getLang() {
+		return key.getLang();
 	}
 
 	public long getLastCheckTimestamp() {
 		return lastCheckTimestamp;
 	}
 
+	@Transient
+	public Long getPageId() {
+		return key.getPageId();
+	}
+
 	public long getPriority() {
 		return priority;
 	}
 
-	public void setId(Long id) {
-		this.id = id;
+	public void setKey(QueuedPagePk key) {
+		this.key = key;
 	}
 
 	public void setLastCheckTimestamp(long lastCheckTimestamp) {

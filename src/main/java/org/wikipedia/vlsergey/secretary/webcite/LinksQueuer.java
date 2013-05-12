@@ -16,7 +16,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
-import org.wikipedia.vlsergey.secretary.dom.parser.Parser;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
@@ -24,12 +23,12 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class LinksQueuer {
+
 	private static final Logger logger = LoggerFactory.getLogger(LinksQueuer.class);
 
 	@Autowired
 	private ArchivedLinkDao archivedLinkDao;
 
-	@Autowired
 	private ArticleLinksCollector articleLinksCollector;
 
 	private MediaWikiBot mediaWikiBot;
@@ -40,10 +39,20 @@ public class LinksQueuer {
 	@Autowired
 	private WebCiteArchiver webCiteArchiver;
 
+	private WebCiteParser webCiteParser;
+
 	private WikiCache wikiCache;
+
+	public ArticleLinksCollector getArticleLinksCollector() {
+		return articleLinksCollector;
+	}
 
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
+	}
+
+	public WebCiteParser getWebCiteParser() {
+		return webCiteParser;
 	}
 
 	public WikiCache getWikiCache() {
@@ -96,8 +105,16 @@ public class LinksQueuer {
 		archivedLinkDao.persist(archivedLink);
 	}
 
+	public void setArticleLinksCollector(ArticleLinksCollector articleLinksCollector) {
+		this.articleLinksCollector = articleLinksCollector;
+	}
+
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
 		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	public void setWebCiteParser(WebCiteParser webCiteParser) {
+		this.webCiteParser = webCiteParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {
@@ -151,7 +168,7 @@ public class LinksQueuer {
 
 	@Transactional(propagation = Propagation.SUPPORTS)
 	public void storeArchivedLinksFromArticleContent(String latestContent) throws Exception {
-		ArticleFragment articleFragment = new Parser().parse(latestContent);
+		ArticleFragment articleFragment = webCiteParser.parse(latestContent);
 		List<ArticleLink> allLinks = articleLinksCollector.getAllLinks(articleFragment);
 
 		// for now - just save...
