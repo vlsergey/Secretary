@@ -124,18 +124,18 @@ public class QueuedLinkDao {
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
-	public void reducePriority(QueuedLink queuedLink) {
-		log.info("Reducing priority of queued link '" + queuedLink.getUrl() + "' ('" + queuedLink.getAccessDate()
+	public void reducePriority(QueuedLink exampleLink) {
+		log.info("Reducing priority of queued link '" + exampleLink.getUrl() + "' ('" + exampleLink.getAccessDate()
 				+ "')...");
 
-		template.update(queuedLink);
-		final long oldPriority = queuedLink.getPriority();
+		template.update(exampleLink);
+		final long oldPriority = exampleLink.getPriority();
 		if (oldPriority > 2) {
-			queuedLink.setPriority(oldPriority / 2);
+			exampleLink.setPriority(oldPriority / 2);
 		} else if (oldPriority >= 0) {
-			queuedLink.setPriority(-1);
+			exampleLink.setPriority(-1);
 		} else {
-			queuedLink.setPriority(oldPriority - 1);
+			exampleLink.setPriority(oldPriority - 1);
 		}
 	}
 

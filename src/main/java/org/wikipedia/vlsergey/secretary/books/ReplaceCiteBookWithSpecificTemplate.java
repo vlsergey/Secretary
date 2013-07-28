@@ -34,7 +34,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
-import org.wikipedia.vlsergey.secretary.webcite.WebCiteParser;
+import org.wikipedia.vlsergey.secretary.webcite.RefAwareParser;
 
 public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
@@ -291,7 +291,7 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	private MediaWikiBot mediaWikiBot;
 
-	private WebCiteParser webCiteParser;
+	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -299,8 +299,8 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 		return mediaWikiBot;
 	}
 
-	public WebCiteParser getWebCiteParser() {
-		return webCiteParser;
+	public RefAwareParser getRefAwareParser() {
+		return refAwareParser;
 	}
 
 	public WikiCache getWikiCache() {
@@ -308,7 +308,7 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 	}
 
 	private void process(Revision revision) throws Exception {
-		ArticleFragment fragment = getWebCiteParser().parse(revision.getXml());
+		ArticleFragment fragment = getRefAwareParser().parse(revision.getXml());
 		String source = fragment.toWiki(false);
 
 		final LinkedHashMap<String, List<Template>> allTemplates = fragment.getAllTemplates();
@@ -358,8 +358,8 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	public void setWebCiteParser(WebCiteParser webCiteParser) {
-		this.webCiteParser = webCiteParser;
+	public void setRefAwareParser(RefAwareParser refAwareParser) {
+		this.refAwareParser = refAwareParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {
@@ -443,7 +443,7 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 		String isbn2 = StringUtils.trimToEmpty(шаблон.getParameterValue("isbn") != null ? шаблон.getParameterValue(
 				"isbn").toWiki(true) : null);
-		if (isbn2 != null && isbn1.toLowerCase().startsWith("isbn"))
+		if (isbn2 != null && isbn2.toLowerCase().startsWith("isbn"))
 			isbn2 = StringUtils.trimToEmpty(isbn2.substring(4));
 
 		String isbn = StringUtils.trimToNull(isbn1 + isbn2);

@@ -35,7 +35,7 @@ public class DateNormalizer {
 				"сентября", "октября", "ноября", "декабря" });
 
 		DateFormatSymbols uk = new DateFormatSymbols(Locales.UK_UK);
-		uk.setMonths(new String[] { "cічня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня",
+		uk.setMonths(new String[] { "січня", "лютого", "березня", "квітня", "травня", "червня", "липня", "серпня",
 				"вересня", "жовтня", "листопада", "грудня" });
 
 		sdf_ddMMMMMyyyy_RU.setDateFormatSymbols(ru);
@@ -57,8 +57,23 @@ public class DateNormalizer {
 		nonNormilizedDate = nonNormilizedDate.replaceAll("&nbsp;", " ");
 		nonNormilizedDate = nonNormilizedDate.replaceAll("  ", " ");
 
+		nonNormilizedDate = nonNormilizedDate.replaceAll("\\{\\{[Nn]obr\\|([^\\}\\|]*)\\}\\}", "$1");
+		nonNormilizedDate = nonNormilizedDate.replaceAll("\\{\\{[Nn]owrap\\|([^\\}\\|]*)\\}\\}", "$1");
+		nonNormilizedDate = nonNormilizedDate.replaceAll("\\{\\{[Ss]\\|([^\\}\\|]*)\\}\\}", "$1");
+
+		nonNormilizedDate = nonNormilizedDate.replaceAll(
+				"\\{\\{[Ss]tart date\\|([^\\}\\|]*)\\|([^\\}\\|]*)\\|([^\\}\\|]*)(\\|df=y)?\\}\\}", "$1-$2-$3");
+		nonNormilizedDate = nonNormilizedDate.replaceAll(
+				"\\{\\{[Dd]ate\\|([^\\}\\|]*)\\|([^\\}\\|]*)\\|([^\\}\\|]*)\\}\\}", "$3-$2-$1");
+		nonNormilizedDate = nonNormilizedDate.replaceAll(
+				"\\{\\{[Пп]роверено\\|([^\\}\\|]*)\\|([^\\}\\|]*)\\|([^\\}\\|]*)\\}\\}", "$3-$2-$1");
+
 		if (nonNormilizedDate.matches("^\\s*[0-9][0-9][0-9][0-9]\\-[0-9][0-9]?\\-[0-9][0-9]?\\s*$")) {
-			return StringUtils.trim(nonNormilizedDate);
+			try {
+				return yyyyMMMMdd.format(yyyyMMMMdd.parse(StringUtils.trim(nonNormilizedDate)));
+			} catch (ParseException e) {
+				return nonNormilizedDate;
+			}
 		}
 
 		try {

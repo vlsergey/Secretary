@@ -43,6 +43,12 @@ public class ArchivedLinkDao {
 				StringUtils.trimToEmpty(url));
 	}
 
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public long findCountWithArchiveResult(String archiveResult) {
+		return ((Number) template.find("SELECT COUNT(links) FROM ArchivedLink links WHERE archiveResult=?",
+				archiveResult).get(0)).longValue();
+	}
+
 	@SuppressWarnings("unchecked")
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public ArchivedLink findNonBrokenLink(String accessUrl, String accessDate) {

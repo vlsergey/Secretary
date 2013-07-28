@@ -140,6 +140,10 @@ enum WikiConstants {
 		return getParameterValue(template, deadlink());
 	}
 
+	String template() {
+		return "cite web";
+	}
+
 	abstract String[] title();
 
 	abstract String[] url();

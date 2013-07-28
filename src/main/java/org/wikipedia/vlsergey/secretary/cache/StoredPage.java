@@ -17,13 +17,11 @@
  */
 package org.wikipedia.vlsergey.secretary.cache;
 
-import java.util.List;
 import java.util.Set;
 
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 
 import org.wikipedia.vlsergey.secretary.jwpf.model.AbstractPage;
@@ -38,8 +36,6 @@ public class StoredPage extends AbstractPage {
 	private Boolean missing = false;
 
 	private Integer namespace;
-
-	private List<StoredRevision> revisions;
 
 	private String title;
 
@@ -71,12 +67,6 @@ public class StoredPage extends AbstractPage {
 	}
 
 	@Override
-	@OneToMany
-	public List<StoredRevision> getRevisions() {
-		return revisions;
-	}
-
-	@Override
 	public String getTitle() {
 		return title;
 	}
@@ -95,10 +85,6 @@ public class StoredPage extends AbstractPage {
 
 	public void setNamespace(Integer namespace) {
 		this.namespace = namespace;
-	}
-
-	public void setRevisions(List<StoredRevision> revisions) {
-		this.revisions = revisions;
 	}
 
 	public void setTitle(String title) {

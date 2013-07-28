@@ -6,7 +6,7 @@ import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Extension;
 import org.wikipedia.vlsergey.secretary.dom.parser.XmlParser;
 
-public class WebCiteParser extends XmlParser {
+public class RefAwareParser extends XmlParser {
 
 	private XmlCache xmlCache;
 

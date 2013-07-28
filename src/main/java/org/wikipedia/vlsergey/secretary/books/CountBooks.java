@@ -40,7 +40,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
-import org.wikipedia.vlsergey.secretary.webcite.WebCiteParser;
+import org.wikipedia.vlsergey.secretary.webcite.RefAwareParser;
 
 @Component
 public class CountBooks implements Runnable {
@@ -49,7 +49,7 @@ public class CountBooks implements Runnable {
 
 	private MediaWikiBot mediaWikiBot;
 
-	private WebCiteParser webCiteParser;
+	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -120,8 +120,8 @@ public class CountBooks implements Runnable {
 		return mediaWikiBot;
 	}
 
-	public WebCiteParser getWebCiteParser() {
-		return webCiteParser;
+	public RefAwareParser getRefAwareParser() {
+		return refAwareParser;
 	}
 
 	public WikiCache getWikiCache() {
@@ -153,7 +153,7 @@ public class CountBooks implements Runnable {
 					}
 				}
 
-				ArticleFragment article = getWebCiteParser().parse(xmlContent);
+				ArticleFragment article = getRefAwareParser().parse(xmlContent);
 
 				Map<String, List<Template>> allTemplates = article.getAllTemplates();
 
@@ -255,8 +255,8 @@ public class CountBooks implements Runnable {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	public void setWebCiteParser(WebCiteParser webCiteParser) {
-		this.webCiteParser = webCiteParser;
+	public void setRefAwareParser(RefAwareParser refAwareParser) {
+		this.refAwareParser = refAwareParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {

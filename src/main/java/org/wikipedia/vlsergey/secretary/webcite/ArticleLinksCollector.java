@@ -14,6 +14,7 @@ import org.wikipedia.vlsergey.secretary.dom.AbstractContainer;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.utils.DateNormalizer;
+import org.wikipedia.vlsergey.secretary.webcite.lists.SkipReason;
 
 public class ArticleLinksCollector {
 
@@ -34,50 +35,14 @@ public class ArticleLinksCollector {
 		return StringUtils.trimToEmpty(value.toWiki(true));
 	}
 
-	static boolean isIgnoreHost(PerArticleReport perArticleReport, String url, String host) {
+	static boolean isIgnoreHost(PerArticleReport perArticleReport, URI uri) {
 
-		if (WebCiteArchiver.SKIP_BLACKLISTED.contains(host)) {
-			logger.debug("URL " + url + " skipped because some of it's URLs are blacklisted on WebCite");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreBlacklisted(url);
-
-			return true;
-		}
-
-		if (WebCiteArchiver.SKIP_ERRORS.contains(host)) {
-			logger.debug("URL " + url + " skipped due to usual errors of WebCite leading to undeadable text");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreTechLimits(url);
-
-			return true;
-		}
-
-		if (WebCiteArchiver.SKIP_TECH_LIMITS.contains(host)) {
-			logger.debug("URL " + url + " skipped due to technical limitatios of WebCite");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreTechLimits(url);
-
-			return true;
-		}
-
-		if (WebCiteArchiver.SKIP_NO_CACHE.contains(host)) {
-			logger.debug("URL " + url + " skipped because pages on this site usually have 'no-cache' tag");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreNoCache(url);
-
-			return true;
-		}
-
-		if (WebCiteArchiver.SKIP_ARCHIVES.contains(host)) {
-			logger.debug("URL " + url + " skipped (are u serious?)");
-
-			if (perArticleReport != null)
-				perArticleReport.skippedIgnoreSence(url);
-
+		SkipReason skipReason = SkipReason.getSkipReason(uri);
+		if (skipReason != null) {
+			logger.debug(skipReason.getConsoleDebugLogString(uri));
+			if (perArticleReport != null) {
+				perArticleReport.skippedByUri(uri, skipReason);
+			}
 			return true;
 		}
 

@@ -29,7 +29,7 @@ public class WebCiteErrorCleanup {
 
 	private MediaWikiBot mediaWikiBot;
 
-	private WebCiteParser webCiteParser;
+	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -47,7 +47,7 @@ public class WebCiteErrorCleanup {
 
 		for (Revision revision : wikiCache.queryLatestContentByPageIds(pageIds)) {
 			try {
-				ArticleFragment article = webCiteParser.parse(revision.getXml());
+				ArticleFragment article = refAwareParser.parse(revision.getXml());
 				List<Template> templates = article.getAllTemplates().get("cite web");
 				if (templates == null) {
 					continue;
@@ -82,8 +82,8 @@ public class WebCiteErrorCleanup {
 		return mediaWikiBot;
 	}
 
-	public WebCiteParser getWebCiteParser() {
-		return webCiteParser;
+	public RefAwareParser getRefAwareParser() {
+		return refAwareParser;
 	}
 
 	public WikiCache getWikiCache() {
@@ -94,8 +94,8 @@ public class WebCiteErrorCleanup {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	public void setWebCiteParser(WebCiteParser webCiteParser) {
-		this.webCiteParser = webCiteParser;
+	public void setRefAwareParser(RefAwareParser refAwareParser) {
+		this.refAwareParser = refAwareParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {

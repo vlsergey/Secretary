@@ -4,3 +4,5 @@
 /derby.log
 /*.log
 /bin/
+/secretarydb-backups/
+/stats/

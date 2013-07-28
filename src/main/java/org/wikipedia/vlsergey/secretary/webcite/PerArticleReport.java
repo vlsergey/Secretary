@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.webcite;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -7,6 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import org.wikipedia.vlsergey.secretary.webcite.lists.SkipReason;
 
 public class PerArticleReport {
 
@@ -27,29 +32,27 @@ public class PerArticleReport {
 	public final Map<String, String> dead = new LinkedHashMap<String, String>();
 	public final List<ArchivingError> nonArchived = new LinkedList<ArchivingError>();
 	public final Map<String, String> potentiallyDead = new LinkedHashMap<String, String>();
-	public final Map<String, String> skipped = new LinkedHashMap<String, String>();
 
-	public final Set<String> skippedIgnoreBlacklisted = new LinkedHashSet<String>();
-	public final Set<String> skippedIgnoreNoCache = new LinkedHashSet<String>();
-	public final Set<String> skippedIgnoreSence = new LinkedHashSet<String>();
-	public final Set<String> skippedIgnoreTechLimit = new LinkedHashSet<String>();
+	public final Map<SkipReason, Set<URI>> skippedByUri = new TreeMap<SkipReason, Set<URI>>();
 
 	public final Set<String> skippedIncorrectFormat = new LinkedHashSet<String>();
 	public final Set<String> skippedMarkedArchived = new LinkedHashSet<String>();
 	public final Set<String> skippedMarkedDead = new LinkedHashSet<String>();
 	public final Set<String> skippedMissingTitle = new LinkedHashSet<String>();
 
+	public final Map<String, String> skippedOnHttpCheck = new LinkedHashMap<String, String>();
+
 	public final Set<String> skippedTooYoung = new LinkedHashSet<String>();
 
-	private void appendLink(StringBuilder stringBuilder, String url, boolean noWikiLinks) {
+	private void appendLink(StringBuilder stringBuilder, Object url, boolean noWikiLinks) {
 		if (noWikiLinks)
 			stringBuilder.append("* <nowiki>" + url + "</nowiki>\n");
 		else
 			stringBuilder.append("* " + url + "\n");
 	}
 
-	private void appendLinks(StringBuilder stringBuilder, Collection<String> links, boolean noWikiLinks) {
-		for (String url : links)
+	private void appendLinks(StringBuilder stringBuilder, Collection<?> links, boolean noWikiLinks) {
+		for (Object url : links)
 			appendLink(stringBuilder, url, noWikiLinks);
 		stringBuilder.append("\n");
 	}
@@ -128,24 +131,11 @@ public class PerArticleReport {
 		potentiallyDead.put(url, reason);
 	}
 
-	void skipped(String url, String reason) {
-		skipped.put(url, reason);
-	}
-
-	void skippedIgnoreBlacklisted(String url) {
-		skippedIgnoreBlacklisted.add(url);
-	}
-
-	void skippedIgnoreNoCache(String url) {
-		skippedIgnoreNoCache.add(url);
-	}
-
-	void skippedIgnoreSence(String url) {
-		skippedIgnoreSence.add(url);
-	}
-
-	void skippedIgnoreTechLimits(String url) {
-		skippedIgnoreTechLimit.add(url);
+	void skippedByUri(URI uri, SkipReason skipReason) {
+		if (!skippedByUri.containsKey(skipReason)) {
+			skippedByUri.put(skipReason, new TreeSet<URI>());
+		}
+		skippedByUri.get(skipReason).add(uri);
 	}
 
 	void skippedIncorrectFormat(String url) {
@@ -170,6 +160,10 @@ public class PerArticleReport {
 
 	void skippedMissingTitle(String url) {
 		skippedMissingTitle.add(url);
+	}
+
+	void skippedOnHttpCheck(String url, String reason) {
+		skippedOnHttpCheck.put(url, reason);
 	}
 
 	void skippedTooYoung(String url) {
@@ -208,30 +202,14 @@ public class PerArticleReport {
 			appendLinks(stringBuilder, skippedMarkedDead, noWikiLinks);
 		}
 
-		if (!skippedIgnoreSence.isEmpty()) {
-			stringBuilder.append("Следующие ссылки были пропущены, так как уже являются ссылками на архивные копии. "
-					+ "Возможно стоит изменить их оформление, "
-					+ "поместив ссылку на архивную копию в параметр archiveurl:\n");
-			appendLinks(stringBuilder, skippedIgnoreSence, noWikiLinks);
-		}
+		for (SkipReason skipReason : SkipReason.values()) {
+			if (!skippedByUri.containsKey(skipReason)) {
+				continue;
+			}
 
-		if (!skippedIgnoreBlacklisted.isEmpty()) {
-			stringBuilder
-					.append("Следующие ссылки были пропущены, "
-							+ "так как они указывают на сайты, которые часто запрещены к показу на WebCite правообладателем:\n");
-			appendLinks(stringBuilder, skippedIgnoreBlacklisted, noWikiLinks);
-		}
-
-		if (!skippedIgnoreNoCache.isEmpty()) {
-			stringBuilder.append("Следующие ссылки были пропущены, "
-					+ "так как они указывают на сайты, которые часто используют тег no-cache:\n");
-			appendLinks(stringBuilder, skippedIgnoreNoCache, noWikiLinks);
-		}
-
-		if (!skippedIgnoreTechLimit.isEmpty()) {
-			stringBuilder.append("Следующие ссылки были пропущены, так как они указывают на сайты, "
-					+ "архивирование которых службой WebCite имеет технические сложности:\n");
-			appendLinks(stringBuilder, skippedIgnoreTechLimit, noWikiLinks);
+			stringBuilder.append(skipReason.getReportDescription());
+			stringBuilder.append(":\n");
+			appendLinks(stringBuilder, skippedByUri.get(skipReason), noWikiLinks);
 		}
 
 		if (!skippedTooYoung.isEmpty()) {
@@ -248,7 +226,7 @@ public class PerArticleReport {
 
 		appendLinks(stringBuilder, "Следующие ссылки были пропущены, "
 				+ "так как проверка их статуса дала неоднозначный для бота результат", "! Ссылка !! Причина",
-				this.skipped, noWikiLinks);
+				this.skippedOnHttpCheck, noWikiLinks);
 
 		appendLinks(stringBuilder, "Следующие ссылки были успешно архивированы",
 				"! Ссылка !! Ссылка на архивную копию", this.archived, noWikiLinks);

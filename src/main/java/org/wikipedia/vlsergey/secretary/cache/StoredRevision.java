@@ -29,6 +29,7 @@ import javax.persistence.Transient;
 
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Entity(name = "Revision")
 public class StoredRevision implements Revision {
@@ -86,7 +87,7 @@ public class StoredRevision implements Revision {
 	@Override
 	@Transient
 	public String getContent() {
-		return IoUtils.stringFromBinary(getBinaryContent());
+		return IoUtils.stringFromBinary(getBinaryContent(), true);
 	}
 
 	@Override
@@ -130,7 +131,18 @@ public class StoredRevision implements Revision {
 	@Override
 	@Transient
 	public String getXml() {
-		return IoUtils.stringFromBinary(getBinaryXml());
+		return IoUtils.stringFromBinary(getBinaryXml(), false);
+	}
+
+	@Override
+	public boolean hasContent() {
+		return getBinaryContent() != null && getBinaryContent().length > 0
+				&& (getBinaryContent().length > 150 || StringUtils.isNotEmpty(getContent()));
+	}
+
+	@Override
+	public boolean hasXml() {
+		return getBinaryXml() != null && getBinaryXml().length > 0 && StringUtils.isNotEmpty(getXml());
 	}
 
 	public void setAnon(Boolean anon) {
@@ -155,7 +167,7 @@ public class StoredRevision implements Revision {
 
 	@Transient
 	public void setContent(String content) {
-		setBinaryContent(IoUtils.stringToBinary(content));
+		setBinaryContent(IoUtils.stringToBinary(content, true));
 	}
 
 	public void setKey(StoredRevisionPk key) {
@@ -184,7 +196,7 @@ public class StoredRevision implements Revision {
 
 	@Transient
 	public void setXml(String xml) {
-		setBinaryXml(IoUtils.stringToBinary(xml));
+		setBinaryXml(IoUtils.stringToBinary(xml, true));
 	}
 
 	@Override

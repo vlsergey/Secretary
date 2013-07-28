@@ -26,7 +26,7 @@ public class ProtectGostRuEntry {
 
 	@Transient
 	public String getContent() {
-		return IoUtils.stringFromBinary(getBinaryContent());
+		return IoUtils.stringFromBinary(getBinaryContent(), true);
 	}
 
 	@Lob
@@ -50,7 +50,7 @@ public class ProtectGostRuEntry {
 
 	@Transient
 	public void setContent(String content) {
-		setBinaryContent(IoUtils.stringToBinary(content));
+		setBinaryContent(IoUtils.stringToBinary(content, true));
 	}
 
 	public void setDescription(String description) {

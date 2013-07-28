@@ -16,12 +16,8 @@
 	<bean id="ukLinksQueuer" class="org.wikipedia.vlsergey.secretary.webcite.LinksQueuer">
 		<property name="articleLinksCollector" ref="ukArticleLinksCollector" />
 		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
-		<property name="webCiteParser" ref="ukWebCiteParser" />
+		<property name="refAwareParser" ref="ukRefAwareParser" />
 		<property name="wikiCache" ref="ukWikipediaCache" />
-	</bean>
-
-	<bean id="ukWebCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
-		<property name="xmlCache" ref="ukWikipediaXmlCache" />
 	</bean>
 
 	<bean id="ukArticleLinksCollector"
@@ -35,19 +31,27 @@
 		<property name="locale" value="uk" />
 		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
 		<property name="wikiCache" ref="ukWikipediaCache" />
-		<property name="webCiteParser" ref="ukWebCiteParser" />
+		<property name="refAwareParser" ref="ukRefAwareParser" />
 	</bean>
 
 	<bean id="ukWebCiteJob" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteJob">
 		<property name="locale" value="uk" />
 		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
+		<property name="queuedPageProcessor" ref="ukQueuedPageProcessor" />
 	</bean>
 
 	<!-- <bean id="ruWebCiteErrorCleanup" -->
 	<!-- class="org.wikipedia.vlsergey.secretary.webcite.WebCiteErrorCleanup"> -->
 	<!-- <property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" /> -->
 	<!-- <property name="wikiCache" ref="ruWikipediaCache" /> -->
-	<!-- <property name="webCiteParser" ref="webCiteParser" /> -->
+	<!-- <property name="refAwareParser" ref="refAwareParser" /> -->
 	<!-- </bean> -->
+
+	<bean id="ukCiteWebCount" class="org.wikipedia.vlsergey.secretary.webcite.CountCiteWeb">
+		<property name="locale" value="uk" />
+		<property name="mediaWikiBot" ref="ukWikipediaWebCiteBot" />
+		<property name="refAwareParser" ref="ukRefAwareParser" />
+		<property name="wikiCache" ref="ukWikipediaCache" />
+	</bean>
 
 </beans>

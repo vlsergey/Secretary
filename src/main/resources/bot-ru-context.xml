@@ -11,4 +11,8 @@
 		<property name="site" value="http://ru.wikipedia.org/w" />
 	</bean>
 
+	<bean id="ruRefAwareParser" class="org.wikipedia.vlsergey.secretary.webcite.RefAwareParser">
+		<property name="xmlCache" ref="ruWikipediaXmlCache" />
+	</bean>
+
 </beans>

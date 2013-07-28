@@ -6,10 +6,10 @@ import java.util.Arrays;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
-public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction implements MultiAction<Page> {
+public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction implements MultiAction<ParsedPage> {
 
 	public static final int MAX_FOR_BOTS = 500;
 
@@ -67,7 +67,7 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 	}
 
 	@Override
-	public MultiAction<Page> getNextAction() {
+	public MultiAction<ParsedPage> getNextAction() {
 		if (rvcontinue == null)
 			return null;
 

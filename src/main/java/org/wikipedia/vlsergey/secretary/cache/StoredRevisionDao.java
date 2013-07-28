@@ -26,7 +26,16 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public StoredRevision getOrCreate(Locale locale, Revision withContent) {
+	public synchronized List<StoredRevision> getOrCreate(Locale locale, Iterable<Revision> withContent) {
+		List<StoredRevision> result = new ArrayList<StoredRevision>();
+		for (Revision source : withContent) {
+			result.add(getOrCreate(locale, source));
+		}
+		return result;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public synchronized StoredRevision getOrCreate(Locale locale, Revision withContent) {
 
 		final StoredRevisionPk key = new StoredRevisionPk(locale, withContent.getId());
 		StoredRevision revisionImpl = getRevisionById(key);
@@ -39,71 +48,44 @@ public class StoredRevisionDao {
 		}
 
 		if (withContent.getPage() != null) {
-			boolean flushRequired = false;
 
 			StoredPage storedPage;
 			if (revisionImpl.getPage() == null) {
 				storedPage = storedPageDao.getOrCreate(locale, withContent.getPage());
 				revisionImpl.setPage(storedPage);
-				flushRequired = true;
 			} else {
 				storedPage = revisionImpl.getPage();
 			}
 
-			if (storedPage.getRevisions() == null) {
-				storedPage.setRevisions(new ArrayList<StoredRevision>());
-				flushRequired = true;
-			}
-			if (!storedPage.getRevisions().contains(revisionImpl)) {
-				storedPage.getRevisions().add(revisionImpl);
-				flushRequired = true;
-			}
-
-			// if (flushRequired)
-			// template.flush();
 		}
-
-		boolean flushRequired = false;
 
 		if (updateRequired(withContent.getAnon(), revisionImpl.getAnon())) {
 			revisionImpl.setAnon(withContent.getAnon());
-			flushRequired = true;
 		}
 		if (updateRequired(withContent.getBot(), revisionImpl.getBot())) {
 			revisionImpl.setBot(withContent.getBot());
-			flushRequired = true;
 		}
 		if (updateRequired(withContent.getComment(), revisionImpl.getComment())) {
 			revisionImpl.setComment(withContent.getComment());
-			flushRequired = true;
 		}
-		if (updateRequired(withContent.getContent(), revisionImpl.getContent())) {
+		if (withContent.getContent() != null && updateRequired(withContent.getContent(), revisionImpl.getContent())) {
 			revisionImpl.setContent(withContent.getContent());
-			flushRequired = true;
 		}
 		if (updateRequired(withContent.getMinor(), revisionImpl.getMinor())) {
 			revisionImpl.setMinor(withContent.getMinor());
-			flushRequired = true;
 		}
 		if (updateRequired(withContent.getSize(), revisionImpl.getSize())) {
 			revisionImpl.setSize(withContent.getSize());
-			flushRequired = true;
 		}
 		if (updateRequired(withContent.getTimestamp(), revisionImpl.getTimestamp())) {
 			revisionImpl.setTimestamp(withContent.getTimestamp());
-			flushRequired = true;
 		}
 		if (updateRequired(withContent.getUser(), revisionImpl.getUser())) {
 			revisionImpl.setUser(withContent.getUser());
-			flushRequired = true;
 		}
-		if (updateRequired(withContent.getXml(), revisionImpl.getXml())) {
+		if (withContent.getXml() != null && updateRequired(withContent.getXml(), revisionImpl.getXml())) {
 			revisionImpl.setXml(withContent.getXml());
-			flushRequired = true;
 		}
-
-		// if (flushRequired)
-		// template.flush();
 
 		return revisionImpl;
 	}

@@ -28,16 +28,24 @@ public class Autopatrol implements Runnable {
 
 		Set<String> trustedUsers = new HashSet<String>();
 
-		for (User user : mediaWikiBot.queryAllusersByGroup("sysop"))
-			trustedUsers.add(user.getName());
-		for (User user : mediaWikiBot.queryAllusersByGroup("closer"))
-			trustedUsers.add(user.getName());
-		for (User user : mediaWikiBot.queryAllusersByGroup("editor"))
-			trustedUsers.add(user.getName());
-		for (User user : mediaWikiBot.queryAllusersByGroup("autoeditor"))
-			trustedUsers.add(user.getName());
+		// for (User user : mediaWikiBot.queryAllusersByGroup("sysop"))
+		// trustedUsers.add(user.getName());
+		// for (User user : mediaWikiBot.queryAllusersByGroup("closer"))
+		// trustedUsers.add(user.getName());
+		// for (User user : mediaWikiBot.queryAllusersByGroup("editor"))
+		// trustedUsers.add(user.getName());
+		// for (User user : mediaWikiBot.queryAllusersByGroup("autoeditor"))
+		// trustedUsers.add(user.getName());
 		for (User user : mediaWikiBot.queryAllusersByGroup("bot"))
 			trustedUsers.add(user.getName());
+
+		trustedUsers.add("Al Silonov");
+		trustedUsers.add("Sergey kudryavtsev");
+		trustedUsers.add("Vesailok");
+		trustedUsers.add("DonRumata");
+		trustedUsers.add("Infovarius");
+		trustedUsers.add("VPliousnine");
+		trustedUsers.add("Wesha");
 
 		for (Page page : mediaWikiBot.queryUnreviewedPages(new int[] { 100 }, FilterRedirects.ALL)) {
 

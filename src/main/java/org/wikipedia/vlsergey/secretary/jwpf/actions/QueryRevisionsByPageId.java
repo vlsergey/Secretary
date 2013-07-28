@@ -4,10 +4,10 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
-public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction implements MultiAction<Page> {
+public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction implements MultiAction<ParsedPage> {
 
 	private final Direction direction;
 
@@ -47,7 +47,7 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction impleme
 	}
 
 	@Override
-	public MultiAction<Page> getNextAction() {
+	public MultiAction<ParsedPage> getNextAction() {
 		if (nextRevision == null)
 			return null;
 
@@ -57,7 +57,7 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction impleme
 	@Override
 	protected void parseQueryContinue(Element queryContinueElement) {
 		Element revisionsElement = (Element) queryContinueElement.getElementsByTagName("revisions").item(0);
-		nextRevision = new Long(revisionsElement.getAttribute("rvstartid"));
+		nextRevision = new Long(revisionsElement.getAttribute("rvcontinue"));
 	}
 
 }

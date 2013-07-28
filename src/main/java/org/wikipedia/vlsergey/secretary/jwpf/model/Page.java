@@ -17,7 +17,6 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
-import java.util.List;
 import java.util.Set;
 
 public interface Page extends Comparable<Page> {
@@ -28,8 +27,6 @@ public interface Page extends Comparable<Page> {
 	Boolean getMissing();
 
 	Integer getNamespace();
-
-	List<? extends Revision> getRevisions();
 
 	String getTitle();
 }

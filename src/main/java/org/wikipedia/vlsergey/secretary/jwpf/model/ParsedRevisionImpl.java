@@ -21,15 +21,24 @@ package org.wikipedia.vlsergey.secretary.jwpf.model;
 import java.util.Date;
 import java.util.List;
 
+import javax.persistence.Transient;
+
+import org.wikipedia.vlsergey.secretary.utils.IoUtils;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
+
 public class ParsedRevisionImpl implements Revision {
 
 	private Boolean anon;
+
+	private byte[] binaryContent = null;
+
+	private byte[] binaryXml = null;
 
 	private Boolean bot;
 
 	private String comment = null;
 
-	private String content = null;
+	private List<RevisionFlagged> flagged = null;
 
 	private Long id = null;
 
@@ -37,15 +46,11 @@ public class ParsedRevisionImpl implements Revision {
 
 	private final Page page;
 
-	private List<RevisionFlagged> flagged = null;
-
 	private Long size = null;
 
 	private Date timestamp = null;
 
 	private String user = null;
-
-	private String xml = null;
 
 	public ParsedRevisionImpl(Page page) {
 		this.page = page;
@@ -54,6 +59,14 @@ public class ParsedRevisionImpl implements Revision {
 	@Override
 	public Boolean getAnon() {
 		return anon;
+	}
+
+	byte[] getBinaryContent() {
+		return binaryContent;
+	}
+
+	byte[] getBinaryXml() {
+		return binaryXml;
 	}
 
 	@Override
@@ -67,8 +80,9 @@ public class ParsedRevisionImpl implements Revision {
 	}
 
 	@Override
+	@Transient
 	public String getContent() {
-		return content;
+		return IoUtils.stringFromBinary(getBinaryContent(), true);
 	}
 
 	public List<RevisionFlagged> getFlagged() {
@@ -107,11 +121,29 @@ public class ParsedRevisionImpl implements Revision {
 
 	@Override
 	public String getXml() {
-		return xml;
+		return IoUtils.stringFromBinary(getBinaryXml(), true);
+	}
+
+	@Override
+	public boolean hasContent() {
+		return getBinaryContent() != null && getBinaryContent().length > 0 && StringUtils.isNotEmpty(getContent());
+	}
+
+	@Override
+	public boolean hasXml() {
+		return getBinaryXml() != null && getBinaryXml().length > 0 && StringUtils.isNotEmpty(getXml());
 	}
 
 	public void setAnon(Boolean anon) {
 		this.anon = anon;
+	}
+
+	void setBinaryContent(byte[] binaryContent) {
+		this.binaryContent = binaryContent;
+	}
+
+	void setBinaryXml(byte[] binaryXml) {
+		this.binaryXml = binaryXml;
 	}
 
 	public void setBot(Boolean bot) {
@@ -122,8 +154,9 @@ public class ParsedRevisionImpl implements Revision {
 		this.comment = comment;
 	}
 
+	@Transient
 	public void setContent(String content) {
-		this.content = content;
+		setBinaryContent(IoUtils.stringToBinary(content, true));
 	}
 
 	public void setFlagged(List<RevisionFlagged> flagged) {
@@ -150,8 +183,9 @@ public class ParsedRevisionImpl implements Revision {
 		this.user = user;
 	}
 
+	@Transient
 	public void setXml(String xml) {
-		this.xml = xml;
+		setBinaryXml(IoUtils.stringToBinary(xml, true));
 	}
 
 	@Override

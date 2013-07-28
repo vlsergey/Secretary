@@ -20,7 +20,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 import java.text.ParseException;
 
 import org.w3c.dom.Element;
-import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPageImpl;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public abstract class AbstractQueryAction extends AbstractAPIAction {
@@ -47,8 +47,8 @@ public abstract class AbstractQueryAction extends AbstractAPIAction {
 		}
 	}
 
-	protected ParsedPageImpl parsePage(Element pageElement) throws ProcessException {
-		ParsedPageImpl pageImpl = new ParsedPageImpl();
+	protected ParsedPage parsePage(Element pageElement) throws ProcessException {
+		ParsedPage pageImpl = new ParsedPage();
 
 		pageImpl.setMissing(pageElement.hasAttribute("missing"));
 

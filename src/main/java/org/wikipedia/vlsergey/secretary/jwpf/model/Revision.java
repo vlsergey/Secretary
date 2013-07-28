@@ -47,4 +47,8 @@ public interface Revision {
 	String getUser();
 
 	String getXml();
+
+	boolean hasContent();
+
+	boolean hasXml();
 }

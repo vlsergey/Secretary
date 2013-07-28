@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 
-public class QueuedLinkProcessor {
+public class QueuedLinkProcessor implements Runnable {
 	private static final Logger logger = LoggerFactory.getLogger(QueuedLinkProcessor.class);
 
 	@Autowired
@@ -32,23 +32,19 @@ public class QueuedLinkProcessor {
 		queuedLinkDao.removeAll();
 	}
 
-	protected void run() {
-		while (true) {
-			try {
-				boolean didAnyWork = runImpl();
-
-				if (!didAnyWork)
-					Thread.sleep(5000);
-			} catch (Throwable exc) {
-				logger.error("" + exc, exc);
-			}
+	@Override
+	public void run() {
+		try {
+			runImpl();
+		} catch (Throwable exc) {
+			logger.error("" + exc, exc);
 		}
 	}
 
 	private boolean runImpl() throws Exception {
 		QueuedLink queuedLink = queuedLinkDao.getLinkFromQueue();
 		if (queuedLink == null) {
-			logger.debug("No links in queue. Sleep.");
+			logger.trace("No links in queue. Sleep.");
 			return false;
 		}
 
@@ -118,18 +114,5 @@ public class QueuedLinkProcessor {
 			queuedLinkDao.reducePriority(queuedLink);
 			throw exc;
 		}
-	}
-
-	public void start() {
-		new Thread(QueuedLinkProcessor.class.getName()) {
-			{
-				setDaemon(true);
-			}
-
-			@Override
-			public void run() {
-				QueuedLinkProcessor.this.run();
-			};
-		}.start();
 	}
 }

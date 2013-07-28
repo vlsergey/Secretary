@@ -9,7 +9,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -17,6 +16,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +30,7 @@ public class IoUtils {
 		try {
 			final ByteArrayOutputStream out = new ByteArrayOutputStream();
 			ZipOutputStream zipOutputStream = new ZipOutputStream(out);
-			zipOutputStream.setLevel(Deflater.BEST_COMPRESSION);
+			zipOutputStream.setLevel(4);
 			zipOutputStream.putNextEntry(new ZipEntry("content"));
 			zipOutputStream.write(original);
 			zipOutputStream.close();
@@ -89,7 +89,11 @@ public class IoUtils {
 		return stringWriter.toString();
 	}
 
-	public static final String stringFromBinary(byte[] content) {
+	public static final String stringFromBinary(byte[] content, boolean allowNull) {
+		if (content == null && allowNull) {
+			return null;
+		}
+
 		if (content == null || content.length == 0)
 			return StringUtils.EMPTY;
 
@@ -101,10 +105,14 @@ public class IoUtils {
 		}
 	}
 
-	public static final byte[] stringToBinary(String content) {
-		if (StringUtils.isEmpty(content)) {
+	public static final byte[] stringToBinary(String content, boolean allowNull) {
+		if (content == null && allowNull) {
 			return null;
 		}
+		if (StringUtils.isEmpty(content)) {
+			return ArrayUtils.EMPTY_BYTE_ARRAY;
+		}
+
 		try {
 			byte[] original = content.getBytes("utf-8");
 			return compress(original);

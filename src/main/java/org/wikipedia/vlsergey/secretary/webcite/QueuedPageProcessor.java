@@ -29,8 +29,12 @@ import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.dom.parser.ParsingException;
+import org.wikipedia.vlsergey.secretary.functions.IteratorUtils;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
+import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
+import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.utils.DateNormalizer;
@@ -61,9 +65,7 @@ public class QueuedPageProcessor {
 			return true;
 		}
 
-		String host = uri.getHost().toLowerCase();
-
-		return ArticleLinksCollector.isIgnoreHost(perArticleReport, url, host);
+		return ArticleLinksCollector.isIgnoreHost(perArticleReport, uri);
 	}
 
 	@Autowired
@@ -90,7 +92,7 @@ public class QueuedPageProcessor {
 	@Autowired
 	private QueuedPageDao queuedPageDao;
 
-	private WebCiteParser webCiteParser;
+	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -129,7 +131,7 @@ public class QueuedPageProcessor {
 						+ latestRevision.getPage().getTitle() + "')");
 			}
 
-			latestContentDom = getWebCiteParser().parse(xml);
+			latestContentDom = getRefAwareParser().parse(xml);
 
 			if (!StringUtils.equals(latestContent, latestContentDom.toWiki(false))) {
 				logger.warn("Parsing content not equal to stored content for page #" + latestRevision.getPage().getId()
@@ -325,7 +327,7 @@ public class QueuedPageProcessor {
 
 			default:
 				logger.warn("Unsupported status: " + statusLine);
-				perArticleReport.skipped(url, "" + statusLine);
+				perArticleReport.skippedOnHttpCheck(url, "" + statusLine);
 				break;
 			}
 		}
@@ -359,8 +361,8 @@ public class QueuedPageProcessor {
 		return mediaWikiBot;
 	}
 
-	public WebCiteParser getWebCiteParser() {
-		return webCiteParser;
+	public RefAwareParser getRefAwareParser() {
+		return refAwareParser;
 	}
 
 	public WikiCache getWikiCache() {
@@ -448,9 +450,62 @@ public class QueuedPageProcessor {
 		}
 	}
 
+	private void recreateQueue() {
+		if ("ru".equals(getLocale().getLanguage())) {
+			for (Long pageId : IteratorUtils.map(mediaWikiBot.queryCategoryMembers(
+					"Категория:Википедия:Пресса о Википедии:Архив", CategoryMemberType.PAGE, Namespaces.PROJECT),
+					CategoryMember.pageIdF)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 5000, 0);
+			}
+
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранная статья", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 1000, pageId.longValue());
+			}
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Хорошая статья", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
+			}
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранный список или портал",
+					Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
+			}
+
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Cite web", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 0, pageId.longValue());
+			}
+
+		}
+
+		if ("uk".equals(getLocale().getLanguage())) {
+			for (Long pageId : IteratorUtils.map(mediaWikiBot.queryCategoryMembers(
+					"Категорія:Вікіпедія:Публікації про Вікіпедію", CategoryMemberType.PAGE, Namespaces.PROJECT),
+					CategoryMember.pageIdF)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 5000, 0);
+			}
+
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Медаль", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 1000, pageId.longValue());
+			}
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Добра_стаття", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
+			}
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Вибраний_список", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
+			}
+
+			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Cite web", Namespaces.MAIN)) {
+				queuedPageDao.addPageToQueue(getLocale(), pageId, 0, pageId.longValue());
+			}
+
+		}
+	}
+
 	public void run() {
+		clearQueue();
+
 		while (true) {
 			try {
+				recreateQueue();
+
 				boolean completed = runImpl();
 
 				// long toSleep = queuedPageDao.findCount() / 60 / 10;
@@ -458,8 +513,10 @@ public class QueuedPageProcessor {
 				logger.debug("Sleeping " + toSleep + " minutes before another cycle with all queued pages...");
 				Thread.sleep(1000l * 60l * toSleep);
 
-				if (completed)
-					return;
+				if (completed) {
+					recreateQueue();
+					continue;
+				}
 			} catch (Exception exc) {
 				logger.error("" + exc, exc);
 
@@ -491,11 +548,15 @@ public class QueuedPageProcessor {
 			if (System.currentTimeMillis() - lastStatUpdate > DateUtils.MILLIS_PER_HOUR) {
 				final long pages = queuedPageDao.findCount(getLocale());
 				final long links = queuedLinkDao.findCount();
-				mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/Statistics", null,
+				mediaWikiBot.writeContent(
+						"User:" + mediaWikiBot.getLogin() + "/Statistics",
+						null,
 						"На момент обновления статистики "
 								+ "({{subst:CURRENTTIME}} {{subst:CURRENTMONTHABBREV}}, {{subst:CURRENTDAY2}}) "
-								+ "в очереди находилось '''" + pages + "''' страниц и '''" + links + "''' ссылок",
-						null, "Update statistics: " + pages + " / " + links, true, false);
+								+ "в очереди находилось '''" + pages + "''' страниц и '''" + links
+								+ "''' ссылок. Всего за время работы бот успешно заархивировал '''"
+								+ archivedLinkDao.findCountWithArchiveResult("success") + "''' ссылок.", null,
+						"Update statistics: " + pages + " / " + links, true, false);
 				lastStatUpdate = System.currentTimeMillis();
 			}
 
@@ -554,8 +615,8 @@ public class QueuedPageProcessor {
 		template.setParameterValue(parameterNames[0], content);
 	}
 
-	public void setWebCiteParser(WebCiteParser webCiteParser) {
-		this.webCiteParser = webCiteParser;
+	public void setRefAwareParser(RefAwareParser refAwareParser) {
+		this.refAwareParser = refAwareParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {

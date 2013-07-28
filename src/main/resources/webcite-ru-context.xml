@@ -17,12 +17,8 @@
 	<bean id="linksQueuer" class="org.wikipedia.vlsergey.secretary.webcite.LinksQueuer">
 		<property name="articleLinksCollector" ref="ruArticleLinksCollector" />
 		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
-		<property name="webCiteParser" ref="ruWebCiteParser" />
+		<property name="refAwareParser" ref="ruRefAwareParser" />
 		<property name="wikiCache" ref="ruWikipediaCache" />
-	</bean>
-
-	<bean id="ruWebCiteParser" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteParser">
-		<property name="xmlCache" ref="ruWikipediaXmlCache" />
 	</bean>
 
 	<bean id="ruArticleLinksCollector"
@@ -33,21 +29,30 @@
 	<bean id="ruQueuedPageProcessor"
 		class="org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor">
 		<property name="articleLinksCollector" ref="ruArticleLinksCollector" />
-		<property name="locale" value="uk" />
+		<property name="locale" value="ru" />
 		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
 		<property name="wikiCache" ref="ruWikipediaCache" />
-		<property name="webCiteParser" ref="ruWebCiteParser" />
+		<property name="refAwareParser" ref="ruRefAwareParser" />
 	</bean>
 
 	<bean id="ruWebCiteJob" class="org.wikipedia.vlsergey.secretary.webcite.WebCiteJob">
+		<property name="locale" value="ru" />
 		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="queuedPageProcessor" ref="ruQueuedPageProcessor" />
 	</bean>
 
 	<!-- <bean id="ruWebCiteErrorCleanup" -->
 	<!-- class="org.wikipedia.vlsergey.secretary.webcite.WebCiteErrorCleanup"> -->
 	<!-- <property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" /> -->
 	<!-- <property name="wikiCache" ref="ruWikipediaCache" /> -->
-	<!-- <property name="webCiteParser" ref="webCiteParser" /> -->
+	<!-- <property name="refAwareParser" ref="refAwareParser" /> -->
 	<!-- </bean> -->
+
+	<bean id="ruCiteWebCount" class="org.wikipedia.vlsergey.secretary.webcite.CountCiteWeb">
+		<property name="locale" value="ru" />
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="refAwareParser" ref="ruRefAwareParser" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+	</bean>
 
 </beans>

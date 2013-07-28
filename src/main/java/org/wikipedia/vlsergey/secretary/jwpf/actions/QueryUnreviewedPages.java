@@ -13,7 +13,7 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
-import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPageImpl;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAction<Page> {
@@ -101,7 +101,7 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 	protected void parseQueryElement(Element queryElement) throws ProcessException, ParseException {
 		results = new ArrayList<Page>();
 		for (Element pElement : new ListAdapter<Element>(queryElement.getElementsByTagName("p"))) {
-			ParsedPageImpl p = parsePage(pElement);
+			ParsedPage p = parsePage(pElement);
 
 			results.add(p);
 		}

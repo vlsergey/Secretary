@@ -22,7 +22,7 @@ import java.util.Set;
 
 import javax.persistence.Id;
 
-public class ParsedPageImpl extends AbstractPage {
+public class ParsedPage extends AbstractPage {
 
 	private Long id;
 
@@ -57,7 +57,6 @@ public class ParsedPageImpl extends AbstractPage {
 		return namespace;
 	}
 
-	@Override
 	public List<Revision> getRevisions() {
 		return revisions;
 	}

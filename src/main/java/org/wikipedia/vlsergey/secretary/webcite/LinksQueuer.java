@@ -21,6 +21,9 @@ import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
+import org.wikipedia.vlsergey.secretary.webcite.lists.Erros;
+import org.wikipedia.vlsergey.secretary.webcite.lists.Archives;
+import org.wikipedia.vlsergey.secretary.webcite.lists.TechLimits;
 
 public class LinksQueuer {
 
@@ -39,7 +42,7 @@ public class LinksQueuer {
 	@Autowired
 	private WebCiteArchiver webCiteArchiver;
 
-	private WebCiteParser webCiteParser;
+	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -51,8 +54,8 @@ public class LinksQueuer {
 		return mediaWikiBot;
 	}
 
-	public WebCiteParser getWebCiteParser() {
-		return webCiteParser;
+	public RefAwareParser getRefAwareParser() {
+		return refAwareParser;
 	}
 
 	public WikiCache getWikiCache() {
@@ -113,8 +116,8 @@ public class LinksQueuer {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	public void setWebCiteParser(WebCiteParser webCiteParser) {
-		this.webCiteParser = webCiteParser;
+	public void setRefAwareParser(RefAwareParser refAwareParser) {
+		this.refAwareParser = refAwareParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {
@@ -168,7 +171,7 @@ public class LinksQueuer {
 
 	@Transactional(propagation = Propagation.SUPPORTS)
 	public void storeArchivedLinksFromArticleContent(String latestContent) throws Exception {
-		ArticleFragment articleFragment = webCiteParser.parse(latestContent);
+		ArticleFragment articleFragment = refAwareParser.parse(latestContent);
 		List<ArticleLink> allLinks = articleLinksCollector.getAllLinks(articleFragment);
 
 		// for now - just save...
@@ -190,9 +193,7 @@ public class LinksQueuer {
 				continue;
 			}
 
-			String originalHost = originalUri.getHost().toLowerCase();
-			if (WebCiteArchiver.SKIP_ERRORS.contains(originalHost)
-					|| WebCiteArchiver.SKIP_TECH_LIMITS.contains(originalHost)) {
+			if (Erros.contains(originalUri) || TechLimits.contains(originalUri)) {
 				// we can have archived copy, but it may be incorrect
 				// this archived copy is not on archives site
 				logger.warn("Ignoring original URL '" + originalUrl
@@ -211,9 +212,8 @@ public class LinksQueuer {
 				logger.warn("URL " + archiveUrl + " skipped due wrong format: " + exc.getMessage());
 				continue;
 			}
-			String archiveHost = archiveUri.getHost().toLowerCase();
 
-			if (!WebCiteArchiver.SKIP_ARCHIVES.contains(archiveHost)) {
+			if (!Archives.contains(archiveUri)) {
 				// this archived copy is not on archives site
 				logger.warn("Ignoring archive URL '" + archiveUrl + "' (as archive copy of '" + originalUrl
 						+ "') because unknown archive site");

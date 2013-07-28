@@ -2,23 +2,20 @@ package org.wikipedia.vlsergey.secretary.webcite;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.wikipedia.vlsergey.secretary.functions.IteratorUtils;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
-import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
-import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.webcite.lists.SkipReason;
 
 public class WebCiteJob implements Runnable {
 
@@ -29,14 +26,7 @@ public class WebCiteJob implements Runnable {
 	@Autowired
 	private QueuedLinkProcessor queuedLinkProcessor;
 
-	@Autowired
-	private QueuedPageDao queuedPageDao;
-
-	@Autowired
 	private QueuedPageProcessor queuedPageProcessor;
-
-	// @Autowired
-	// private WebCiteErrorCleanup webCiteErrorCleanup;
 
 	public Locale getLocale() {
 		return locale;
@@ -46,60 +36,22 @@ public class WebCiteJob implements Runnable {
 		return mediaWikiBot;
 	}
 
+	// @Autowired
+	// private WebCiteErrorCleanup webCiteErrorCleanup;
+
+	public QueuedPageProcessor getQueuedPageProcessor() {
+		return queuedPageProcessor;
+	}
+
 	@PostConstruct
 	public void init() throws Exception {
 		updateIgnoringList();
-		queuedLinkProcessor.start();
 	}
 
 	@Override
 	public void run() {
-
 		// webCiteErrorCleanup.errorCleanup("http://news.euro-coins.info/");
-		queuedPageProcessor.clearQueue();
 		queuedLinkProcessor.clearQueue();
-
-		if ("ru".equals(getLocale().getLanguage())) {
-			for (Long pageId : IteratorUtils.map(mediaWikiBot.queryCategoryMembers(
-					"Категория:Википедия:Пресса о Википедии:Архив", CategoryMemberType.PAGE, Namespaces.PROJECT),
-					CategoryMember.pageIdF)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 5000, 0);
-			}
-
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранная статья", Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 1000, pageId.longValue());
-			}
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Хорошая статья", Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
-			}
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранный список или портал",
-					Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
-			}
-		}
-
-		if ("uk".equals(getLocale().getLanguage())) {
-			for (Long pageId : IteratorUtils.map(mediaWikiBot.queryCategoryMembers(
-					"Категорія:Вікіпедія:Публікації про Вікіпедію", CategoryMemberType.PAGE, Namespaces.PROJECT),
-					CategoryMember.pageIdF)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 5000, 0);
-			}
-
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Медаль", Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 1000, pageId.longValue());
-			}
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Добра_стаття", Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
-			}
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Вибраний_список", Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
-			}
-		}
-
-		for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Template:Cite web", Namespaces.MAIN)) {
-			queuedPageDao.addPageToQueue(getLocale(), pageId, 0, pageId.longValue());
-		}
-
 		queuedPageProcessor.run();
 	}
 
@@ -111,15 +63,18 @@ public class WebCiteJob implements Runnable {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	public void updateIgnoringList() throws Exception {
-		updateIgnoringList(WebCiteArchiver.SKIP_ERRORS, "User:" + getMediaWikiBot().getLogin() + "/IgnoreErrors");
-		updateIgnoringList(WebCiteArchiver.SKIP_NO_CACHE, "User:" + getMediaWikiBot().getLogin() + "/IgnoreNoCache");
-		updateIgnoringList(WebCiteArchiver.SKIP_ARCHIVES, "User:" + getMediaWikiBot().getLogin() + "/IgnoreSence");
-		updateIgnoringList(WebCiteArchiver.SKIP_TECH_LIMITS, "User:" + getMediaWikiBot().getLogin()
-				+ "/IgnoreTechLimits");
+	public void setQueuedPageProcessor(QueuedPageProcessor queuedPageProcessor) {
+		this.queuedPageProcessor = queuedPageProcessor;
 	}
 
-	private void updateIgnoringList(Set<String> hostsToIgnore, String pageName) throws Exception {
+	public void updateIgnoringList() throws Exception {
+		for (SkipReason skipReason : SkipReason.values()) {
+			updateIgnoringList(skipReason.collection(),
+					"User:" + getMediaWikiBot().getLogin() + "/" + skipReason.botSubpageName());
+		}
+	}
+
+	private void updateIgnoringList(Collection<String> hostsToIgnore, String pageName) throws Exception {
 		StringBuffer stringBuffer = new StringBuffer();
 
 		List<String> hosts = new ArrayList<String>(hostsToIgnore);

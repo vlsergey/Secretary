@@ -25,11 +25,11 @@ import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Element;
-import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionFlagged;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
-import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPageImpl;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevisionImpl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionFlagged;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
@@ -41,7 +41,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	private final List<RevisionPropery> properties;
 
-	private List<Page> result;
+	private List<ParsedPage> result;
 
 	protected AbstractQueryRevisionsAction(boolean bot, final List<RevisionPropery> properties) {
 		super(bot);
@@ -57,13 +57,13 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 		return (isBot() ? MAX_FOR_BOTS : MAX_FOR_NON_BOTS);
 	}
 
-	public List<Page> getResults() {
+	public List<ParsedPage> getResults() {
 		return result;
 	}
 
 	@Override
-	protected ParsedPageImpl parsePage(Element pageElement) throws ProcessException {
-		ParsedPageImpl result = super.parsePage(pageElement);
+	protected ParsedPage parsePage(Element pageElement) throws ProcessException {
+		ParsedPage result = super.parsePage(pageElement);
 
 		for (Element child : new ListAdapter<Element>(pageElement.getChildNodes())) {
 			parsePageElement(result, child);
@@ -72,7 +72,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 		return result;
 	}
 
-	protected void parsePageElement(ParsedPageImpl page, Element element) throws ProcessException {
+	protected void parsePageElement(ParsedPage page, Element element) throws ProcessException {
 		page.setRevisions(new ArrayList<Revision>());
 		for (Element revElement : new ListAdapter<Element>(element.getElementsByTagName("rev"))) {
 			ParsedRevisionImpl revisionImpl = parseRevision(page, revElement);
@@ -83,10 +83,10 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 	@Override
 	protected void parseQueryElement(Element queryElement) throws ProcessException {
 		final ListAdapter<Element> pageElements = new ListAdapter<Element>(queryElement.getElementsByTagName("page"));
-		final List<Page> result = new ArrayList<Page>(pageElements.size());
+		final List<ParsedPage> result = new ArrayList<ParsedPage>(pageElements.size());
 
 		for (Element pageElement : pageElements) {
-			ParsedPageImpl pageImpl = parsePage(pageElement);
+			ParsedPage pageImpl = parsePage(pageElement);
 			result.add(pageImpl);
 		}
 

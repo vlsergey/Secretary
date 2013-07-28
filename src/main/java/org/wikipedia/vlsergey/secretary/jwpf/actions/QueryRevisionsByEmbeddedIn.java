@@ -5,10 +5,10 @@ import java.util.Arrays;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
-public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction implements MultiAction<Page> {
+public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction implements MultiAction<ParsedPage> {
 
 	private final String embeddedIn;
 
@@ -56,7 +56,7 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 	}
 
 	@Override
-	public MultiAction<Page> getNextAction() {
+	public MultiAction<ParsedPage> getNextAction() {
 		if (geicontinue == null)
 			return null;
 

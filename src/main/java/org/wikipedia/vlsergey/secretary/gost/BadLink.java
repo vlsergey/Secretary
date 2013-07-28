@@ -24,7 +24,7 @@ public class BadLink {
 
 	@Transient
 	public String getContent() {
-		return IoUtils.stringFromBinary(getBinaryContent());
+		return IoUtils.stringFromBinary(getBinaryContent(), true);
 	}
 
 	@Column(length = 5000)
@@ -43,7 +43,7 @@ public class BadLink {
 
 	@Transient
 	public void setContent(String content) {
-		setBinaryContent(IoUtils.stringToBinary(content));
+		setBinaryContent(IoUtils.stringToBinary(content, true));
 	}
 
 	public void setName(String name) {

@@ -31,7 +31,7 @@ public class XmlCacheItem {
 
 	@Transient
 	public String getContent() {
-		return IoUtils.stringFromBinary(getBinaryContent());
+		return IoUtils.stringFromBinary(getBinaryContent(), true);
 	}
 
 	@Id
@@ -41,7 +41,7 @@ public class XmlCacheItem {
 
 	@Transient
 	public String getXml() {
-		return IoUtils.stringFromBinary(getBinaryXml());
+		return IoUtils.stringFromBinary(getBinaryXml(), true);
 	}
 
 	protected void setBinaryContent(byte[] content) {
@@ -54,7 +54,7 @@ public class XmlCacheItem {
 
 	@Transient
 	public void setContent(String content) {
-		setBinaryContent(IoUtils.stringToBinary(content));
+		setBinaryContent(IoUtils.stringToBinary(content, true));
 	}
 
 	public void setHash(String hash) {
@@ -63,7 +63,7 @@ public class XmlCacheItem {
 
 	@Transient
 	public void setXml(String xml) {
-		setBinaryXml(IoUtils.stringToBinary(xml));
+		setBinaryXml(IoUtils.stringToBinary(xml, true));
 	}
 
 	@Override
