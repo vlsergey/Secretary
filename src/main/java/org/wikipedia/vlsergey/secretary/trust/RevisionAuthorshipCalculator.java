@@ -799,7 +799,8 @@ public class RevisionAuthorshipCalculator {
 	private void updateByTemplateIncluded(final String statPageTitle, final String template, final int updateAfter) {
 
 		final AtomicInteger counter = new AtomicInteger(0);
-		final SortedMap<String, List<TextChunk>> results = new TreeMap<String, List<TextChunk>>();
+		final SortedMap<String, List<TextChunk>> results = Collections
+				.synchronizedSortedMap(new TreeMap<String, List<TextChunk>>());
 
 		List<Future<List<TextChunk>>> futures = new ArrayList<Future<List<TextChunk>>>();
 		for (final String pageTitle : mediaWikiBot.queryEmbeddedInPageTitles(template, Namespaces.MAIN)) {
