@@ -22,18 +22,27 @@ public class LCS {
 		List<T> substring = Collections.emptyList();
 		for (int i = 1; i < sa.length(); i++) {
 
+			final List<T> prevItem = sa.select(i - 1);
+			final List<T> currItem = sa.select(i);
+
+			final int currItemSize = currItem.size();
+			final int prevItemSize = prevItem.size();
+
 			// adjacent suffixes both from second text string
-			if (sa.select(i).size() <= N2 && sa.select(i - 1).size() <= N2)
+			if (currItemSize <= N2 && prevItemSize <= N2)
 				continue;
 
 			// adjacent suffixes both from first text string
-			if (sa.select(i).size() > N2 + 1 && sa.select(i - 1).size() > N2 + 1)
+			if (currItemSize > N2 + 1 && prevItemSize > N2 + 1)
 				continue;
 
-			// check if adjacent suffixes longer common substring
-			int length = sa.lcp(i);
-			if (length > substring.size())
-				substring = sa.select(i).subList(0, length);
+			// check if it is possible to have longer substring
+			if (currItemSize > substring.size() && prevItemSize > substring.size()) {
+				// check if adjacent suffixes longer common substring
+				int length = SuffixArray.lcp(currItem, prevItem);
+				if (length > substring.size())
+					substring = currItem.subList(0, length);
+			}
 		}
 
 		return substring;

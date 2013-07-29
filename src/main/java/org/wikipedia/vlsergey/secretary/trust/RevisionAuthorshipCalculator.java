@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang.NullArgumentException;
 import org.slf4j.Logger;
@@ -124,6 +125,10 @@ public class RevisionAuthorshipCalculator {
 
 		public Revision queryLatestRevision() {
 			return queryRevision(revisionInfosOlderIds.get(0));
+		}
+
+		public Revision queryLatestRevisionInfo() {
+			return revisionInfosOlder.get(0);
 		}
 
 		public Revision queryRevision(Long revisionId) {
@@ -447,17 +452,9 @@ public class RevisionAuthorshipCalculator {
 
 		log.info("Get authorwhip for rev#" + newRevisionId);
 
-		try {
-			final RevisionAuthorship stored = revisionAuthorshipDao.findByRevision(getLocale(), newRevisionId);
-			if (stored != null && stored.getData() != null && stored.getData().length != 0) {
-				List<TextChunk> restored = RevisionAuthorshipDao.fromBinary(stored.getData());
-				if (restored != null) {
-					log.info("Get authorwhip for rev#" + newRevisionId + ": found in DB");
-					return restored;
-				}
-			}
-		} catch (Exception exc) {
-			log.debug("Not good stored one: " + exc, exc);
+		List<TextChunk> chunks = getAuthorshipFromDatabase(newRevisionId);
+		if (chunks != null) {
+			return chunks;
 		}
 
 		// not found
@@ -493,6 +490,14 @@ public class RevisionAuthorshipCalculator {
 		}
 
 		if (PRELOAD) {
+			{
+				// check DB before preloading
+				List<TextChunk> chunks = getAuthorshipFromDatabase(pageContext.queryLatestRevisionInfo().getId());
+				if (chunks != null) {
+					return chunks;
+				}
+			}
+
 			// pregenerate to prevent out of memory and out of stack?
 			log.info("Preload all revisions of '" + pageTitle + "'");
 
@@ -545,6 +550,22 @@ public class RevisionAuthorshipCalculator {
 			return null;
 		}
 		return getAuthorship(pageContext, revision.getId());
+	}
+
+	private List<TextChunk> getAuthorshipFromDatabase(Long newRevisionId) {
+		try {
+			final RevisionAuthorship stored = revisionAuthorshipDao.findByRevision(getLocale(), newRevisionId);
+			if (stored != null && stored.getData() != null && stored.getData().length != 0) {
+				List<TextChunk> restored = RevisionAuthorshipDao.fromBinary(stored.getData());
+				if (restored != null) {
+					log.info("Get authorwhip for rev#" + newRevisionId + ": found in DB");
+					return restored;
+				}
+			}
+		} catch (Exception exc) {
+			log.debug("Not good stored one: " + exc, exc);
+		}
+		return null;
 	}
 
 	public Locale getLocale() {
@@ -772,12 +793,12 @@ public class RevisionAuthorshipCalculator {
 	}
 
 	public void updateBlockCodes() {
-		updateByTemplateIncluded("Авторство статей о блочных шифрах", "Шаблон:Карточка блочного шифра", false);
+		updateByTemplateIncluded("Авторство статей о блочных шифрах", "Шаблон:Карточка блочного шифра", 10);
 	}
 
-	private void updateByTemplateIncluded(final String statPageTitle, final String template,
-			final boolean updateAfterEach) {
+	private void updateByTemplateIncluded(final String statPageTitle, final String template, final int updateAfter) {
 
+		final AtomicInteger counter = new AtomicInteger(0);
 		final SortedMap<String, List<TextChunk>> results = new TreeMap<String, List<TextChunk>>();
 
 		List<Future<List<TextChunk>>> futures = new ArrayList<Future<List<TextChunk>>>();
@@ -790,7 +811,9 @@ public class RevisionAuthorshipCalculator {
 					try {
 						List<TextChunk> chunks = getAuthorship(pageTitle, null);
 						results.put(pageTitle, chunks);
-						if (updateAfterEach) {
+
+						int done = counter.incrementAndGet();
+						if (done % updateAfter == 0) {
 							try {
 								write(statPageTitle, results);
 							} catch (Exception exc) {
@@ -819,8 +842,12 @@ public class RevisionAuthorshipCalculator {
 		write(statPageTitle, results);
 	}
 
-	public void updateFeatured() {
-		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья", true);
+	public void updateFeaturedArticles() {
+		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья", 10);
+	}
+
+	public void updateGoodArticles() {
+		updateByTemplateIncluded("Авторство хороших статей", "Шаблон:Хорошая статья", 10);
 	}
 
 	private void write(String title, SortedMap<String, List<TextChunk>> results) {

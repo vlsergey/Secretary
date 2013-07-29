@@ -3,6 +3,8 @@ package org.wikipedia.vlsergey.secretary.cache;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +17,20 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 @Repository
 public class StoredRevisionDao {
 
+	private static final int SEGMENTS = 64;
+
+	private final Lock[] locks = new Lock[SEGMENTS];
+
 	@Autowired
 	private StoredPageDao storedPageDao;
 
 	protected HibernateTemplate template = null;
+
+	public StoredRevisionDao() {
+		for (int i = 0; i < SEGMENTS; i++) {
+			locks[i] = new ReentrantLock();
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	public List<Long> getAllRevisionIds() {
@@ -26,7 +38,7 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public synchronized List<StoredRevision> getOrCreate(Locale locale, Iterable<Revision> withContent) {
+	public List<StoredRevision> getOrCreate(Locale locale, Iterable<Revision> withContent) {
 		List<StoredRevision> result = new ArrayList<StoredRevision>();
 		for (Revision source : withContent) {
 			result.add(getOrCreate(locale, source));
@@ -35,8 +47,18 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public synchronized StoredRevision getOrCreate(Locale locale, Revision withContent) {
+	public StoredRevision getOrCreate(Locale locale, Revision withContent) {
+		final int segmentIndex = (int) (withContent.getId().longValue() % SEGMENTS);
+		final Lock lock = locks[segmentIndex];
+		lock.lock();
+		try {
+			return getOrCreateImpl(locale, withContent);
+		} finally {
+			lock.unlock();
+		}
+	}
 
+	private StoredRevision getOrCreateImpl(Locale locale, Revision withContent) {
 		final StoredRevisionPk key = new StoredRevisionPk(locale, withContent.getId());
 		StoredRevision revisionImpl = getRevisionById(key);
 		if (revisionImpl == null) {

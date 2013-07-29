@@ -38,6 +38,15 @@ import java.util.List;
 
 public class SuffixArray<T> {
 
+	// length of longest common prefix of s and t
+	public static <T> int lcp(List<T> s, List<T> t) {
+		int N = Math.min(s.size(), t.size());
+		for (int i = 0; i < N; i++)
+			if (!s.get(i).equals(t.get(i)))
+				return i;
+		return N;
+	}
+
 	private final int N;
 
 	private final List<T>[] suffixes;
@@ -64,15 +73,6 @@ public class SuffixArray<T> {
 	// longest common prefix of suffixes(i) and suffixes(j)
 	public int lcp(int i, int j) {
 		return lcp(suffixes[i], suffixes[j]);
-	}
-
-	// length of longest common prefix of s and t
-	private int lcp(List<T> s, List<T> t) {
-		int N = Math.min(s.size(), t.size());
-		for (int i = 0; i < N; i++)
-			if (!s.get(i).equals(t.get(i)))
-				return i;
-		return N;
 	}
 
 	// size of string
