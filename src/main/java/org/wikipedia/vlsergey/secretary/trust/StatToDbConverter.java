@@ -43,7 +43,7 @@ public class StatToDbConverter {
 
 			@Override
 			public boolean accept(File dir, String name) {
-				return name.endsWith(".gz") && name.contains("2013060");
+				return name.endsWith(".gz") && name.contains("201306");
 			}
 		})) {
 
@@ -65,14 +65,7 @@ public class StatToDbConverter {
 		}
 
 		List<String> articleName = new ArrayList<String>(counters.keySet());
-		Collections.sort(articleName, new Comparator<String>() {
-			@Override
-			public int compare(String o1, String o2) {
-				Long l1 = counters.get(o1).longValue();
-				Long l2 = counters.get(o2).longValue();
-				return l2.compareTo(l1);
-			}
-		});
+		sort(articleName, counters);
 
 		final String outputName = "stats/stats-2013-06-01.txt";
 		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(outputName), "utf-8");
@@ -84,7 +77,7 @@ public class StatToDbConverter {
 			fileWriter.close();
 		}
 		System.out.println("Done! -- " + outputName);
-
+		executor.shutdown();
 	}
 
 	private void processFile(ConcurrentMap<String, AtomicLong> counters, File gzFile)
@@ -97,6 +90,7 @@ public class StatToDbConverter {
 				if (line.startsWith("ru ")) {
 					String[] strings = StringUtils.split(line, " ");
 					try {
+
 						String pageName = URLDecoder.decode(strings[1], "utf-8");
 						pageName = pageName.replace('_', ' ');
 
@@ -105,19 +99,20 @@ public class StatToDbConverter {
 							pageName = URLDecoder.decode(pageName, "utf-8");
 						}
 
-						if (pageName.contains(":") || pageName.startsWith("wiki/")) {
+						if (pageName.startsWith("w/") || pageName.startsWith("wiki/")
+								|| pageName.startsWith("Special:") || pageName.startsWith("Служебная:")
+								|| pageName.startsWith("Участник:") || pageName.startsWith("Википедия:")
+								|| pageName.startsWith("Файл:") || pageName.startsWith("Обсуждение:")
+								|| pageName.startsWith("Обсуждение участника:")) {
 							continue;
 						}
-						if (!pageName.matches("[0-9a-zA-Zа-яА-ЯёЁ\\(\\)\\\\\\/\\-\\+\\? ]+")) {
-							continue;
-						}
+
 						long visits = Long.parseLong(strings[3]);
 
 						if (!counters.containsKey(pageName))
 							counters.putIfAbsent(pageName, new AtomicLong());
 
 						counters.get(pageName).addAndGet(visits);
-
 					} catch (IllegalArgumentException exc) {
 						// skip
 					}
@@ -127,5 +122,16 @@ public class StatToDbConverter {
 		} finally {
 			reader.close();
 		}
+	}
+
+	private void sort(List<String> articleName, final ConcurrentMap<String, AtomicLong> counters) {
+		Collections.sort(articleName, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				Long l1 = counters.get(o1).longValue();
+				Long l2 = counters.get(o2).longValue();
+				return l2.compareTo(l1);
+			}
+		});
 	}
 }
