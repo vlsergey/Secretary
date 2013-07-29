@@ -25,7 +25,7 @@ public class RevisionAuthorshipCalculatorTest {
 		List<TextChunk> chunks2 = calculator.toChunks("B", text2);
 
 		final List<TextChunk> joined = calculator.join(chunks1, chunks2);
-		Assert.assertEquals("A 97,3%; B 2,7%;", calculator.toString(joined, false));
+		Assert.assertEquals("A 97,21%; B 2,79%;", calculator.toString(joined, false));
 	}
 
 	@Test

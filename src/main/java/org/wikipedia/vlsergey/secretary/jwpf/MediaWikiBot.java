@@ -355,15 +355,7 @@ public class MediaWikiBot extends HttpBot {
 		return performMultiAction(a);
 	}
 
-	public Iterable<ParsedPage> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, int[] namespaces,
-			RevisionPropery[] properties) throws ActionException, ProcessException {
-
-		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn,
-				createNsString(namespaces), properties);
-		return performMultiAction(query);
-	}
-
-	public Revision queryRevisionByPageId(Long pageId, RevisionPropery[] properties) throws ActionException,
+	public Revision queryLatestRevision(Long pageId, RevisionPropery[] properties) throws ActionException,
 			ProcessException {
 		logger.info("queryRevisionByPageId(" + pageId + ", " + Arrays.toString(properties) + ")");
 
@@ -373,23 +365,73 @@ public class MediaWikiBot extends HttpBot {
 		return getSingleRevision(action.getResults());
 	}
 
+	public Revision queryLatestRevision(String pageTitle, RevisionPropery... properties) throws ActionException,
+			ProcessException {
+		logger.info("queryRevisionLatest('" + pageTitle + "', " + Arrays.toString(properties) + ")");
+
+		QueryRevisionsByPageTitles action = new QueryRevisionsByPageTitles(isBot(), Collections.singleton(pageTitle),
+				properties);
+		performAction(action);
+
+		return getSingleRevision(action.getResults());
+	}
+
+	public Iterable<Revision> queryLatestRevisionsByPageIds(Iterable<Long> pageIds, RevisionPropery... properties)
+			throws ActionException, ProcessException {
+		return queryLatestRevisionsByPageIdsF(properties).apply(pageIds);
+	}
+
+	public MultiresultFunction<Long, Revision> queryLatestRevisionsByPageIdsF(final RevisionPropery... properties) {
+		return new MultiresultFunction<Long, Revision>() {
+			@Override
+			public Iterable<Revision> apply(Iterable<Long> a) {
+				logger.info("queryLatestRevisionsByPageIdsF: " + a + "; " + Arrays.asList(properties));
+
+				List<Revision> result = new ArrayList<Revision>();
+				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(isBot(), a, properties);
+				performAction(bufferAction);
+				addSingleRevisionsToResult(bufferAction.getResults(), result);
+
+				return result;
+			}
+		}.makeBatched(isBot() ? 500 : 50);
+	}
+
+	public Iterable<Revision> queryLatestRevisionsByPageTitles(Iterable<String> pageIds, RevisionPropery... properties)
+			throws ActionException, ProcessException {
+		return queryLatestRevisionsByPageTitlesF(properties).apply(pageIds);
+	}
+
+	public MultiresultFunction<String, Revision> queryLatestRevisionsByPageTitlesF(final RevisionPropery... properties) {
+		return new MultiresultFunction<String, Revision>() {
+			@Override
+			public Iterable<Revision> apply(Iterable<String> a) {
+				logger.info("queryLatestRevisionsByPageTitlesF: " + a + "; " + Arrays.asList(properties));
+
+				List<Revision> result = new ArrayList<Revision>();
+				QueryRevisionsByPageTitles bufferAction = new QueryRevisionsByPageTitles(isBot(), a, properties);
+				performAction(bufferAction);
+				addSingleRevisionsToResult(bufferAction.getResults(), result);
+
+				return result;
+			}
+		}.makeBatched(isBot() ? 500 : 50);
+	}
+
+	public Iterable<ParsedPage> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, int[] namespaces,
+			RevisionPropery[] properties) throws ActionException, ProcessException {
+
+		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn,
+				createNsString(namespaces), properties);
+		return performMultiAction(query);
+	}
+
 	public Revision queryRevisionByRevisionId(Long revisionId, boolean rvgeneratexml, RevisionPropery[] properties)
 			throws ActionException, ProcessException {
 		logger.info("queryRevisionByRevisionId(" + revisionId + ", " + Arrays.toString(properties) + ", "
 				+ rvgeneratexml + ")");
 
 		QueryRevisionsByRevision action = new QueryRevisionsByRevision(isBot(), revisionId, rvgeneratexml, properties);
-		performAction(action);
-
-		return getSingleRevision(action.getResults());
-	}
-
-	public Revision queryRevisionLatest(String pageTitle, RevisionPropery... properties) throws ActionException,
-			ProcessException {
-		logger.info("queryRevisionLatest('" + pageTitle + "', " + Arrays.toString(properties) + ")");
-
-		QueryRevisionsByPageTitles action = new QueryRevisionsByPageTitles(isBot(), Collections.singleton(pageTitle),
-				properties);
 		performAction(action);
 
 		return getSingleRevision(action.getResults());
@@ -406,48 +448,6 @@ public class MediaWikiBot extends HttpBot {
 				properties))) {
 			addAllRevisionsToResult(page, result);
 		}
-		return result;
-	}
-
-	public Collection<Revision> queryRevisionsByPageIds(Iterable<Long> pageIds, RevisionPropery... properties)
-			throws ActionException, ProcessException {
-		logger.info("queryRevisionsByPageIds: " + pageIds + "; " + Arrays.asList(properties));
-
-		List<Revision> result = new ArrayList<Revision>();
-
-		final int limit = isBot() ? 500 : 50;
-		List<Long> buffer = new ArrayList<Long>(limit);
-		for (Long pageId : pageIds) {
-			buffer.add(pageId);
-
-			if (buffer.size() == limit) {
-				logger.info("queryRevisionsByPageIds(...): " + buffer);
-
-				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(isBot(), buffer, properties);
-				performAction(bufferAction);
-
-				addSingleRevisionsToResult(bufferAction.getResults(), result);
-
-				buffer.clear();
-				synchronized (this) {
-					try {
-						this.wait(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-		}
-
-		if (!buffer.isEmpty()) {
-			logger.info("queryRevisionsByPageIds(...): " + buffer);
-
-			QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(isBot(), buffer, properties);
-			performAction(bufferAction);
-			addSingleRevisionsToResult(bufferAction.getResults(), result);
-			buffer.clear();
-		}
-
 		return result;
 	}
 

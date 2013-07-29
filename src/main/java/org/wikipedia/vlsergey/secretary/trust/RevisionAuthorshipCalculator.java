@@ -38,6 +38,7 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.trust.princeton.LCS;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
@@ -482,7 +483,16 @@ public class RevisionAuthorshipCalculator {
 		return newAuthorship;
 	}
 
-	public List<TextChunk> getAuthorship(String pageTitle, final Date lastPossibleEditTimestamp) throws Exception {
+	public List<TextChunk> getAuthorship(String pageTitle, Revision latestRevisionIdHolder,
+			final Date lastPossibleEditTimestamp) throws Exception {
+
+		{
+			// check DB before preloading
+			List<TextChunk> chunks = getAuthorshipFromDatabase(latestRevisionIdHolder.getId());
+			if (chunks != null) {
+				return chunks;
+			}
+		}
 
 		PageContext pageContext = new PageContext(pageTitle);
 		if (pageContext.revisionInfosNewer.isEmpty()) {
@@ -490,14 +500,6 @@ public class RevisionAuthorshipCalculator {
 		}
 
 		if (PRELOAD) {
-			{
-				// check DB before preloading
-				List<TextChunk> chunks = getAuthorshipFromDatabase(pageContext.queryLatestRevisionInfo().getId());
-				if (chunks != null) {
-					return chunks;
-				}
-			}
-
 			// pregenerate to prevent out of memory and out of stack?
 			log.info("Preload all revisions of '" + pageTitle + "'");
 
@@ -803,14 +805,18 @@ public class RevisionAuthorshipCalculator {
 				.synchronizedSortedMap(new TreeMap<String, List<TextChunk>>());
 
 		List<Future<List<TextChunk>>> futures = new ArrayList<Future<List<TextChunk>>>();
-		for (final String pageTitle : mediaWikiBot.queryEmbeddedInPageTitles(template, Namespaces.MAIN)) {
-			// for (final String pageTitle : new String[] { "Кирибати" }) {
+		for (final Revision latestRevisionIdHolder : mediaWikiBot.queryLatestRevisionsByPageIds(
+				mediaWikiBot.queryEmbeddedInPageIds(template, Namespaces.MAIN), WikiCache.FAST)) {
+
+			final Page page = latestRevisionIdHolder.getPage();
+			final String pageTitle = page.getTitle();
+
 			futures.add(executor.submit(new Callable<List<TextChunk>>() {
 
 				@Override
 				public List<TextChunk> call() throws Exception {
 					try {
-						List<TextChunk> chunks = getAuthorship(pageTitle, null);
+						List<TextChunk> chunks = getAuthorship(pageTitle, latestRevisionIdHolder, null);
 						results.put(pageTitle, chunks);
 
 						int done = counter.incrementAndGet();

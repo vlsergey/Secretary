@@ -25,6 +25,8 @@ import java.util.TreeMap;
 
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class WikiStats {
@@ -130,9 +132,10 @@ public class WikiStats {
 
 		long prevCounter = 0;
 		long counter = 0;
-		for (String articleName : byPopularity) {
+		for (Revision latestRevision : mediaWikiBot.queryLatestRevisionsByPageTitles(byPopularity, RevisionPropery.IDS)) {
 
-			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(articleName,
+			String articleName = latestRevision.getPage().getTitle();
+			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(articleName, latestRevision,
 					lastAllowedEditTimestamp());
 			if (textChunks == null) {
 				System.out.println("Skip article: " + articleName);
@@ -183,8 +186,11 @@ public class WikiStats {
 		TObjectDoubleHashMap<String> byUser = new TObjectDoubleHashMap<String>(16, 1, 0);
 		final Map<String, SortedMap<String, Double>> perUserProcents = new HashMap<String, SortedMap<String, Double>>();
 
-		for (final String pageTitle : mediaWikiBot.queryEmbeddedInPageTitles(template, Namespaces.MAIN)) {
-			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(pageTitle,
+		for (final Revision latestRevision : mediaWikiBot.queryLatestRevisionsByPageIds(
+				mediaWikiBot.queryEmbeddedInPageIds(template, Namespaces.MAIN), RevisionPropery.IDS)) {
+			String pageTitle = latestRevision.getPage().getTitle();
+
+			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(pageTitle, latestRevision,
 					lastAllowedEditTimestamp());
 			if (textChunks == null) {
 				System.out.println("Skip article: " + pageTitle);

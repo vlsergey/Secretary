@@ -142,7 +142,7 @@ public class WikiCache {
 		logger.info("queryLatestContentByPageIds: " + pageIds);
 
 		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
-		for (Revision revision : mediaWikiBot.queryRevisionsByPageIds(pageIds, FAST)) {
+		for (Revision revision : mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, FAST)) {
 			// update info in DB
 			revision = storedRevisionDao.getOrCreate(getLocale(), revision);
 
@@ -203,7 +203,7 @@ public class WikiCache {
 	public Revision queryLatestRevision(Long pageId) {
 		logger.debug("queryLatestRevision(" + pageId + ")");
 
-		Revision latest = mediaWikiBot.queryRevisionByPageId(pageId, FAST);
+		Revision latest = mediaWikiBot.queryLatestRevision(pageId, FAST);
 
 		if (latest == null)
 			return null;
@@ -225,7 +225,7 @@ public class WikiCache {
 	public Revision queryLatestRevision(String pageTitle) {
 		logger.debug("queryLatestRevision('" + pageTitle + "')");
 
-		Revision latest = mediaWikiBot.queryRevisionLatest(pageTitle, FAST);
+		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, FAST);
 
 		if (latest == null)
 			return null;
