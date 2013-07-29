@@ -36,20 +36,22 @@ public class Secretary {
 
 		// appContext.getBean(RevisionAuthorshipDao.class).removeAll();
 		// appContext.getBean(RevisionAuthorshipCalculator.class).updateBlockCodes();
-		appContext.getBean(RevisionAuthorshipCalculator.class).updateFeaturedArticles();
-		appContext.getBean(RevisionAuthorshipCalculator.class).updateGoodArticles();
 
+		appContext.getBean(RevisionAuthorshipCalculator.class).updateFeaturedArticles();
 		appContext.getBean(WikiStats.class).updateByTemplateIncluded(
 				"Рейтинг авторов избранных статей/2013-06",
 				"На данной странице делается попытка построить рейтинг редакторов избранных статей русской Википедии, "
 						+ "основываясь на посещаемости статей в июне месяце и вкладе каждого редактора.",
 				"Шаблон:Избранная статья", true);
 
+		appContext.getBean(RevisionAuthorshipCalculator.class).updateGoodArticles();
 		appContext.getBean(WikiStats.class).updateByTemplateIncluded(
 				"Рейтинг авторов хороших статей/2013-06",
 				"На данной странице делается попытка построить рейтинг редакторов хороших статей русской Википедии, "
 						+ "основываясь на посещаемости статей в июне месяце и вкладе каждого редактора.",
 				"Шаблон:Хорошая статья", true);
+
+		appContext.getBean(WikiStats.class).run();
 
 		while (true) {
 			Thread.sleep(10000);
