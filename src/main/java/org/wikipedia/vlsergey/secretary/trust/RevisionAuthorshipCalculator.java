@@ -486,7 +486,7 @@ public class RevisionAuthorshipCalculator {
 	public List<TextChunk> getAuthorship(String pageTitle, Revision latestRevisionIdHolder,
 			final Date lastPossibleEditTimestamp) throws Exception {
 
-		{
+		if (latestRevisionIdHolder != null) {
 			// check DB before preloading
 			List<TextChunk> chunks = getAuthorshipFromDatabase(latestRevisionIdHolder.getId());
 			if (chunks != null) {
