@@ -844,7 +844,8 @@ public class RevisionAuthorshipCalculator {
 	}
 
 	public void updateFeaturedArticles() {
-		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья", 10);
+		// already calculated
+		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья", 10000);
 	}
 
 	public void updateGoodArticles() {
