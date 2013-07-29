@@ -178,8 +178,8 @@ public class WikiStats {
 		this.revisionAuthorshipCalculator = revisionAuthorshipCalculator;
 	}
 
-	public void updateByTemplateIncluded(final String statPageTitle, final String description, final String template,
-			final boolean updateAfterEach) throws Exception {
+	public void updateByTemplateIncluded(final String statPageTitle, final String description, final String template)
+			throws Exception {
 
 		final TObjectLongHashMap<String> counters = loadCounters();
 
@@ -213,14 +213,6 @@ public class WikiStats {
 				}
 				userArticles.put(pageTitle, Double.valueOf(percent));
 			}
-
-			if (updateAfterEach) {
-				try {
-					write(statPageTitle, description, counters, byUser, perUserProcents);
-				} catch (Exception exc) {
-					exc.printStackTrace();
-				}
-			}
 		}
 
 		write(statPageTitle, description, counters, byUser, perUserProcents);
@@ -234,15 +226,19 @@ public class WikiStats {
 		StringBuffer buffer = new StringBuffer();
 		buffer.append(description + "\n\n");
 		buffer.append("{| class=\"wikitable sortable\"\n");
-		buffer.append("! {{comment|Редактор|учитывается вклад всех редакторов, в том числе ботов}} !"
+		buffer.append("! {{comment|Место|место по порядку в рейтинге}} !"
+				+ "! {{comment|Редактор|учитывается вклад всех редакторов, в том числе ботов}} !"
 				+ "! {{comment|Статей|количество статей, в редактировании которых участник принимал участие (из числа проанализированных)}} !"
 				+ "! {{comment|Статьи|список статей, количество посещений статьи, процент вклада участника и баллы за статью}} !"
 				+ "! {{comment|Сумма баллов|сумма баллов за все статьи, в наполнении которых редактор принимал участие (из числа проанализированных)}}\n");
 		buffer.append("|-\n");
+
+		int counter = 0;
 		for (String userName : sorted) {
 			double userTotalPoints = byUser.get(userName);
 			SortedMap<String, Double> userArticles = perUserProcents.get(userName);
 
+			buffer.append("| " + (++counter) + "\n");
 			buffer.append("| [[User:" + userName + "|" + userName + "]]\n");
 			buffer.append("| align=right | " + userArticles.size() + "\n");
 			buffer.append("| {{Сокрытие|title=Список статей|hidden=1|content=\n");
@@ -259,6 +255,10 @@ public class WikiStats {
 			buffer.append("}}\n");
 			buffer.append("| align=right | " + decimalFormat.format(userTotalPoints) + "\n");
 			buffer.append("|-\n");
+
+			if (buffer.length() > 500000) {
+				break;
+			}
 		}
 		buffer.append("|}\n");
 
