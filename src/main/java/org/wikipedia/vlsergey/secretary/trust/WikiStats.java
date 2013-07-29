@@ -31,7 +31,7 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class WikiStats {
 
-	private static final DecimalFormat decimalFormat = new DecimalFormat("0.00");
+	private static final DecimalFormat decimalFormat = new DecimalFormat("###,##0.00");
 
 	private static final int MAX_USERS = 500;
 
@@ -105,7 +105,9 @@ public class WikiStats {
 						continue;
 					}
 					String[] strings = StringUtils.split(line, "\t");
-					counters.put(strings[0], Long.valueOf(strings[1]));
+					if (strings.length == 2) {
+						counters.put(strings[0], Long.valueOf(strings[1]));
+					}
 				}
 			} finally {
 				reader.close();
@@ -186,11 +188,9 @@ public class WikiStats {
 		TObjectDoubleHashMap<String> byUser = new TObjectDoubleHashMap<String>(16, 1, 0);
 		final Map<String, SortedMap<String, Double>> perUserProcents = new HashMap<String, SortedMap<String, Double>>();
 
-		for (final Revision latestRevision : mediaWikiBot.queryLatestRevisionsByPageIds(
-				mediaWikiBot.queryEmbeddedInPageIds(template, Namespaces.MAIN), RevisionPropery.IDS)) {
-			String pageTitle = latestRevision.getPage().getTitle();
+		for (final String pageTitle : mediaWikiBot.queryEmbeddedInPageTitles(template, Namespaces.MAIN)) {
 
-			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(pageTitle, latestRevision,
+			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(pageTitle, null,
 					lastAllowedEditTimestamp());
 			if (textChunks == null) {
 				System.out.println("Skip article: " + pageTitle);
