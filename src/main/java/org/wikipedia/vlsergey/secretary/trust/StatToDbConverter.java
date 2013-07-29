@@ -1,7 +1,5 @@
 package org.wikipedia.vlsergey.secretary.trust;
 
-import gnu.trove.map.hash.TObjectLongHashMap;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -18,6 +16,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
@@ -28,11 +32,14 @@ public class StatToDbConverter {
 		new StatToDbConverter().collectToDb();
 	}
 
+	private final ExecutorService executor = Executors.newFixedThreadPool(2);
+
 	public void collectToDb() throws Exception {
 		// clean all before start?
 
-		final TObjectLongHashMap<String> counters = new TObjectLongHashMap<String>(16, 1, 0);
-		for (File gzFile : new File("stats/pagecounts-raw/2013/06/").listFiles(new FilenameFilter() {
+		final List<Future<?>> futures = new ArrayList<Future<?>>();
+		final ConcurrentMap<String, AtomicLong> counters = new ConcurrentHashMap<String, AtomicLong>(10000);
+		for (final File gzFile : new File("stats/pagecounts-raw/2013/06/").listFiles(new FilenameFilter() {
 
 			@Override
 			public boolean accept(File dir, String name) {
@@ -40,21 +47,35 @@ public class StatToDbConverter {
 			}
 		})) {
 
-			processFile(counters, gzFile);
-			System.out.println("File " + gzFile + " processed");
+			futures.add(executor.submit(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						processFile(counters, gzFile);
+						System.out.println("File " + gzFile + " processed");
+					} catch (Exception exc) {
+						exc.printStackTrace();
+					}
+				}
+			}));
+		}
+
+		for (Future<?> future : futures) {
+			future.get();
 		}
 
 		List<String> articleName = new ArrayList<String>(counters.keySet());
 		Collections.sort(articleName, new Comparator<String>() {
 			@Override
 			public int compare(String o1, String o2) {
-				Long l1 = counters.get(o1);
-				Long l2 = counters.get(o2);
+				Long l1 = counters.get(o1).longValue();
+				Long l2 = counters.get(o2).longValue();
 				return l2.compareTo(l1);
 			}
 		});
 
-		Writer fileWriter = new OutputStreamWriter(new FileOutputStream("stats/stats-2013-06-01.txt"), "utf-8");
+		final String outputName = "stats/stats-2013-06-01.txt";
+		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(outputName), "utf-8");
 		try {
 			for (String key : articleName) {
 				fileWriter.append(key + "\t" + counters.get(key) + "\n");
@@ -62,16 +83,15 @@ public class StatToDbConverter {
 		} finally {
 			fileWriter.close();
 		}
-		System.out.println("Done!");
+		System.out.println("Done! -- " + outputName);
 
 	}
 
-	private void processFile(TObjectLongHashMap<String> counters, File gzFile) throws UnsupportedEncodingException,
-			IOException, FileNotFoundException {
+	private void processFile(ConcurrentMap<String, AtomicLong> counters, File gzFile)
+			throws UnsupportedEncodingException, IOException, FileNotFoundException {
 		LineNumberReader reader = new LineNumberReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(
-				gzFile)), "utf-8"));
+				gzFile)), "utf-8"), 1 << 20);
 		try {
-
 			String line;
 			while ((line = reader.readLine()) != null) {
 				if (line.startsWith("ru ")) {
@@ -88,11 +108,15 @@ public class StatToDbConverter {
 						if (pageName.contains(":") || pageName.startsWith("wiki/")) {
 							continue;
 						}
-						if (!pageName.matches("[0-9a-zA-Zа-яА-ЯёЁ\\(\\)\\\\\\/\\-\\+\\?]+")) {
+						if (!pageName.matches("[0-9a-zA-Zа-яА-ЯёЁ\\(\\)\\\\\\/\\-\\+\\? ]+")) {
 							continue;
 						}
 						long visits = Long.parseLong(strings[3]);
-						counters.put(pageName, counters.get(pageName) + visits);
+
+						if (!counters.containsKey(pageName))
+							counters.putIfAbsent(pageName, new AtomicLong());
+
+						counters.get(pageName).addAndGet(visits);
 
 					} catch (IllegalArgumentException exc) {
 						// skip
