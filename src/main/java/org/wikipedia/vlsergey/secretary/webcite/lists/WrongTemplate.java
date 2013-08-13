@@ -26,11 +26,15 @@ public class WrongTemplate extends SkipList {
 
 			"allkriminal.ru",
 
+			"elibrary.ru",
+
 			"books.google.ru",
 
 			"kommersant.ru",
 
 			"kp.ru",
+
+			"lib.ru",
 
 			"ng.ru",
 
