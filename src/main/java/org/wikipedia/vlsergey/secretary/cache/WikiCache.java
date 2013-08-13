@@ -225,7 +225,7 @@ public class WikiCache {
 	public Revision queryLatestRevision(String pageTitle) {
 		logger.debug("queryLatestRevision('" + pageTitle + "')");
 
-		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, FAST);
+		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, false, FAST);
 
 		if (latest == null)
 			return null;
