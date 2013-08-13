@@ -328,7 +328,7 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 		String result = fragment.toWiki(false);
 
 		if (!StringUtils.equals(source, result)) {
-			mediaWikiBot.writeContent(revision.getPage(), revision, result, "Replace with book template(s)", true);
+			mediaWikiBot.writeContent(revision, result, "Replace with book template(s)", true);
 		}
 	}
 

@@ -273,7 +273,7 @@ public class Gost {
 			}
 
 			if (!StringUtils.equals(content, revision.getContent())) {
-				mediaWikiBot.writeContent(revision.getPage(), revision, content, "Replace " + badSite.getUrlTemplate()
+				mediaWikiBot.writeContent(revision, content, "Replace " + badSite.getUrlTemplate()
 						+ " with protect.gost.ru", true);
 			}
 		}
