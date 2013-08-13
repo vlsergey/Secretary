@@ -2,6 +2,8 @@ package org.wikipedia.vlsergey.secretary.cache;
 
 import java.security.MessageDigest;
 import java.util.Locale;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang.StringUtils;
@@ -18,11 +20,21 @@ public class XmlCache {
 
 	private static final Log log = LogFactory.getLog(XmlCache.class);
 
+	private static final int SEGMENTS = 64;
+
 	private Locale locale;
+
+	private final Lock[] locks = new Lock[SEGMENTS];
 
 	private MediaWikiBot mediaWikiBot;
 
 	protected HibernateTemplate template = null;
+
+	public XmlCache() {
+		for (int i = 0; i < SEGMENTS; i++) {
+			locks[i] = new ReentrantLock();
+		}
+	}
 
 	public Locale getLocale() {
 		return locale;
@@ -40,24 +52,33 @@ public class XmlCache {
 		byte[] digest = md.digest(content.getBytes("utf-8"));
 		String hash = Hex.encodeHexString(digest);
 
-		String key = getLocale().getLanguage() + "-" + hash;
-		XmlCacheItem cacheItem = template.get(XmlCacheItem.class, key);
-		if (cacheItem != null) {
-			log.trace("XML for string with hash '" + key + "' found");
-			return cacheItem.getXml();
-		}
+		final int segmentIndex = (hash.hashCode() % SEGMENTS + SEGMENTS) % SEGMENTS;
+		final Lock lock = locks[segmentIndex];
 
-		ExpandTemplates expandTemplates = mediaWikiBot.expandTemplates(content, null, true, false);
-		final String xml = expandTemplates.getParsetree();
-		if (StringUtils.isNotEmpty(StringUtils.trimToEmpty(xml))) {
-			XmlCacheItem xmlCacheItem = new XmlCacheItem();
-			xmlCacheItem.setHash(key);
-			xmlCacheItem.setContent(content);
-			xmlCacheItem.setXml(xml);
-			template.save(xmlCacheItem);
-		}
+		lock.lock();
+		try {
 
-		return xml;
+			String key = getLocale().getLanguage() + "-" + hash;
+			XmlCacheItem cacheItem = template.get(XmlCacheItem.class, key);
+			if (cacheItem != null) {
+				log.trace("XML for string with hash '" + key + "' found");
+				return cacheItem.getXml();
+			}
+
+			ExpandTemplates expandTemplates = mediaWikiBot.expandTemplates(content, null, true, false);
+			final String xml = expandTemplates.getParsetree();
+			if (StringUtils.isNotEmpty(StringUtils.trimToEmpty(xml))) {
+				XmlCacheItem xmlCacheItem = new XmlCacheItem();
+				xmlCacheItem.setHash(key);
+				xmlCacheItem.setContent(content);
+				xmlCacheItem.setXml(xml);
+				template.save(xmlCacheItem);
+			}
+
+			return xml;
+		} finally {
+			lock.unlock();
+		}
 	}
 
 	public void setLocale(Locale locale) {
