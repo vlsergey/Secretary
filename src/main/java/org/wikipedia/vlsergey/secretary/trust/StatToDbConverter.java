@@ -29,21 +29,23 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 public class StatToDbConverter {
 
 	public static void main(String[] args) throws Exception {
-		new StatToDbConverter().collectToDb();
+		new StatToDbConverter().collectToDb("stats/pagecounts-raw/2013/07/", "201307", "stats/stats-2013-07.txt", 10);
+		// new StatToDbConverter().collectToDb("stats/pagecounts-raw/2013/06/",
+		// "201306", "stats/stats-2013-06.txt", 10);
 	}
 
 	private final ExecutorService executor = Executors.newFixedThreadPool(2);
 
-	public void collectToDb() throws Exception {
-		// clean all before start?
+	public void collectToDb(final String folder, final String fileNameContains, final String outputName, int minValue)
+			throws Exception {
 
 		final List<Future<?>> futures = new ArrayList<Future<?>>();
 		final ConcurrentMap<String, AtomicLong> counters = new ConcurrentHashMap<String, AtomicLong>(10000);
-		for (final File gzFile : new File("stats/pagecounts-raw/2013/06/").listFiles(new FilenameFilter() {
+		for (final File gzFile : new File(folder).listFiles(new FilenameFilter() {
 
 			@Override
 			public boolean accept(File dir, String name) {
-				return name.endsWith(".gz") && name.contains("201306");
+				return name.endsWith(".gz") && name.contains(fileNameContains);
 			}
 		})) {
 
@@ -67,11 +69,14 @@ public class StatToDbConverter {
 		List<String> articleName = new ArrayList<String>(counters.keySet());
 		sort(articleName, counters);
 
-		final String outputName = "stats/stats-2013-06-01.txt";
 		Writer fileWriter = new OutputStreamWriter(new FileOutputStream(outputName), "utf-8");
 		try {
 			for (String key : articleName) {
-				fileWriter.append(key + "\t" + counters.get(key) + "\n");
+				final AtomicLong value = counters.get(key);
+				if (value.longValue() < minValue) {
+					break;
+				}
+				fileWriter.append(key + "\t" + value + "\n");
 			}
 		} finally {
 			fileWriter.close();
@@ -94,20 +99,66 @@ public class StatToDbConverter {
 						String pageName = URLDecoder.decode(strings[1], "utf-8");
 						pageName = pageName.replace('_', ' ');
 
+						if (pageName.codePointAt(0) == 65533) {
+							// Windows-1251?
+							pageName = URLDecoder.decode(strings[1], "Windows-1251");
+							pageName = pageName.replace('_', ' ');
+						}
+
 						if (pageName.contains("\\x")) {
 							pageName = pageName.replace("\\x", "%");
 							pageName = URLDecoder.decode(pageName, "utf-8");
 						}
 
-						if (pageName.startsWith("w/") || pageName.startsWith("wiki/")
-								|| pageName.startsWith("Special:") || pageName.startsWith("Служебная:")
-								|| pageName.startsWith("Участник:") || pageName.startsWith("Википедия:")
-								|| pageName.startsWith("Файл:") || pageName.startsWith("Обсуждение:")
-								|| pageName.startsWith("Обсуждение участника:")) {
+						if (pageName.contains("\r") || pageName.contains("\n") || pageName.contains("\t")
+								|| pageName.contains("\0")) {
 							continue;
 						}
 
-						long visits = Long.parseLong(strings[3]);
+						if (pageName.startsWith("Заглавная страница") || pageName.startsWith("Main page")
+								|| pageName.equals("edit") || pageName.equals("null")) {
+							continue;
+						}
+
+						{
+							String lowerCase = pageName.toLowerCase();
+							if (lowerCase.startsWith("w/")
+									|| lowerCase.startsWith("wiki/")
+									//
+									|| lowerCase.startsWith("обсуждение:")
+									//
+									|| lowerCase.startsWith("категория:")
+									|| lowerCase.startsWith("обсуждение категории:")
+									//
+									|| lowerCase.startsWith("арбитраж:")
+									|| lowerCase.startsWith("обсуждение арбитража:")
+									//
+									|| lowerCase.startsWith("википедия:")
+									|| lowerCase.startsWith("обсуждение википедии:")
+									//
+									|| lowerCase.startsWith("шаблон:")
+									|| lowerCase.startsWith("обсуждение шаблона:")
+									//
+									|| lowerCase.startsWith("портал:")
+									|| lowerCase.startsWith("обсуждение портала:")
+									//
+									|| lowerCase.startsWith("проект:")
+									|| lowerCase.startsWith("обсуждение проекта:")
+									//
+									|| lowerCase.startsWith("user:") || lowerCase.startsWith("участник:")
+									|| lowerCase.startsWith("участница:")
+									|| lowerCase.startsWith("обсуждение участника:")
+									|| lowerCase.startsWith("обсуждение участницы:")
+									//
+									|| lowerCase.startsWith("файл:") || lowerCase.startsWith("изображение:")
+									|| lowerCase.startsWith("обсуждение файла:")
+									//
+									|| lowerCase.startsWith("special:") || lowerCase.startsWith("служебная:")) {
+								continue;
+							}
+						}
+
+						long visits = Long.parseLong(strings[2]);
 
 						if (!counters.containsKey(pageName))
 							counters.putIfAbsent(pageName, new AtomicLong());

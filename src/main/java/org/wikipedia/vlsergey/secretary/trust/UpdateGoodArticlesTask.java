@@ -1,0 +1,35 @@
+package org.wikipedia.vlsergey.secretary.trust;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class UpdateGoodArticlesTask implements Runnable {
+
+	private static final Log log = LogFactory.getLog(UpdateGoodArticlesTask.class);
+
+	@Autowired
+	private RevisionAuthorshipCalculator revisionAuthorshipCalculator;
+
+	@Autowired
+	private WikiStats wikiStats;
+
+	@Override
+	public void run() {
+		revisionAuthorshipCalculator.updateGoodArticles();
+
+		try {
+			wikiStats.updateByTemplateIncluded(StatisticsKey.GOOD, "Шаблон:Хорошая статья", Month.MONTH_OF_2013_06);
+		} catch (Exception exc) {
+			log.error("Unable to update featured articles raiting: " + exc, exc);
+		}
+		try {
+			wikiStats.updateByTemplateIncluded(StatisticsKey.GOOD, "Шаблон:Хорошая статья", Month.MONTH_OF_2013_07);
+		} catch (Exception exc) {
+			log.error("Unable to update featured articles raiting: " + exc, exc);
+		}
+	}
+
+}

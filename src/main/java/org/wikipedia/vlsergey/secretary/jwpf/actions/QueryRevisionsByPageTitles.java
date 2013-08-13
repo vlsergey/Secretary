@@ -6,7 +6,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByPageTitles extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByPageTitles(boolean bot, Iterable<String> pageTitles, RevisionPropery[] properties) {
+	public QueryRevisionsByPageTitles(boolean bot, Iterable<String> pageTitles, boolean followRedirects,
+			RevisionPropery[] properties) {
 		super(bot, properties);
 
 		HttpPost postMethod = new HttpPost("/api.php");
@@ -14,6 +15,10 @@ public class QueryRevisionsByPageTitles extends AbstractQueryRevisionsAction {
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
+
+		if (followRedirects) {
+			setParameter(multipartEntity, "redirects", "follow");
+		}
 
 		setParameter(multipartEntity, "titles", toStringParameters(pageTitles));
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));

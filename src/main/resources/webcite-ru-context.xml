@@ -26,6 +26,12 @@
 		<property name="locale" value="ru" />
 	</bean>
 
+	<bean id="ruLinkDeactivationTask"
+		class="org.wikipedia.vlsergey.secretary.webcite.LinkDeactivationTask">
+		<property name="mediaWikiBot" ref="ruWikipediaWebCiteBot" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
+	</bean>
+
 	<bean id="ruQueuedPageProcessor"
 		class="org.wikipedia.vlsergey.secretary.webcite.QueuedPageProcessor">
 		<property name="articleLinksCollector" ref="ruArticleLinksCollector" />

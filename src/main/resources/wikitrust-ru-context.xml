@@ -6,10 +6,13 @@
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
 	">
 
-	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.cache" />
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.trust" />
 
 	<bean id="revisionAuthorshipDao"
 		class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorshipDao"
+		p:sessionFactory-ref="sessionFactory" />
+	<bean id="toDateArticleRevisionDao"
+		class="org.wikipedia.vlsergey.secretary.trust.ToDateArticleRevisionDao"
 		p:sessionFactory-ref="sessionFactory" />
 
 	<bean id="ruRevisionAuthorshipCalculator"
@@ -25,6 +28,7 @@
 		<property name="mediaWikiBot" ref="ruWikipediaBot" />
 		<property name="locale" value="ru" />
 		<property name="revisionAuthorshipCalculator" ref="ruRevisionAuthorshipCalculator" />
+		<property name="wikiCache" ref="ruWikipediaCache" />
 	</bean>
 
 

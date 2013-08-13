@@ -1,15 +1,8 @@
 package org.wikipedia.vlsergey.secretary.trust;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -29,28 +22,6 @@ public class RevisionAuthorshipDao {
 
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipDao.class);
 
-	@SuppressWarnings("unchecked")
-	static <T> List<T> fromBinary(byte[] bs) throws Exception {
-		final ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new ByteArrayInputStream(
-				bs)));
-		try {
-			return (List<T>) objectInputStream.readObject();
-		} finally {
-			objectInputStream.close();
-		}
-	}
-
-	static <T> byte[] toBinary(List<T> source) throws Exception {
-		final ByteArrayOutputStream result = new ByteArrayOutputStream();
-		ObjectOutputStream stream = new ObjectOutputStream(new GZIPOutputStream(result));
-		try {
-			stream.writeObject(new ArrayList<T>(source));
-		} finally {
-			stream.close();
-		}
-		return result.toByteArray();
-	}
-
 	protected HibernateTemplate template = null;
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
@@ -68,6 +39,13 @@ public class RevisionAuthorshipDao {
 		return template.get(RevisionAuthorship.class, new RevisionAuthorshipPk(locale, revision.getId()));
 	}
 
+	@SuppressWarnings("unchecked")
+	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
+	public List<Long> getAllRevisionIds(Locale locale) {
+		return template.find("SELECT key.revisionId " + "FROM RevisionAuthorship revisionAuthorship "
+				+ "WHERE key.lang=? " + "ORDER BY id", locale.getLanguage());
+	}
+
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void removeAll() {
 		template.execute(new HibernateCallback<Integer>() {
@@ -83,9 +61,9 @@ public class RevisionAuthorshipDao {
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
-	public synchronized void store(Locale locale, Revision revision, List<TextChunk> authorship) throws Exception {
+	public synchronized void store(Locale locale, Revision revision, TextChunkList authorship) throws Exception {
 
-		final byte[] data = toBinary(authorship);
+		final byte[] data = authorship.toBinary();
 		log.debug("Store " + data.length + " bytes of authorship info for rev#" + revision);
 
 		final RevisionAuthorshipPk key = new RevisionAuthorshipPk(locale, revision.getId());

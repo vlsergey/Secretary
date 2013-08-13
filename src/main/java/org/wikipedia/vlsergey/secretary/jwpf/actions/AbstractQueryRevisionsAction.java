@@ -21,7 +21,10 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Element;
@@ -39,9 +42,11 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	public static final int MAX_FOR_NON_BOTS = 500;
 
+	private List<ParsedPage> pages;
+
 	private final List<RevisionPropery> properties;
 
-	private List<ParsedPage> result;
+	public Map<String, List<String>> redirectedFrom;
 
 	protected AbstractQueryRevisionsAction(boolean bot, final List<RevisionPropery> properties) {
 		super(bot);
@@ -58,7 +63,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 	}
 
 	public List<ParsedPage> getResults() {
-		return result;
+		return pages;
 	}
 
 	@Override
@@ -82,15 +87,33 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	@Override
 	protected void parseQueryElement(Element queryElement) throws ProcessException {
-		final ListAdapter<Element> pageElements = new ListAdapter<Element>(queryElement.getElementsByTagName("page"));
-		final List<ParsedPage> result = new ArrayList<ParsedPage>(pageElements.size());
+		redirectedFrom = new LinkedHashMap<String, List<String>>();
+		for (Element redirectsElement : new ListAdapter<Element>(queryElement.getElementsByTagName("redirects"))) {
+			for (Element rElement : new ListAdapter<Element>(redirectsElement.getElementsByTagName("r"))) {
+				final String to = rElement.getAttribute("to");
+				final String from = rElement.getAttribute("from");
 
-		for (Element pageElement : pageElements) {
-			ParsedPage pageImpl = parsePage(pageElement);
-			result.add(pageImpl);
+				List<String> redirects = redirectedFrom.get(to);
+				if (redirects == null) {
+					redirects = new LinkedList<String>();
+					redirectedFrom.put(to, redirects);
+				}
+				redirects.add(from);
+			}
 		}
 
-		this.result = result;
+		final ListAdapter<Element> pageElements = new ListAdapter<Element>(queryElement.getElementsByTagName("page"));
+		final List<ParsedPage> pages = new ArrayList<ParsedPage>(pageElements.size());
+		for (Element pageElement : pageElements) {
+			ParsedPage pageImpl = parsePage(pageElement);
+			pages.add(pageImpl);
+
+			if (redirectedFrom.containsKey(pageImpl.getTitle())) {
+				pageImpl.setRedirectedFrom(redirectedFrom.get(pageImpl.getTitle()));
+			}
+		}
+		this.pages = pages;
+
 	}
 
 	protected ParsedRevisionImpl parseRevision(Page page, Element revisionElement) throws ProcessException {

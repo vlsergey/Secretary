@@ -1,6 +1,9 @@
 package org.wikipedia.vlsergey.secretary.trust;
 
+import gnu.trove.map.TObjectDoubleMap;
+import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 
 import java.io.FileInputStream;
@@ -10,74 +13,105 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.UnsupportedEncodingException;
 import java.text.DecimalFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.math.stat.descriptive.SummaryStatistics;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
+import org.wikipedia.vlsergey.secretary.jwpf.model.User;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class WikiStats {
 
 	private static final DecimalFormat decimalFormat = new DecimalFormat("###,##0.00");
 
-	private static final int MAX_USERS = 500;
+	private static final DecimalFormat integerFormat = new DecimalFormat("###,##0");
 
-	private static String dump(final TObjectDoubleHashMap<String> byUser) {
+	private static final Log log = LogFactory.getLog(WikiStats.class);
 
-		List<String> userNames = getKeysSortedByValueDesc(byUser);
-
-		int count = 0;
-		StringBuilder stringBuilder = new StringBuilder();
-		for (String userName : userNames) {
-			double value = byUser.get(userName);
-			count++;
-			final String strValue = decimalFormat.format(value);
-			stringBuilder.append("# [[User:" + userName + "|" + userName + "]] — " + strValue + " ;\n");
-
-			if (count == MAX_USERS) {
-				break;
-			}
-		}
-
-		return stringBuilder.toString();
-
-	}
-
-	private static List<String> getKeysSortedByValueDesc(final TObjectDoubleHashMap<String> byUser) {
-		List<String> userNames = new ArrayList<String>(byUser.keySet());
-		Collections.sort(userNames, new Comparator<String>() {
+	private static <T> List<T> getKeysSortedByValueDesc(final TObjectDoubleHashMap<T> byUser) {
+		List<T> keys = new ArrayList<T>(byUser.keySet());
+		Collections.sort(keys, new Comparator<T>() {
 			@Override
-			public int compare(String o1, String o2) {
+			public int compare(T o1, T o2) {
 				Double l1 = byUser.get(o1);
 				Double l2 = byUser.get(o2);
 				return l2.compareTo(l1);
 			}
 		});
-		return userNames;
-	}
-
-	private static Date lastAllowedEditTimestamp() throws ParseException {
-		return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse("2013-07-01T00:00:00.000+0000");
+		return keys;
 	}
 
 	private Locale locale;
 
 	private MediaWikiBot mediaWikiBot;
 
+	private final Map<StatisticsKey, Map<Month, TObjectIntMap<Contributor>>> places = new HashMap<StatisticsKey, Map<Month, TObjectIntMap<Contributor>>>();
+
+	private final Map<String, String> renamedUsers = new HashMap<String, String>();
+
 	private RevisionAuthorshipCalculator revisionAuthorshipCalculator;
+
+	private final ExecutorService totalStatsExecutor = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+			new LinkedBlockingQueue<Runnable>(), new CustomizableThreadFactory("TotalStats-"));
+
+	private WikiCache wikiCache;
+
+	{
+		renamedUsers.put("HiddeneN", "GorkyFromChe");
+		renamedUsers.put("MonTheCeltics", "GorkyFromChe");
+
+		renamedUsers.put("G8J", "Mggu77");
+
+		renamedUsers.put("Panov1975", "Radimov");
+
+		renamedUsers.put("Vlad Veschenikin", "Vlad Jursalim");
+		renamedUsers.put("Vladislav Veschenikin", "Vlad Jursalim");
+		renamedUsers.put("Владислав Вещеникин", "Vlad Jursalim");
+
+		renamedUsers.put("Батискаф обыкновенный", "Аурелиано Буэндиа");
+		renamedUsers.put("Любитель грёзофарса", "Аурелиано Буэндиа");
+
+		renamedUsers.put("Ryadinsky Eugen", "Рядинский Евгений");
+	}
+
+	private List<Contributor> getAsContributors(final Map<String, List<Contributor>> allContributors, String userName) {
+		List<Contributor> countFor;
+		synchronized (allContributors) {
+			countFor = allContributors.get(userName);
+			if (countFor == null) {
+				countFor = Collections.<Contributor> singletonList(new ContributorUser(userName));
+				allContributors.put(userName, countFor);
+			}
+		}
+		return countFor;
+	}
 
 	public Locale getLocale() {
 		return locale;
@@ -91,22 +125,30 @@ public class WikiStats {
 		return revisionAuthorshipCalculator;
 	}
 
-	private TObjectLongHashMap<String> loadCounters() throws UnsupportedEncodingException, FileNotFoundException,
-			IOException {
+	public WikiCache getWikiCache() {
+		return wikiCache;
+	}
+
+	private TObjectLongHashMap<String> loadCounters(final String statisticsFileName)
+			throws UnsupportedEncodingException, FileNotFoundException, IOException {
+		log.info("Loading articles statistics...");
+
 		final TObjectLongHashMap<String> counters = new TObjectLongHashMap<String>(16, 1, 0);
 
 		{
-			LineNumberReader reader = new LineNumberReader(new InputStreamReader(new FileInputStream(
-					"stats/stats-2013-06-01.txt"), "utf-8"));
+			LineNumberReader reader = new LineNumberReader(new InputStreamReader(
+					new FileInputStream(statisticsFileName), "utf-8"));
 			try {
 				String line;
 				while ((line = reader.readLine()) != null) {
-					if (StringUtils.isBlank(line)) {
-						continue;
-					}
-					String[] strings = StringUtils.split(line, "\t");
-					if (strings.length == 2) {
+					try {
+						if (StringUtils.isBlank(line)) {
+							continue;
+						}
+						String[] strings = StringUtils.split(line, "\t");
 						counters.put(strings[0], Long.valueOf(strings[1]));
+					} catch (Exception exc) {
+						System.out.println("Skip line: '" + StringEscapeUtils.escapeJava(line) + "'");
 					}
 				}
 			} finally {
@@ -116,9 +158,67 @@ public class WikiStats {
 		return counters;
 	}
 
-	public void run() throws Exception {
+	private void loadTeam(final Map<String, List<Contributor>> nameToContributors, final String wikiGroupCode,
+			final String teamName, final String teamDescription, boolean skipIncrementPlace, boolean removeOtherTeams) {
+		log.info("Loading user group: '" + wikiGroupCode + "'");
+		TreeSet<String> userNames = new TreeSet<String>();
+		for (User user : mediaWikiBot.queryAllusersByGroup(wikiGroupCode)) {
+			userNames.add(user.getName());
+		}
 
-		final TObjectLongHashMap<String> counters = loadCounters();
+		if (wikiGroupCode.equals("bot")) {
+			userNames.add("Ashikbot");
+			userNames.add("LankLinkBot");
+		}
+
+		Contributor teamContributor = new ContributorTeam(teamName, teamDescription);
+		for (String userName : userNames) {
+			List<Contributor> already = nameToContributors.get(userName);
+			if (already == null) {
+				already = new ArrayList<Contributor>(2);
+				already.add(new ContributorUser(userName, skipIncrementPlace));
+				nameToContributors.put(userName, already);
+			}
+			if (removeOtherTeams) {
+				for (Iterator<Contributor> iterator = already.iterator(); iterator.hasNext();) {
+					Contributor contributor = iterator.next();
+					if (contributor instanceof ContributorTeam) {
+						iterator.remove();
+					}
+				}
+			}
+			already.add(teamContributor);
+		}
+	}
+
+	private Map<String, List<Contributor>> loadTeams() {
+		final Map<String, List<Contributor>> nameToContributors = new HashMap<String, List<Contributor>>();
+
+		loadTeam(nameToContributors, "bot", "Команда «Боты»", "Объединённая статистика по ботам", true, false);
+
+		loadTeam(nameToContributors, "autoeditor", "Команда «Автопатрулируемые»",
+				"Объединённая статистика по автопатрулируемым", false, true);
+		loadTeam(nameToContributors, "editor", "Команда «Патрулирующие»", "Объединённая статистика по патрулирующим",
+				false, true);
+		loadTeam(nameToContributors, "closer", "Команда «ПИ»", "Объединённая статистика по подводящим итоги", false,
+				true);
+		loadTeam(nameToContributors, "sysop", "Команда «Администраторы»", "Объединённая статистика по администраторам",
+				false, true);
+
+		loadTeam(nameToContributors, "bureaucrat", "Команда «Бюрократы»", "Объединённая статистика по бюрократам",
+				false, false);
+		loadTeam(nameToContributors, "checkuser", "Команда «Чекюзеры»", "Объединённая статистика по чекюзерам", false,
+				false);
+		loadTeam(nameToContributors, "oversight", "Команда «Ревизоры»", "Объединённая статистика по ревизорам", false,
+				false);
+
+		return nameToContributors;
+	}
+
+	public void run(final Month month, long firstWriteAfter, final long updateEachMs) throws Exception {
+
+		final StatisticsKey statisticsKey = StatisticsKey.TOTAL;
+		final TObjectLongHashMap<String> counters = loadCounters(month.getPagesCountsFile());
 
 		List<String> byPopularity = new ArrayList<String>(counters.keySet());
 		Collections.sort(byPopularity, new Comparator<String>() {
@@ -130,42 +230,132 @@ public class WikiStats {
 			}
 		});
 
-		TObjectDoubleHashMap<String> byUser = new TObjectDoubleHashMap<String>(16, 1, 0);
+		final Map<String, List<Contributor>> contributors = loadTeams();
 
-		long prevCounter = 0;
-		long counter = 0;
-		for (Revision latestRevision : mediaWikiBot.queryLatestRevisionsByPageTitles(byPopularity, RevisionPropery.IDS)) {
-
-			String articleName = latestRevision.getPage().getTitle();
-			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(articleName, latestRevision,
-					lastAllowedEditTimestamp());
-			if (textChunks == null) {
-				System.out.println("Skip article: " + articleName);
-				continue;
+		final TObjectDoubleHashMap<Contributor> byContributor = new TObjectDoubleHashMap<Contributor>(16, 1, 0);
+		final Map<Contributor, TObjectDoubleMap<String>> byContributorArticleAuthorship = new HashMap<Contributor, TObjectDoubleMap<String>>();
+		final Function<Contributor, Integer> userCountF = new Function<Contributor, Integer>() {
+			@Override
+			public Integer apply(Contributor сontributor) {
+				return byContributorArticleAuthorship.get(сontributor).size();
 			}
+		};
 
-			long visits = counters.get(articleName);
+		final Set<String> already = new HashSet<String>();
+		final AtomicLong lastWrite = new AtomicLong(System.currentTimeMillis() - updateEachMs + firstWriteAfter);
+		final AtomicLong hitsAnalyzed = new AtomicLong(0);
+		final AtomicInteger pagesAnalyzed = new AtomicInteger(0);
 
-			Map<String, Double> perArticle = RevisionAuthorshipCalculator.getProcents(textChunks);
-			for (String articleAuthor : perArticle.keySet()) {
-				double percent = perArticle.get(articleAuthor);
-				double value = percent * visits;
+		final Semaphore semaphore = new Semaphore(8);
 
-				byUser.put(articleAuthor, byUser.get(articleAuthor) + value);
-			}
+		for (final Revision latestRevisionId : mediaWikiBot.queryLatestRevisionsByPageTitles(byPopularity, true,
+				WikiCache.FAST)) {
+			semaphore.acquire(1);
 
-			if (counter - prevCounter > 1000000) {
-				mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/WikiRaiting/2013-07", null,
-						"Рейтинг авторов по посещаемости их статей, основано на анализе " + counter + " хитов.\n\n"
-								+ dump(byUser), null, "Update stats on " + counter + " hits", true, false);
-				prevCounter = counter;
-			}
+			totalStatsExecutor.submit(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						final ParsedPage page = (ParsedPage) latestRevisionId.getPage();
+						final String pageTitle = page.getTitle();
+
+						TextChunkList textChunks = revisionAuthorshipCalculator.getAuthorship(page,
+								wikiCache.queryRevision(latestRevisionId.getId()), month.getEnd());
+						if (textChunks == null) {
+							System.out.println("Skip article: " + pageTitle);
+							return;
+						}
+
+						long visits = 0;
+						boolean articleProcessedBefore = false;
+						synchronized (already) {
+							if (already.add(pageTitle)) {
+								visits += counters.get(pageTitle);
+							} else {
+								articleProcessedBefore = true;
+							}
+							if (page.getRedirectedFrom() != null) {
+								for (String redirectedFrom : page.getRedirectedFrom()) {
+									if (already.add(redirectedFrom)) {
+										visits += counters.get(redirectedFrom);
+									}
+								}
+							}
+						}
+						if (visits == 0) {
+							return;
+						}
+
+						Map<String, Double> perArticle = textChunks.getAuthorshipProcents();
+						for (String articleAuthor : perArticle.keySet()) {
+							double percent = perArticle.get(articleAuthor);
+							double value = percent * visits;
+
+							if (renamedUsers.containsKey(articleAuthor)) {
+								articleAuthor = renamedUsers.get(articleAuthor);
+							}
+
+							List<Contributor> countFor = getAsContributors(contributors, articleAuthor);
+							for (Contributor contributor : countFor) {
+
+								synchronized (byContributor) {
+									byContributor.put(contributor, byContributor.get(contributor) + value);
+								}
+
+								if (!articleProcessedBefore) {
+									TObjectDoubleMap<String> byArticle;
+									synchronized (byContributorArticleAuthorship) {
+										byArticle = byContributorArticleAuthorship.get(contributor);
+										if (byArticle == null) {
+											byArticle = new TObjectDoubleHashMap<String>(1, 1, 0);
+											byContributorArticleAuthorship.put(contributor, byArticle);
+										}
+									}
+
+									synchronized (byArticle) {
+										final double newProcent = byArticle.get(pageTitle) + percent;
+										if (newProcent > 1) {
+											throw new AssertionError("Contribution of " + contributor + " in " + "'"
+													+ pageTitle + "'" + " > 100%");
+										}
+										byArticle.put(pageTitle, newProcent);
+									}
+								}
+							}
+						}
+
+						hitsAnalyzed.addAndGet(visits);
+						if (!articleProcessedBefore) {
+							pagesAnalyzed.incrementAndGet();
+						}
+
+						try {
+							long prevLastWrite = lastWrite.get();
+							if (System.currentTimeMillis() - prevLastWrite > updateEachMs) {
+								if (lastWrite.compareAndSet(prevLastWrite, System.currentTimeMillis())) {
+									write(statisticsKey, month, pagesAnalyzed.intValue(), hitsAnalyzed.longValue(),
+											contributors, counters, byContributor, userCountF,
+											byContributorArticleAuthorship, 5, 1000);
+								}
+							}
+						} catch (Exception exc) {
+							log.error("Unable to save WikiStats data: " + exc, exc);
+						}
+					} catch (Exception exc) {
+						log.error("Unable to calculate WikiStats data for " + latestRevisionId + ": " + exc, exc);
+					} finally {
+						semaphore.release(1);
+					}
+				}
+
+			});
 		}
 
-		mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/WikiRaiting/2013-07", null,
-				"Рейтинг авторов по посещаемости их статей, основано на анализе " + counter
-						+ " хитов (всё, что доступно боту).\n\n" + dump(byUser), null, "Update stats (final) ", true,
-				false);
+		semaphore.acquire(8);
+
+		write(statisticsKey, month, pagesAnalyzed.intValue(), hitsAnalyzed.longValue(), contributors, counters,
+				byContributor, userCountF, byContributorArticleAuthorship, 5, 1000);
 	}
 
 	public void setLocale(Locale locale) {
@@ -180,80 +370,240 @@ public class WikiStats {
 		this.revisionAuthorshipCalculator = revisionAuthorshipCalculator;
 	}
 
-	public void updateByTemplateIncluded(final String statPageTitle, final String description, final String template)
+	public void setWikiCache(WikiCache wikiCache) {
+		this.wikiCache = wikiCache;
+	}
+
+	public void updateByTemplateIncluded(final StatisticsKey statisticsKey, final String template, final Month month)
 			throws Exception {
 
-		final TObjectLongHashMap<String> counters = loadCounters();
+		// TODO: redirects not counted
 
-		TObjectDoubleHashMap<String> byUser = new TObjectDoubleHashMap<String>(16, 1, 0);
-		final Map<String, SortedMap<String, Double>> perUserProcents = new HashMap<String, SortedMap<String, Double>>();
+		final TObjectLongHashMap<String> counters = loadCounters(month.getPagesCountsFile());
+		log.info("Loading user group: '" + "bot" + "'");
+		TreeSet<String> userNames = new TreeSet<String>();
+		for (User user : mediaWikiBot.queryAllusersByGroup("bot")) {
+			userNames.add(user.getName());
+		}
 
-		for (final String pageTitle : mediaWikiBot.queryEmbeddedInPageTitles(template, Namespaces.MAIN)) {
+		final Map<String, List<Contributor>> contributors = loadTeams();
 
-			List<TextChunk> textChunks = revisionAuthorshipCalculator.getAuthorship(pageTitle, null,
-					lastAllowedEditTimestamp());
+		TObjectDoubleHashMap<Contributor> byContributor = new TObjectDoubleHashMap<Contributor>(16, 1, 0);
+		final Map<Contributor, TObjectDoubleMap<String>> byContributorByArticleProcents = new HashMap<Contributor, TObjectDoubleMap<String>>();
+
+		final AtomicInteger pagesAnalyzed = new AtomicInteger(0);
+		final AtomicLong hitsAnalyzed = new AtomicLong(0);
+
+		for (final Revision latestRevisionContent : wikiCache.queryLatestContentByPageIds(mediaWikiBot
+				.queryEmbeddedInPageIds(template, Namespaces.MAIN))) {
+
+			final Page page = latestRevisionContent.getPage();
+			final String pageTitle = page.getTitle();
+
+			TextChunkList textChunks = revisionAuthorshipCalculator.getAuthorship(page, latestRevisionContent,
+					month.getEnd());
 			if (textChunks == null) {
-				System.out.println("Skip article: " + pageTitle);
+				System.out.println("Skip article: " + page);
 				continue;
 			}
 
 			long visits = counters.get(pageTitle);
 
-			Map<String, Double> perArticle = RevisionAuthorshipCalculator.getProcents(textChunks);
+			Map<String, Double> perArticle = textChunks.getAuthorshipProcents();
 			for (String articleAuthor : perArticle.keySet()) {
 				double percent = perArticle.get(articleAuthor);
 				double value = percent * visits;
 
-				byUser.put(articleAuthor, byUser.get(articleAuthor) + value);
-
-				SortedMap<String, Double> userArticles = perUserProcents.get(articleAuthor);
-				if (userArticles == null) {
-					userArticles = new TreeMap<String, Double>();
-					perUserProcents.put(articleAuthor, userArticles);
+				if (renamedUsers.containsKey(articleAuthor)) {
+					articleAuthor = renamedUsers.get(articleAuthor);
 				}
-				userArticles.put(pageTitle, Double.valueOf(percent));
+
+				List<Contributor> countFor = getAsContributors(contributors, articleAuthor);
+
+				for (Contributor contributor : countFor) {
+					synchronized (byContributorByArticleProcents) {
+						byContributor.put(contributor, byContributor.get(contributor) + value);
+					}
+
+					synchronized (byContributorByArticleProcents) {
+						TObjectDoubleMap<String> contributorArticles = byContributorByArticleProcents.get(contributor);
+						if (contributorArticles == null) {
+							contributorArticles = new TObjectDoubleHashMap<String>(1, 1, 0);
+							byContributorByArticleProcents.put(contributor, contributorArticles);
+						}
+						contributorArticles.put(pageTitle, contributorArticles.get(pageTitle) + percent);
+					}
+				}
+			}
+
+			pagesAnalyzed.incrementAndGet();
+			hitsAnalyzed.addAndGet(visits);
+		}
+
+		write(statisticsKey, month, pagesAnalyzed.get(), hitsAnalyzed.get(), contributors, counters, byContributor,
+				new Function<Contributor, Integer>() {
+					@Override
+					public Integer apply(Contributor contributor) {
+						return byContributorByArticleProcents.get(contributor).size();
+					}
+				}, byContributorByArticleProcents, 10, 10000);
+	}
+
+	private void write(StatisticsKey statisticsKey, Month month, int pagesAnalyzed, long hitsAnalyzed,
+			Map<String, List<Contributor>> teams, final TObjectLongHashMap<String> pageVisits,
+			TObjectDoubleHashMap<Contributor> byContributor, Function<Contributor, Integer> byContributorArticlesCount,
+			Map<Contributor, TObjectDoubleMap<String>> byContributorByArticleAuthorship, int maxArticlesToOutput,
+			int maxPlacesToOutput) {
+
+		final TObjectIntMap<Contributor> previousMonthStatistics;
+		{
+			final Month previousMonth = month.getPrevious();
+			if (previousMonth == null) {
+				previousMonthStatistics = null;
+			} else {
+				synchronized (places) {
+					Map<Month, TObjectIntMap<Contributor>> monthPlaces = places.get(statisticsKey);
+					if (monthPlaces == null) {
+						previousMonthStatistics = null;
+					} else {
+						previousMonthStatistics = monthPlaces.get(previousMonth);
+					}
+				}
 			}
 		}
 
-		write(statPageTitle, description, counters, byUser, perUserProcents);
-	}
-
-	private void write(String statPageTitle, String description, TObjectLongHashMap<String> counters,
-			TObjectDoubleHashMap<String> byUser, Map<String, SortedMap<String, Double>> perUserProcents) {
-
-		List<String> sorted = getKeysSortedByValueDesc(byUser);
+		List<Contributor> sorted = getKeysSortedByValueDesc(byContributor);
 
 		StringBuffer buffer = new StringBuffer();
-		buffer.append(description + "\n\n");
+		buffer.append(statisticsKey.getStatisticsPageDescription(month, integerFormat.format(pagesAnalyzed),
+				integerFormat.format(hitsAnalyzed)) + "\n\n");
 		buffer.append("{| class=\"wikitable sortable\"\n");
-		buffer.append("! {{comment|Место|место по порядку в рейтинге}} !"
-				+ "! {{comment|Редактор|учитывается вклад всех редакторов, в том числе ботов}} !"
-				+ "! {{comment|Статей|количество статей, в редактировании которых участник принимал участие (из числа проанализированных)}} !"
-				+ "! {{comment|Статьи|список статей, количество посещений статьи, процент вклада участника и баллы за статью}} !"
-				+ "! {{comment|Сумма баллов|сумма баллов за все статьи, в наполнении которых редактор принимал участие (из числа проанализированных)}}\n");
+		buffer.append("! colspan=2 | {{comment|Место|место по порядку в рейтинге}} !");
+		buffer.append("! {{comment|Редактор|учитывается вклад всех редакторов, в том числе ботов}} !");
+		if (byContributorArticlesCount != null) {
+			buffer.append("! {{comment|Статей|количество статей, в редактировании которых участник принимал участие (из числа проанализированных)}} !");
+		}
+		if (byContributorByArticleAuthorship != null && maxArticlesToOutput > 0) {
+			buffer.append("! {{comment|Статьи|список статей, количество посещений статьи, процент вклада участника и баллы за статью}} !");
+		}
+		buffer.append("! {{comment|Сумма баллов|сумма баллов за все статьи, в наполнении которых редактор принимал участие (из числа проанализированных)}}\n");
 		buffer.append("|-\n");
 
-		int counter = 0;
-		for (String userName : sorted) {
-			double userTotalPoints = byUser.get(userName);
-			SortedMap<String, Double> userArticles = perUserProcents.get(userName);
+		int placeCounter = 0;
+		final TObjectIntMap<Contributor> placesMap = new TObjectIntHashMap<Contributor>();
+		for (Contributor contributor : sorted) {
 
-			buffer.append("| " + (++counter) + "\n");
-			buffer.append("| [[User:" + userName + "|" + userName + "]]\n");
-			buffer.append("| align=right | " + userArticles.size() + "\n");
-			buffer.append("| {{Сокрытие|title=Список статей|hidden=1|content=\n");
-			for (Map.Entry<String, Double> entry : userArticles.entrySet()) {
-
-				String articleTitle = entry.getKey();
-				double articleProCent = 100 * entry.getValue().doubleValue();
-				final long articleVisits = counters.get(articleTitle);
-				double articlePoints = entry.getValue().doubleValue() * articleVisits;
-
-				buffer.append("* [[" + articleTitle + "]] (" + articleVisits + ") — "
-						+ decimalFormat.format(articleProCent) + "% (" + decimalFormat.format(articlePoints) + ")\n");
+			int currentMonthPlace;
+			if (contributor.isSkipIncrementPlace()) {
+				currentMonthPlace = -1;
+			} else {
+				currentMonthPlace = ++placeCounter;
+				placesMap.put(contributor, currentMonthPlace);
 			}
-			buffer.append("}}\n");
-			buffer.append("| align=right | " + decimalFormat.format(userTotalPoints) + "\n");
+
+			if (placeCounter >= maxPlacesToOutput) {
+				continue;
+			}
+
+			if (contributor.isSkipIncrementPlace()) {
+				buffer.append("|\n");
+				buffer.append("|\n");
+			} else {
+				buffer.append("|align=right| " + currentMonthPlace + "\n");
+
+				if (previousMonthStatistics == null) {
+					buffer.append("||\n");
+				} else if (!previousMonthStatistics.containsKey(contributor)) {
+					buffer.append("|align=center|{{comment|{{up}}|new}}\n");
+				} else {
+					int prevMonthPlace = previousMonthStatistics.get(contributor);
+					int change = prevMonthPlace - currentMonthPlace;
+
+					if (change > 0) {
+						buffer.append("|align=center|{{comment|{{up}}|+" + change + "}}\n");
+					} else if (change < 0) {
+						buffer.append("|align=center|{{comment|{{down}}|" + change + "}}\n");
+					} else if (change == 0) {
+						buffer.append("|align=center|{{нет изменений}}\n");
+					}
+				}
+			}
+
+			buffer.append("|" + contributor.toWiki() + "\n");
+
+			if (byContributorArticlesCount != null) {
+				buffer.append("|align=right|" + integerFormat.format(byContributorArticlesCount.apply(contributor))
+						+ "\n");
+			}
+
+			if (byContributorByArticleAuthorship != null && maxArticlesToOutput > 0) {
+				final TObjectDoubleMap<String> byArticleProcents = byContributorByArticleAuthorship.get(contributor);
+
+				List<String> pageTitles = new ArrayList<String>(byArticleProcents.keySet());
+				Collections.sort(pageTitles, new Comparator<String>() {
+					@Override
+					public int compare(String o1, String o2) {
+						Double l1 = Double.valueOf(byArticleProcents.get(o1) * pageVisits.get(o1));
+						Double l2 = Double.valueOf(byArticleProcents.get(o2) * pageVisits.get(o2));
+						return l2.compareTo(l1);
+					}
+				});
+
+				int toOutpuFull = Math.min(maxArticlesToOutput, pageTitles.size());
+				int toOutputShort = pageTitles.size() - toOutpuFull;
+				if (toOutputShort < 7) {
+					toOutpuFull = pageTitles.size();
+					toOutputShort = 0;
+				}
+
+				buffer.append("|{{Сокрытие|title=Список статей|hidden=1|content=\n");
+
+				for (int i = 0; i < toOutpuFull; i++) {
+					String pageTitle = pageTitles.get(i);
+					double procents = byArticleProcents.get(pageTitle);
+					double articleProCent = 100 * procents;
+					final long articleVisits = pageVisits.get(pageTitle);
+					double articlePoints = procents * articleVisits;
+
+					buffer.append("* [[" + pageTitle + "]] (" + integerFormat.format(articleVisits) + ") — "
+							+ decimalFormat.format(articleProCent) + "% (" + integerFormat.format(articlePoints)
+							+ ")\n");
+				}
+
+				SummaryStatistics statArticlesCount = new SummaryStatistics();
+				SummaryStatistics statArticlesAuthorship = new SummaryStatistics();
+				SummaryStatistics statArticlesVisits = new SummaryStatistics();
+				SummaryStatistics statArticlesPoints = new SummaryStatistics();
+
+				if (toOutputShort > 0) {
+					for (int i = toOutpuFull; i < pageTitles.size(); i++) {
+						String pageTitle = pageTitles.get(i);
+						double procents = byArticleProcents.get(pageTitle);
+						final long articleVisits = pageVisits.get(pageTitle);
+						double articlePoints = procents * articleVisits;
+
+						statArticlesCount.addValue(1);
+						statArticlesAuthorship.addValue(procents);
+						statArticlesVisits.addValue(articleVisits);
+						statArticlesPoints.addValue(articlePoints);
+					}
+
+					buffer.append("* Оставшиеся статьи (" + integerFormat.format(statArticlesCount.getSum()) + "):\n");
+					buffer.append("** Средний вклад: " + decimalFormat.format(statArticlesAuthorship.getMean() * 100)
+							+ "% ± " + decimalFormat.format(statArticlesAuthorship.getStandardDeviation() * 100)
+							+ "%\n");
+					buffer.append("** Посещений: " + integerFormat.format(statArticlesVisits.getMean()) + " ± "
+							+ integerFormat.format(statArticlesVisits.getStandardDeviation()) + "\n");
+					buffer.append("** Баллов за статью: " + integerFormat.format(statArticlesPoints.getMean()) + " ± "
+							+ integerFormat.format(statArticlesPoints.getStandardDeviation()) + "\n");
+					buffer.append("** Итого за оставшиеся: " + integerFormat.format(statArticlesPoints.getSum()) + "\n");
+				}
+
+				buffer.append("}}\n");
+			}
+
+			double userTotalPoints = byContributor.get(contributor);
+			buffer.append("|align=right|" + integerFormat.format(userTotalPoints) + "\n");
 			buffer.append("|-\n");
 
 			if (buffer.length() > 500000) {
@@ -262,7 +612,18 @@ public class WikiStats {
 		}
 		buffer.append("|}\n");
 
-		mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/" + statPageTitle, null, buffer.toString(),
-				null, "Обновление статистики", false, false);
+		synchronized (places) {
+			Map<Month, TObjectIntMap<Contributor>> byMonth = places.get(statisticsKey);
+			if (byMonth == null) {
+				byMonth = new HashMap<Month, TObjectIntMap<Contributor>>();
+				places.put(statisticsKey, byMonth);
+			}
+			byMonth.put(month, placesMap);
+		}
+
+		mediaWikiBot.writeContent(
+				"User:" + mediaWikiBot.getLogin() + "/" + statisticsKey.getStatisticsPageSuffix(month), null,
+				buffer.toString(), null, "Обновление статистики (статей/хитов: " + integerFormat.format(pagesAnalyzed)
+						+ " / " + integerFormat.format(hitsAnalyzed) + " )", false, false);
 	}
 }

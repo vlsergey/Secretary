@@ -21,19 +21,19 @@
 	<task:executor id="myExecutor" pool-size="5" />
 	<task:scheduler id="myScheduler" pool-size="10" />
 
-<!-- 	<import resource="books-context.xml" /> -->
+	<import resource="books-context.xml" />
 	<import resource="bot-context.xml" />
 	<import resource="bot-ru-context.xml" />
-<!-- 	<import resource="bot-uk-context.xml" /> -->
+	<import resource="bot-uk-context.xml" />
 	<import resource="cache-context.xml" />
 	<import resource="cache-ru-context.xml" />
-<!-- 	<import resource="cache-uk-context.xml" /> -->
+	<import resource="cache-uk-context.xml" />
 	<!-- <import resource="gost-context.xml" /> -->
 	<!-- <import resource="patrolauto-context.xml" /> -->
-<!-- 	<import resource="patrollists-context.xml" /> -->
-<!-- 	<import resource="webcite-context.xml" /> -->
-<!-- 	<import resource="webcite-ru-context.xml" /> -->
-<!-- 	<import resource="webcite-uk-context.xml" /> -->
+	<import resource="patrollists-context.xml" />
+	<import resource="webcite-context.xml" />
+	<import resource="webcite-ru-context.xml" />
+	<import resource="webcite-uk-context.xml" />
 
 	<import resource="wikitrust-ru-context.xml" />
 

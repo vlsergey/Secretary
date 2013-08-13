@@ -32,6 +32,8 @@ public class ParsedPage extends AbstractPage {
 
 	private Integer namespace;
 
+	private List<String> redirectedFrom;
+
 	private List<Revision> revisions;
 
 	private String title;
@@ -57,6 +59,10 @@ public class ParsedPage extends AbstractPage {
 		return namespace;
 	}
 
+	public List<String> getRedirectedFrom() {
+		return redirectedFrom;
+	}
+
 	public List<Revision> getRevisions() {
 		return revisions;
 	}
@@ -80,6 +86,10 @@ public class ParsedPage extends AbstractPage {
 
 	public void setNamespace(Integer namespace) {
 		this.namespace = namespace;
+	}
+
+	public void setRedirectedFrom(List<String> redirectedFrom) {
+		this.redirectedFrom = redirectedFrom;
 	}
 
 	public void setRevisions(List<Revision> revisions) {

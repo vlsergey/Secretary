@@ -22,6 +22,8 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpGet;
 import org.w3c.dom.Element;
 
@@ -34,6 +36,8 @@ import org.w3c.dom.Element;
  */
 public class QueryEmbeddedinTitles extends AbstractQueryEmbeddedIn implements MultiAction<String> {
 
+	private static final Log log = LogFactory.getLog(QueryEmbeddedinTitles.class);
+
 	private String namespaces;
 
 	private String nextPageInfo = null;
@@ -44,6 +48,7 @@ public class QueryEmbeddedinTitles extends AbstractQueryEmbeddedIn implements Mu
 
 	public QueryEmbeddedinTitles(boolean bot, String title, String namespaces) {
 		super(bot);
+		log.info("queryEmbeddedinTitles(" + title + ", " + namespaces + ", " + null + ")");
 
 		this.title = title;
 		this.namespaces = namespaces;
@@ -60,6 +65,7 @@ public class QueryEmbeddedinTitles extends AbstractQueryEmbeddedIn implements Mu
 	 */
 	private QueryEmbeddedinTitles(boolean bot, String title, String namespaces, String nextPageInfo) {
 		super(bot);
+		log.info("queryEmbeddedinTitles(" + title + ", " + namespaces + ", " + nextPageInfo + ")");
 
 		this.title = title;
 		this.namespaces = namespaces;

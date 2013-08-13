@@ -8,6 +8,7 @@
 		<mapping class="org.wikipedia.vlsergey.secretary.gost.ProtectGostRuEntry" />
 
 		<mapping class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorship" />
+		<mapping class="org.wikipedia.vlsergey.secretary.trust.ToDateArticleRevision" />
 
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.ArchivedLink" />
 		<mapping class="org.wikipedia.vlsergey.secretary.webcite.QueuedLink" />

@@ -83,4 +83,25 @@ public interface Namespaces {
 	 */
 	int TEMPLATE_TALK = 11;
 
+	/**
+	 * Each user has a corresponding page in the User namespace, which is linked
+	 * to from edit histories, watchlists, recent changes, etc; wherever an
+	 * individual user is uniquely identified. This page, and subpages of it,
+	 * can be used by users to record information about themselves or to test
+	 * and draft new content. Pages of the form "User:UserName/Foo.js" or
+	 * "User:UserName/Foo.css" can only be edited by the user themselves or by
+	 * administrators.
+	 */
+	int USER = 2;
+
+	/**
+	 * This namespace is the talkspace associated with the User namespace. Pages
+	 * in this namespace are mainly used to leave messages for particular users
+	 * or inform them of discussions that may be of interest to them. To
+	 * facilitate this, when a page User talk:UserName is edited, whenever the
+	 * user "UserName" loads a page, a notice is displayed at the top of the
+	 * page informing them of the edit.
+	 */
+	int USER_TALK = 3;
+
 }
