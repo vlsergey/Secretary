@@ -113,7 +113,6 @@ public class ArchivedLinkDao {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void persist(ArchivedLink archivedLink) {
-
 		archivedLink.setAccessDate(dateNormalizer.normalizeDate(StringUtils.trimToEmpty(archivedLink.getAccessDate())));
 		archivedLink.setAccessUrl(StringUtils.trimToEmpty(archivedLink.getAccessUrl()));
 		archivedLink
@@ -128,6 +127,7 @@ public class ArchivedLinkDao {
 		template.persist(archivedLink);
 	}
 
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public void removeByAccessUrlPrefix(String baseUrl) {
 		log.info("Removing records of access URL started with '" + baseUrl + "'");
 		int removed = template.bulkUpdate("DELETE FROM ArchivedLink WHERE SUBSTR(accessUrl, 1, " + baseUrl.length()

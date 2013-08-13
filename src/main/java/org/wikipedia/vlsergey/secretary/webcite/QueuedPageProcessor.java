@@ -185,7 +185,7 @@ public class QueuedPageProcessor {
 			commentBuilder.append("]]");
 			String comment = commentBuilder.toString().trim();
 
-			mediaWikiBot.writeContent(latestRevision.getPage(), latestRevision, newContent, comment, true);
+			mediaWikiBot.writeContent(latestRevision, newContent, comment, true);
 
 			writeReport(reportPage, reportAnchor, latestRevision.getPage().getTitle(), perArticleReport);
 		}
@@ -464,10 +464,16 @@ public class QueuedPageProcessor {
 			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Хорошая статья", Namespaces.MAIN)) {
 				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
 			}
-			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранный список или портал",
-					Namespaces.MAIN)) {
-				queuedPageDao.addPageToQueue(getLocale(), pageId, 500, pageId.longValue());
-			}
+			/*
+			 * Качество данного проекта меня категорически не устраивает --
+			 * пусть становятся в общую очередь -- vlsergey
+			 */
+			// for (Long pageId :
+			// mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Избранный список или портал",
+			// Namespaces.MAIN)) {
+			// queuedPageDao.addPageToQueue(getLocale(), pageId, 500,
+			// pageId.longValue());
+			// }
 
 			for (Long pageId : mediaWikiBot.queryEmbeddedInPageIds("Шаблон:Cite web", Namespaces.MAIN)) {
 				queuedPageDao.addPageToQueue(getLocale(), pageId, 0, pageId.longValue());

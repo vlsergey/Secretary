@@ -69,8 +69,8 @@ public class WebCiteErrorCleanup {
 				}
 
 				if (hasChanges) {
-					mediaWikiBot.writeContent(revision.getPage(), revision, article.toWiki(false),
-							"Remove broken archived links", true);
+					mediaWikiBot.writeContent(revision, article.toWiki(false), "Remove broken archived links",
+							true);
 				}
 			} catch (Exception exc) {
 				logger.error("Unable to procede " + revision + ": " + exc, exc);

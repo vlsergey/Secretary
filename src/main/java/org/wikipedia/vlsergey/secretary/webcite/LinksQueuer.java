@@ -21,8 +21,8 @@ import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
-import org.wikipedia.vlsergey.secretary.webcite.lists.Erros;
 import org.wikipedia.vlsergey.secretary.webcite.lists.Archives;
+import org.wikipedia.vlsergey.secretary.webcite.lists.Erros;
 import org.wikipedia.vlsergey.secretary.webcite.lists.TechLimits;
 
 public class LinksQueuer {
@@ -39,10 +39,10 @@ public class LinksQueuer {
 	@Autowired
 	private QueuedLinkDao queuedLinkDao;
 
+	private RefAwareParser refAwareParser;
+
 	@Autowired
 	private WebCiteArchiver webCiteArchiver;
-
-	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -105,7 +105,9 @@ public class LinksQueuer {
 
 		archivedLink.setArchiveUrl(articleLink.archiveUrl);
 
-		archivedLinkDao.persist(archivedLink);
+		synchronized (ArchivedLinkDao.class) {
+			archivedLinkDao.persist(archivedLink);
+		}
 	}
 
 	public void setArticleLinksCollector(ArticleLinksCollector articleLinksCollector) {

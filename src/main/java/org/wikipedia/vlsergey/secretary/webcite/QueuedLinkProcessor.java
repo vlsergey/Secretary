@@ -104,7 +104,9 @@ public class QueuedLinkProcessor implements Runnable {
 				archivedLink.setArchiveDate(DateFormatUtils.format(new Date(), "yyyy-MM-dd"));
 				archivedLink.setArchiveResult(StringUtils.trimToEmpty(status));
 				archivedLink.setArchiveUrl(StringUtils.trimToEmpty(archiveUrl));
-				archivedLinkDao.persist(archivedLink);
+				synchronized (ArchivedLinkDao.class) {
+					archivedLinkDao.persist(archivedLink);
+				}
 
 				queuedLinkDao.removeLinkFromQueue(sameUrl);
 			}
