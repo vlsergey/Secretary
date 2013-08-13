@@ -26,6 +26,8 @@ public class WikisourceTarget extends SkipList {
 
 			"document.kremlin.ru",
 
+			"rulex.ru",
+
 			"zakon.scli.ru",
 
 			"systema.ru",
