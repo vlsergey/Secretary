@@ -44,21 +44,13 @@ public class PerArticleReport {
 
 	public final Set<String> skippedTooYoung = new LinkedHashSet<String>();
 
-	private void appendLink(StringBuilder stringBuilder, Object url, boolean noWikiLinks) {
-		if (noWikiLinks)
-			stringBuilder.append("* <nowiki>" + url + "</nowiki>\n");
-		else
-			stringBuilder.append("* " + url + "\n");
-	}
-
-	private void appendLinks(StringBuilder stringBuilder, Collection<?> links, boolean noWikiLinks) {
+	private void appendLinks(StringBuilder stringBuilder, Collection<?> links) {
 		for (Object url : links)
-			appendLink(stringBuilder, url, noWikiLinks);
+			stringBuilder.append("* <nowiki>" + url + "</nowiki>\n");
 		stringBuilder.append("\n");
 	}
 
-	private void appendLinks(StringBuilder stringBuilder, String intro, String tableHeader,
-			List<ArchivingError> errors, boolean noWikiLinks) {
+	private void appendLinks(StringBuilder stringBuilder, String intro, String tableHeader, List<ArchivingError> errors) {
 		if (!errors.isEmpty()) {
 			stringBuilder.append(intro + ":\n");
 			stringBuilder.append("{{{!}} class=\"wikitable sortable\" \n");
@@ -68,10 +60,7 @@ public class PerArticleReport {
 				stringBuilder.append("{{!-}}\n");
 				stringBuilder.append("{{!}} ");
 
-				if (noWikiLinks)
-					stringBuilder.append("<nowiki>" + entry.originalUrl + "</nowiki>");
-				else
-					stringBuilder.append(entry.originalUrl);
+				stringBuilder.append("<nowiki>" + entry.originalUrl + "</nowiki>");
 
 				stringBuilder.append(" {{!}}{{!}} ");
 				stringBuilder.append(entry.archiveUrl);
@@ -86,8 +75,7 @@ public class PerArticleReport {
 		}
 	}
 
-	private void appendLinks(StringBuilder stringBuilder, String intro, String tableHeader, Map<String, String> dead,
-			boolean noWikiLinks) {
+	private void appendLinks(StringBuilder stringBuilder, String intro, String tableHeader, Map<String, String> dead) {
 		if (!dead.isEmpty()) {
 			stringBuilder.append(intro + ":\n");
 			stringBuilder.append("{{{!}} class=\"wikitable sortable\" \n");
@@ -97,10 +85,7 @@ public class PerArticleReport {
 				stringBuilder.append("{{!-}}\n");
 				stringBuilder.append("{{!}} ");
 
-				if (noWikiLinks)
-					stringBuilder.append("<nowiki>" + entry.getKey() + "</nowiki>");
-				else
-					stringBuilder.append(entry.getKey());
+				stringBuilder.append("<nowiki>" + entry.getKey() + "</nowiki>");
 
 				stringBuilder.append(" {{!}}{{!}} ");
 				stringBuilder.append(entry.getValue());
@@ -170,7 +155,7 @@ public class PerArticleReport {
 		skippedTooYoung.add(url);
 	}
 
-	public String toWiki(String title, String anchor, boolean noWikiLinks) {
+	public String toWiki(String title, String anchor) {
 		StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("\n\n== ");
@@ -189,17 +174,17 @@ public class PerArticleReport {
 		if (!skippedIncorrectFormat.isEmpty()) {
 			stringBuilder
 					.append("Следующие ссылки были пропущены, так как их формат не смог быть корректно воспринят ботом:\n");
-			appendLinks(stringBuilder, skippedIncorrectFormat, noWikiLinks);
+			appendLinks(stringBuilder, skippedIncorrectFormat);
 		}
 
 		if (!skippedMarkedArchived.isEmpty()) {
 			stringBuilder.append("Следующие ссылки были пропущены, так как уже имеют ссылку на архивную версию:\n");
-			appendLinks(stringBuilder, skippedMarkedArchived, noWikiLinks);
+			appendLinks(stringBuilder, skippedMarkedArchived);
 		}
 
 		if (!skippedMarkedDead.isEmpty()) {
 			stringBuilder.append("Следующие ссылки были пропущены, так как уже помечены как «мёртвые»:\n");
-			appendLinks(stringBuilder, skippedMarkedDead, noWikiLinks);
+			appendLinks(stringBuilder, skippedMarkedDead);
 		}
 
 		for (SkipReason skipReason : SkipReason.values()) {
@@ -209,30 +194,29 @@ public class PerArticleReport {
 
 			stringBuilder.append(skipReason.getReportDescription());
 			stringBuilder.append(":\n");
-			appendLinks(stringBuilder, skippedByUri.get(skipReason), noWikiLinks);
+			appendLinks(stringBuilder, skippedByUri.get(skipReason));
 		}
 
 		if (!skippedTooYoung.isEmpty()) {
 			stringBuilder.append("Следующие ссылки были пропущены, " + "так как они появились слишком недавно:\n");
-			appendLinks(stringBuilder, skippedTooYoung, noWikiLinks);
+			appendLinks(stringBuilder, skippedTooYoung);
 		}
 
-		appendLinks(stringBuilder, "Следующие ссылки были помечены как «мёртвые»", "! Ссылка !! Причина", this.dead,
-				noWikiLinks);
+		appendLinks(stringBuilder, "Следующие ссылки были помечены как «мёртвые»", "! Ссылка !! Причина", this.dead);
 
 		appendLinks(stringBuilder, "Следующие ссылки были пропущены, "
 				+ "так как они являются потенциально «мёртвыми» и недоступны в настоящий момент",
-				"! Ссылка !! Причина", this.potentiallyDead, noWikiLinks);
+				"! Ссылка !! Причина", this.potentiallyDead);
 
 		appendLinks(stringBuilder, "Следующие ссылки были пропущены, "
 				+ "так как проверка их статуса дала неоднозначный для бота результат", "! Ссылка !! Причина",
-				this.skippedOnHttpCheck, noWikiLinks);
+				this.skippedOnHttpCheck);
 
 		appendLinks(stringBuilder, "Следующие ссылки были успешно архивированы",
-				"! Ссылка !! Ссылка на архивную копию", this.archived, noWikiLinks);
+				"! Ссылка !! Ссылка на архивную копию", this.archived);
 
 		appendLinks(stringBuilder, "Следующие ссылки были добавлены в WebCite, но их архивация завершилась с ошибкой",
-				"! Ссылка !! Ссылка на архивную копию !! Тип ошибки", this.nonArchived, noWikiLinks);
+				"! Ссылка !! Ссылка на архивную копию !! Тип ошибки", this.nonArchived);
 
 		stringBuilder.append("Спасибо за внимание! ~~~~");
 

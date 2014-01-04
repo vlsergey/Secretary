@@ -36,7 +36,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.utils.DateNormalizer;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
@@ -647,14 +646,8 @@ public class QueuedPageProcessor {
 		}
 		String comment = commentBuilder.toString();
 
-		try {
-			mediaWikiBot.writeContent(reportPage, null, null,
-					perArticleReport.toWiki("[[" + articleName + "]]", anchor, false), comment, false, false);
-		} catch (ProcessException exc) {
-			// antispam?
-			mediaWikiBot.writeContent("Обсуждение:" + articleName, null, null,
-					perArticleReport.toWiki("[[" + articleName + "]]", anchor, true), comment, false, false);
-		}
+		mediaWikiBot.writeContent(reportPage, null, null,
+				perArticleReport.toWiki("[[" + articleName + "]]", anchor), comment, false, false);
 
 	}
 }
