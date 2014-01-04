@@ -28,6 +28,8 @@ public class DateNormalizer {
 	private static final SimpleDateFormat sdf_MMMMMddyyyy_EN = new SimpleDateFormat("MMMMM dd, yyyy", Locale.US);
 
 	private static final SimpleDateFormat yyyyMMMMdd = new SimpleDateFormat("yyyy-MM-dd");
+	private static final SimpleDateFormat yyyyMMMMdd2 = new SimpleDateFormat("yyyy=MM-dd");
+	private static final SimpleDateFormat yyyyMMMMdd3 = new SimpleDateFormat("yyyy-MM=dd");
 
 	static {
 		DateFormatSymbols ru = new DateFormatSymbols(Locales.RU_RU);
@@ -71,6 +73,22 @@ public class DateNormalizer {
 		if (nonNormilizedDate.matches("^\\s*[0-9][0-9][0-9][0-9]\\-[0-9][0-9]?\\-[0-9][0-9]?\\s*$")) {
 			try {
 				return yyyyMMMMdd.format(yyyyMMMMdd.parse(StringUtils.trim(nonNormilizedDate)));
+			} catch (ParseException e) {
+				return nonNormilizedDate;
+			}
+		}
+
+		if (nonNormilizedDate.matches("^\\s*[0-9][0-9][0-9][0-9]\\=[0-9][0-9]?\\-[0-9][0-9]?\\s*$")) {
+			try {
+				return yyyyMMMMdd.format(yyyyMMMMdd2.parse(StringUtils.trim(nonNormilizedDate)));
+			} catch (ParseException e) {
+				return nonNormilizedDate;
+			}
+		}
+
+		if (nonNormilizedDate.matches("^\\s*[0-9][0-9][0-9][0-9]\\-[0-9][0-9]?\\=[0-9][0-9]?\\s*$")) {
+			try {
+				return yyyyMMMMdd.format(yyyyMMMMdd3.parse(StringUtils.trim(nonNormilizedDate)));
 			} catch (ParseException e) {
 				return nonNormilizedDate;
 			}
