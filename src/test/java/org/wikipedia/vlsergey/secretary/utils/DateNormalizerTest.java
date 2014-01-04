@@ -11,6 +11,9 @@ public class DateNormalizerTest {
 
 		DateNormalizer dateNormalizer = new DateNormalizer();
 
+		assertEquals("2012-06-28", dateNormalizer.normalizeDate("2012-06=28"));
+		assertEquals("2012-06-28", dateNormalizer.normalizeDate("2012=06-28"));
+
 		assertEquals("2009-10-26", dateNormalizer.normalizeDate("26 October 2009"));
 		assertEquals("2009-08-14", dateNormalizer.normalizeDate("14 августа 2009"));
 		assertEquals("2012-06-22", dateNormalizer.normalizeDate("22.06.2012"));
