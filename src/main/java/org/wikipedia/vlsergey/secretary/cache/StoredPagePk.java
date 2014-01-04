@@ -66,4 +66,9 @@ public class StoredPagePk implements Serializable {
 		this.pageId = pageId;
 	}
 
+	@Override
+	public String toString() {
+		return "PageKey [" + lang + "; " + pageId + "]";
+	}
+
 }

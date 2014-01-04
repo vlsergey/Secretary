@@ -7,11 +7,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 import org.wikipedia.vlsergey.secretary.books.CountBooks;
+import org.wikipedia.vlsergey.secretary.books.ReplaceCiteBookWithSpecificTemplate;
 import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
-import org.wikipedia.vlsergey.secretary.trust.Month;
 import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
-import org.wikipedia.vlsergey.secretary.trust.WikiStats;
+import org.wikipedia.vlsergey.secretary.webcite.LinkDeactivationTask;
 import org.wikipedia.vlsergey.secretary.webcite.QueuedLinkProcessor;
 import org.wikipedia.vlsergey.secretary.webcite.WebCiteJob;
 
@@ -22,7 +22,7 @@ public class Secretary {
 	public static void main(String[] args) throws Exception {
 		ApplicationContext appContext = new ClassPathXmlApplicationContext("application-context.xml");
 
-		// runOfType(appContext, LinkDeactivationTask.class);
+		runOfType(appContext, LinkDeactivationTask.class);
 
 		TaskScheduler taskScheduler = appContext.getBean(TaskScheduler.class);
 
@@ -32,51 +32,26 @@ public class Secretary {
 		taskScheduler.scheduleWithFixedDelay(appContext.getBean(QueuedLinkProcessor.class),
 				DateUtils.MILLIS_PER_SECOND * 2);
 
-		for (WebCiteJob webCiteJob : appContext.getBeansOfType(WebCiteJob.class).values()) {
-			taskScheduler.scheduleWithFixedDelay(webCiteJob, DateUtils.MILLIS_PER_DAY);
-		}
+		scheduleWithFixedDelayOfType(appContext, WebCiteJob.class, DateUtils.MILLIS_PER_DAY);
 
 		// for (CountCiteWeb task :
 		// appContext.getBeansOfType(CountCiteWeb.class).values()) {
 		// taskScheduler.scheduleAtFixedRate(task, DateUtils.MILLIS_PER_DAY);
 		// }
 
-		final UpdateFeaturedArticlesTask updateFeaturedArticlesTask = appContext
-				.getBean(UpdateFeaturedArticlesTask.class);
-		final UpdateGoodArticlesTask updateGoodArticlesTask = appContext.getBean(UpdateGoodArticlesTask.class);
+		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_DAY);
+		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 
-		updateFeaturedArticlesTask.run();
-		updateGoodArticlesTask.run();
+		/* Until done -- run hourly */
+		// scheduleWithFixedDelayOfType(appContext,
+		// UpdatePopularArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
+		// runOfType(appContext, UpdatePopularArticlesTask.class);
 
-		taskScheduler.scheduleWithFixedDelay(updateFeaturedArticlesTask, DateUtils.MILLIS_PER_DAY);
-		taskScheduler.scheduleWithFixedDelay(updateGoodArticlesTask, DateUtils.MILLIS_PER_DAY);
+		// UpdatePopularArticlesTask wikiStats =
+		// appContext.getBean(UpdatePopularArticlesTask.class);
+		// wikiStats.schedule();
 
-		final WikiStats wikiStats = appContext.getBean(WikiStats.class);
-
-		// if exception happens -- restart in one hour
-		taskScheduler.scheduleWithFixedDelay(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					wikiStats.run(Month.MONTH_OF_2013_06, DateUtils.MILLIS_PER_MINUTE * 10, DateUtils.MILLIS_PER_HOUR);
-				} catch (Exception exc) {
-					log.error("Unable to update total raiting: " + exc, exc);
-				}
-			}
-		}, DateUtils.MILLIS_PER_HOUR);
-
-		taskScheduler.scheduleWithFixedDelay(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					wikiStats.run(Month.MONTH_OF_2013_07, DateUtils.MILLIS_PER_MINUTE * 15, DateUtils.MILLIS_PER_HOUR);
-				} catch (Exception exc) {
-					log.error("Unable to update total raiting: " + exc, exc);
-				}
-			}
-		}, DateUtils.MILLIS_PER_HOUR);
-
-		// appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
+		appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
 
 		while (true) {
 			Thread.sleep(10000);
@@ -87,6 +62,14 @@ public class Secretary {
 	private static <T extends Runnable> void runOfType(ApplicationContext appContext, Class<T> cls) {
 		for (T task : appContext.getBeansOfType(cls).values()) {
 			task.run();
+		}
+	}
+
+	private static <T extends Runnable> void scheduleWithFixedDelayOfType(ApplicationContext appContext, Class<T> cls,
+			long delay) {
+		TaskScheduler taskScheduler = appContext.getBean(TaskScheduler.class);
+		for (T job : appContext.getBeansOfType(cls).values()) {
+			taskScheduler.scheduleWithFixedDelay(job, delay);
 		}
 	}
 }

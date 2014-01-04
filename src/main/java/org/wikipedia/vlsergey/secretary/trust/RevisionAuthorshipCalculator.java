@@ -1,5 +1,8 @@
 package org.wikipedia.vlsergey.secretary.trust;
 
+import gnu.trove.map.TLongIntMap;
+import gnu.trove.map.hash.TLongIntHashMap;
+
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -7,10 +10,12 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
@@ -41,11 +46,13 @@ public class RevisionAuthorshipCalculator {
 		final LastUserHashMap<Long, TextChunkList> anonymChunksCache = new LastUserHashMap<Long, TextChunkList>(
 				CONTEXT_CACHES_SIZE);
 
+		final Page page;
+		final Long pageId;
 		final String pageTitle;
 
 		final LastUserHashMap<Long, Revision> revisionCache = new LastUserHashMap<Long, Revision>(CONTEXT_CACHES_SIZE);
 
-		final Map<Long, Long> revisionChunkedLength = new HashMap<Long, Long>();
+		final TLongIntMap revisionChunkedLength = new TLongIntHashMap();
 		final Map<Long, Revision> revisionInfos = new HashMap<Long, Revision>();
 
 		final List<Revision> revisionInfosNewer;
@@ -54,7 +61,7 @@ public class RevisionAuthorshipCalculator {
 		final List<Revision> revisionInfosOlder;
 		final List<Long> revisionInfosOlderIds;
 
-		final int revisionInfosSize;
+		final int revisionsCount;
 
 		public PageContext(String pageTitle) {
 			this.pageTitle = pageTitle;
@@ -67,12 +74,21 @@ public class RevisionAuthorshipCalculator {
 				revisionInfos.put(revision.getId(), revision);
 			}
 
+			this.revisionsCount = revisionInfosNewer.size();
+
+			if (revisionsCount != 0) {
+				page = revisionInfosNewer.get(0).getPage();
+				pageId = page.getId();
+			} else {
+				page = null;
+				pageId = null;
+			}
+
 			this.revisionInfosOlder = new ArrayList<Revision>(revisionInfosNewer);
 			this.revisionInfosOlderIds = new ArrayList<Long>(revisionInfosNewerIds);
 			Collections.reverse(revisionInfosOlder);
 			Collections.reverse(revisionInfosOlderIds);
 
-			this.revisionInfosSize = revisionInfosNewer.size();
 		}
 
 		synchronized TextChunkList getAnonymChunks(Long revisionId) {
@@ -128,7 +144,7 @@ public class RevisionAuthorshipCalculator {
 				if (index == -1) {
 					throw new IllegalArgumentException("Unknown revision: " + rvStartId + " of '" + pageTitle + "'");
 				}
-				return revisionInfosNewer.subList(index, revisionInfosSize);
+				return revisionInfosNewer.subList(index, revisionsCount);
 			}
 			case OLDER: {
 				if (rvStartId == null) {
@@ -138,11 +154,42 @@ public class RevisionAuthorshipCalculator {
 				if (index == -1) {
 					throw new IllegalArgumentException("Unknown revision: " + rvStartId + " of '" + pageTitle + "'");
 				}
-				return revisionInfosOlder.subList(index, revisionInfosSize);
+				return revisionInfosOlder.subList(index, revisionsCount);
 			}
 			default:
 				throw new AssertionError();
 			}
+		}
+
+		public synchronized Revision queryRevisionWithPreload(Long revisionId, Direction direction, int preload) {
+			if (revisionId == null) {
+				throw new NullArgumentException("revisionId");
+			}
+			Revision revision = revisionCache.get(revisionId);
+			if (revision == null) {
+
+				final List<Revision> sublist;
+				if (direction == Direction.NEWER) {
+					sublist = sublistSafe(revisionInfosNewer, revisionInfos.get(revisionId), preload);
+				} else {
+					sublist = sublistSafe(revisionInfosOlder, revisionInfos.get(revisionId), preload);
+				}
+				for (Revision revisionContent : wikiCache.queryRevisions(sublist)) {
+					revisionCache.put(revisionId, revisionContent);
+				}
+
+				revisionCache.put(revisionId, revision);
+			}
+			return revision;
+		}
+
+		private <T> List<T> sublistSafe(List<T> original, T start, int length) {
+			int index = original.indexOf(start);
+			if (index == -1) {
+				throw new IllegalArgumentException("Start item " + start + " not present in full list");
+			}
+			int end = Math.min(index + length, original.size());
+			return original.subList(index, end);
 		}
 
 	}
@@ -151,7 +198,7 @@ public class RevisionAuthorshipCalculator {
 
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipCalculator.class);
 
-	private static final boolean PRELOAD = true;
+	public static final int PRELOAD_BATCH = 25;
 
 	public static final int SEGMENTS = 256;
 
@@ -198,6 +245,9 @@ public class RevisionAuthorshipCalculator {
 
 	private final Lock[] articleLocks;
 
+	@Autowired
+	private PageRevisionChunksLengthDao chunksLengthDao;
+
 	// private final ExecutorService executor =
 	// Executors.newSingleThreadExecutor();
 	private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
@@ -205,9 +255,6 @@ public class RevisionAuthorshipCalculator {
 	private Locale locale;
 
 	private MediaWikiBot mediaWikiBot;
-
-	private final ExecutorService preloadExecutor = Executors.newFixedThreadPool(Runtime.getRuntime()
-			.availableProcessors());
 
 	private RefAwareParser refAwareParser;
 
@@ -232,14 +279,18 @@ public class RevisionAuthorshipCalculator {
 		return TextChunkList.calculateDifference(chunks1, chunks2);
 	}
 
-	public TextChunkList getAuthorship(Page page, Revision latestRevisionContent, final Date lastPossibleEditTimestamp)
+	private void cleanupCache(PageContext pageContext, Set<Long> preserveRevisionIds) {
+		wikiCache.removePageRevisionsExcept(pageContext.page, preserveRevisionIds);
+	}
+
+	public TextChunkList getAuthorship(Page page, Revision latestRevisionInfo, final Date lastPossibleEditTimestamp)
 			throws Exception {
 
 		final int lockIndex = (int) ((page.getId().longValue() % SEGMENTS + SEGMENTS) % SEGMENTS);
 		final Lock lock = articleLocks[lockIndex];
 		lock.lock();
 		try {
-			return getAuthorshipImpl(page, latestRevisionContent, lastPossibleEditTimestamp);
+			return getAuthorshipImpl(page, latestRevisionInfo, lastPossibleEditTimestamp);
 		} finally {
 			lock.unlock();
 		}
@@ -285,14 +336,7 @@ public class RevisionAuthorshipCalculator {
 	}
 
 	private TextChunkList getAuthorshipFromDatabase(final PageContext pageContext, final Long newRevisionId) {
-		return getAuthorshipFromDatabaseImpl(newRevisionId, new Callable<Revision>() {
-
-			@Override
-			public Revision call() throws Exception {
-				return pageContext.queryRevisionInfo(newRevisionId);
-			}
-		}, new Callable<String>() {
-
+		return getAuthorshipFromDatabaseImpl(newRevisionId, new Callable<String>() {
 			@Override
 			public String call() throws Exception {
 				return pageContext.queryRevision(newRevisionId).getContent();
@@ -300,24 +344,7 @@ public class RevisionAuthorshipCalculator {
 		});
 	}
 
-	private TextChunkList getAuthorshipFromDatabase(final Revision revisionContent) {
-		return getAuthorshipFromDatabaseImpl(revisionContent.getId(), new Callable<Revision>() {
-
-			@Override
-			public Revision call() throws Exception {
-				return revisionContent;
-			}
-		}, new Callable<String>() {
-
-			@Override
-			public String call() throws Exception {
-				return revisionContent.getContent();
-			}
-		});
-	}
-
-	private TextChunkList getAuthorshipFromDatabaseImpl(Long newRevisionId, Callable<Revision> revisionInfoF,
-			Callable<String> contentF) {
+	private TextChunkList getAuthorshipFromDatabaseImpl(Long newRevisionId, Callable<String> contentF) {
 		try {
 			final RevisionAuthorship stored = revisionAuthorshipDao.findByRevision(getLocale(), newRevisionId);
 			if (stored != null && stored.getData() != null && stored.getData().length != 0) {
@@ -333,44 +360,43 @@ public class RevisionAuthorshipCalculator {
 		return null;
 	}
 
-	private TextChunkList getAuthorshipImpl(Page page, Revision latestRevisionContent,
+	private TextChunkList getAuthorshipImpl(Page page, final Revision latestRevisionInfo,
 			final Date lastPossibleEditTimestamp) throws Exception, InterruptedException, ExecutionException {
-		if (lastPossibleEditTimestamp == null && latestRevisionContent != null) {
-			// check DB before preloading
-			TextChunkList chunks = getAuthorshipFromDatabase(latestRevisionContent);
+
+		if (latestRevisionInfo.getTimestamp() != null
+				&& (lastPossibleEditTimestamp == null || latestRevisionInfo.getTimestamp().before(
+						lastPossibleEditTimestamp))) {
+			/*
+			 * если контрольная дата не установлена или если текущая последняя
+			 * версия сделана до контрольной даты -- значит изучаем последнюю
+			 * версию
+			 */
+			TextChunkList chunks = getAuthorshipFromDatabaseImpl(latestRevisionInfo.getId(), new Callable<String>() {
+				@Override
+				public String call() throws Exception {
+					return wikiCache.queryRevision(latestRevisionInfo).getContent();
+				}
+			});
 			if (chunks != null) {
 				return chunks;
 			}
-		}
+		} else {
+			/*
+			 * Нужно узнать, какая именно версия сделана ДО установленной
+			 * контрольной даты (если это не текущая последняя). Может быть, у
+			 * нас есть эта информация в кеше?
+			 */
+			final ToDateArticleRevision toDateRevisionInfo = toDateArticleRevisionDao.find(getLocale(), page,
+					lastPossibleEditTimestamp);
 
-		{
-			Long toLookupInCache;
-			if (lastPossibleEditTimestamp == null) {
-				/*
-				 * если контрольная дата не установлена -- значит изучаем
-				 * последнюю версию
-				 */
-				toLookupInCache = latestRevisionContent != null ? latestRevisionContent.getId() : null;
-			} else if (latestRevisionContent.getTimestamp() != null
-					&& latestRevisionContent.getTimestamp().before(lastPossibleEditTimestamp)) {
-				/*
-				 * Если текущая последняя версия сделана до контрольной даты,
-				 * значит её и нужно изучать
-				 */
-				toLookupInCache = latestRevisionContent.getId();
-			} else {
-				/*
-				 * Нужно узнать, какая именно версия сделана ДО установленной
-				 * контрольной даты (если это не текущая последняя). Может быть,
-				 * у нас есть эта информация в кеше?
-				 */
-				ToDateArticleRevision revision = toDateArticleRevisionDao.find(getLocale(), page,
-						lastPossibleEditTimestamp);
-				toLookupInCache = revision != null ? revision.getRevisionId() : null;
-			}
-
-			if (toLookupInCache != null) {
-				TextChunkList chunks = getAuthorshipFromDatabase(wikiCache.queryRevision(toLookupInCache));
+			if (toDateRevisionInfo != null) {
+				TextChunkList chunks = getAuthorshipFromDatabaseImpl(toDateRevisionInfo.getRevisionId(),
+						new Callable<String>() {
+							@Override
+							public String call() throws Exception {
+								return wikiCache.queryRevision(toDateRevisionInfo.getRevisionId()).getContent();
+							}
+						});
 				if (chunks != null) {
 					return chunks;
 				}
@@ -405,35 +431,36 @@ public class RevisionAuthorshipCalculator {
 			}
 		}
 
-		if (PRELOAD) {
-			// pregenerate to prevent out of memory and out of stack?
-			log.info("Preload all revisions of '" + pageTitle + "'");
-
-			// preload all revisions
-			final PageContext pageContext2 = pageContext;
-			List<Future<?>> futures = new ArrayList<Future<?>>();
-			for (final Revision revision : wikiCache.queryRevisions(pageContext.queryRevisionsInfo(null,
-					Direction.NEWER))) {
-				futures.add(preloadExecutor.submit(new Runnable() {
-					@Override
-					public void run() {
-						final TextChunkList chunks = TextChunkList.toTextChunkList(getLocale(), "127.0.0.1",
-								revision.getContent());
-						synchronized (pageContext2) {
-							pageContext2.anonymChunksCache.put(revision.getId(), chunks);
-							pageContext2.revisionChunkedLength.put(revision.getId(), Long.valueOf(chunks.length()));
-							pageContext2.revisionCache.put(revision.getId(), revision);
-						}
-					}
-				}));
+		TLongIntMap chunkLengths = chunksLengthDao.findSafe(getLocale(), pageContext.pageId);
+		{
+			// we need ALL revisions chunk lengths
+			List<Revision> missingLengths = new ArrayList<Revision>(pageContext.revisionsCount - chunkLengths.size());
+			for (Revision revisionInfo : pageContext.revisionInfosOlder) {
+				if (!chunkLengths.containsKey(revisionInfo.getId().longValue())) {
+					missingLengths.add(revisionInfo);
+				}
 			}
 
-			for (Future<?> future : futures) {
-				future.get();
+			if (!missingLengths.isEmpty()) {
+				for (Revision revision : wikiCache.queryRevisions(missingLengths)) {
+					final TextChunkList chunks = TextChunkList.toTextChunkList(getLocale(), "127.0.0.1",
+							revision.getContent());
+
+					chunkLengths.put(revision.getId(), chunks.length());
+
+					// usually it is the latest ones...
+					pageContext.anonymChunksCache.put(revision.getId(), chunks);
+					pageContext.revisionCache.put(revision.getId(), revision);
+				}
+				chunksLengthDao.store(getLocale(), pageContext.pageId, chunkLengths);
 			}
 		}
+		pageContext.revisionChunkedLength.putAll(chunkLengths);
 
-		if (pageContext.revisionInfosOlderIds.size() > 100) {
+		Set<Long> preserveRevisionIds = new HashSet<Long>();
+		preserveRevisionIds.add(pageContext.queryLatestRevisionInfo().getId());
+
+		{
 			Calendar calendar = Calendar.getInstance();
 			calendar.set(Calendar.DATE, 1);
 			calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -453,10 +480,24 @@ public class RevisionAuthorshipCalculator {
 
 			for (final Revision revisionInfo : toPregenerate) {
 				getAuthorship(pageContext, revisionInfo.getId());
+				preserveRevisionIds.add(revisionInfo.getId());
 			}
 		}
 
-		return getAuthorship(pageContext, revisionToResearchId.getId());
+		{
+			int counter = 10;
+			for (Long revisionId : pageContext.revisionInfosOlderIds) {
+				counter--;
+				preserveRevisionIds.add(revisionId);
+				if (counter == 0) {
+					break;
+				}
+			}
+		}
+
+		TextChunkList result = getAuthorship(pageContext, revisionToResearchId.getId());
+		cleanupCache(pageContext, preserveRevisionIds);
+		return result;
 	}
 
 	public Locale getLocale() {
@@ -477,7 +518,7 @@ public class RevisionAuthorshipCalculator {
 			throw new NullArgumentException("newRevisionId");
 		}
 
-		final long newRevisionLength = pageContext.revisionChunkedLength.get(newRevisionId);
+		final int newRevisionLength = pageContext.revisionChunkedLength.get(newRevisionId);
 		final Revision newRevision = pageContext.queryRevision(newRevisionId);
 		log.info("Searching through history for best compare candidate for " + toString(newRevision));
 
@@ -503,6 +544,8 @@ public class RevisionAuthorshipCalculator {
 
 			log.debug("Searching through history for best compare candidate for " + toString(newRevision)
 					+ ": compare with " + toString(oldRevision));
+
+			pageContext.queryRevisionWithPreload(oldRevision.getId(), Direction.OLDER, PRELOAD_BATCH);
 
 			long difference = calculateDifference(pageContext, oldRevision.getId(), newRevisionId);
 
@@ -704,6 +747,9 @@ public class RevisionAuthorshipCalculator {
 		for (String key : results.keySet()) {
 			stringBuilder.append("* [[" + key + "]]: " + toString(results.get(key), true) + "\n");
 		}
+
+		stringBuilder.append("\n");
+		stringBuilder.append("[[Категория:Википедия:Рейтинги авторов]]\n");
 
 		mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/" + title, null, stringBuilder.toString(),
 				null, "Обновление статистики", true, false);

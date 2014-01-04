@@ -23,24 +23,23 @@ public abstract class MultiresultFunction<A, B> extends Function<Iterable<A>, It
 
 							@Override
 							public boolean hasNext() {
-								return curentResult.hasNext() || sourceIterator.hasNext();
-							}
-
-							@Override
-							public B next() {
-								if (curentResult.hasNext())
-									return curentResult.next();
-
-								if (sourceIterator.hasNext()) {
+								while (!curentResult.hasNext() && sourceIterator.hasNext()) {
 									List<A> batch = new ArrayList<A>(batchSize);
 									while (batch.size() < batchSize && sourceIterator.hasNext()) {
 										batch.add(sourceIterator.next());
 									}
 									this.curentResult = sourceFunction.apply(batch).iterator();
-									return curentResult.next();
+									// repeat until non-empty result
 								}
+								return curentResult.hasNext();
+							}
 
-								throw new NoSuchElementException();
+							@Override
+							public B next() {
+								if (!hasNext()) {
+									throw new NoSuchElementException();
+								}
+								return curentResult.next();
 							}
 
 							@Override

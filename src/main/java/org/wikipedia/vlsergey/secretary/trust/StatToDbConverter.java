@@ -29,9 +29,13 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 public class StatToDbConverter {
 
 	public static void main(String[] args) throws Exception {
-		new StatToDbConverter().collectToDb("stats/pagecounts-raw/2013/07/", "201307", "stats/stats-2013-07.txt", 10);
+		new StatToDbConverter().collectToDb("stats/pagecounts-raw/2013/08/", "201308", "stats/stats-2013-08.txt", 100);
+
+		// new StatToDbConverter().collectToDb("stats/pagecounts-raw/2013/07/",
+		// "201307", "stats/stats-2013-07.txt", 100);
+		//
 		// new StatToDbConverter().collectToDb("stats/pagecounts-raw/2013/06/",
-		// "201306", "stats/stats-2013-06.txt", 10);
+		// "201306", "stats/stats-2013-06.txt", 100);
 	}
 
 	private final ExecutorService executor = Executors.newFixedThreadPool(2);

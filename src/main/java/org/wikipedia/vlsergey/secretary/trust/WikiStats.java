@@ -55,6 +55,8 @@ public class WikiStats {
 
 	private static final Log log = LogFactory.getLog(WikiStats.class);
 
+	private static final int MIN_PAGES_DIFFERENCE = 10000;
+
 	private static <T> List<T> getKeysSortedByValueDesc(final TObjectDoubleHashMap<T> byUser) {
 		List<T> keys = new ArrayList<T>(byUser.keySet());
 		Collections.sort(keys, new Comparator<T>() {
@@ -67,6 +69,8 @@ public class WikiStats {
 		});
 		return keys;
 	}
+
+	private final Map<StatisticsKey, TObjectIntMap<Month>> doneMonth = new HashMap<StatisticsKey, TObjectIntMap<Month>>();
 
 	private Locale locale;
 
@@ -84,19 +88,39 @@ public class WikiStats {
 	private WikiCache wikiCache;
 
 	{
+		renamedUsers.put("BoBink", "InkBoB");
+		renamedUsers.put("IzolL", "InkBoB");
+		renamedUsers.put("TyyyVer", "InkBoB");
+
 		renamedUsers.put("HiddeneN", "GorkyFromChe");
 		renamedUsers.put("MonTheCeltics", "GorkyFromChe");
 
 		renamedUsers.put("G8J", "Mggu77");
 
+		renamedUsers.put("Nice big guy", "PavelUstinovich");
+
 		renamedUsers.put("Panov1975", "Radimov");
+
+		renamedUsers.put("Insuranze", "SkyBon");
+
+		renamedUsers.put("Prozazhizni", "Smartass2006");
+		renamedUsers.put("Smartass", "Smartass2006");
+		renamedUsers.put("Zolumov", "Smartass2006");
+		renamedUsers.put("ЛеонидовЕВ", "Smartass2006");
+
+		renamedUsers.put("Uuuiiiccc", "Ua1-136-500");
 
 		renamedUsers.put("Vlad Veschenikin", "Vlad Jursalim");
 		renamedUsers.put("Vladislav Veschenikin", "Vlad Jursalim");
 		renamedUsers.put("Владислав Вещеникин", "Vlad Jursalim");
 
+		renamedUsers.put("Borrow-188", "X-Romix");
+		renamedUsers.put("Бэримор", "X-Romix");
+
 		renamedUsers.put("Батискаф обыкновенный", "Аурелиано Буэндиа");
 		renamedUsers.put("Любитель грёзофарса", "Аурелиано Буэндиа");
+
+		renamedUsers.put("Вам письмо", "Климова");
 
 		renamedUsers.put("Ryadinsky Eugen", "Рядинский Евгений");
 	}
@@ -129,6 +153,16 @@ public class WikiStats {
 		return wikiCache;
 	}
 
+	private boolean isMonthDone(StatisticsKey statisticsKey, Month month, int already) {
+		synchronized (doneMonth) {
+			TObjectIntMap<Month> done = doneMonth.get(statisticsKey);
+			if (done == null) {
+				return false;
+			}
+			return done.get(month) >= already;
+		}
+	}
+
 	private TObjectLongHashMap<String> loadCounters(final String statisticsFileName)
 			throws UnsupportedEncodingException, FileNotFoundException, IOException {
 		log.info("Loading articles statistics...");
@@ -146,7 +180,8 @@ public class WikiStats {
 							continue;
 						}
 						String[] strings = StringUtils.split(line, "\t");
-						counters.put(strings[0], Long.valueOf(strings[1]));
+						final Long visits = Long.valueOf(strings[1]);
+						counters.put(strings[0], visits);
 					} catch (Exception exc) {
 						System.out.println("Skip line: '" + StringEscapeUtils.escapeJava(line) + "'");
 					}
@@ -167,6 +202,7 @@ public class WikiStats {
 		}
 
 		if (wikiGroupCode.equals("bot")) {
+			userNames.add("AlcoBot");
 			userNames.add("Ashikbot");
 			userNames.add("LankLinkBot");
 		}
@@ -215,7 +251,7 @@ public class WikiStats {
 		return nameToContributors;
 	}
 
-	public void run(final Month month, long firstWriteAfter, final long updateEachMs) throws Exception {
+	public void run(final Month month) throws Exception {
 
 		final StatisticsKey statisticsKey = StatisticsKey.TOTAL;
 		final TObjectLongHashMap<String> counters = loadCounters(month.getPagesCountsFile());
@@ -242,11 +278,12 @@ public class WikiStats {
 		};
 
 		final Set<String> already = new HashSet<String>();
-		final AtomicLong lastWrite = new AtomicLong(System.currentTimeMillis() - updateEachMs + firstWriteAfter);
 		final AtomicLong hitsAnalyzed = new AtomicLong(0);
 		final AtomicInteger pagesAnalyzed = new AtomicInteger(0);
+		final AtomicInteger pagesLogged = new AtomicInteger(0);
 
-		final Semaphore semaphore = new Semaphore(8);
+		final int maxQueue = Runtime.getRuntime().availableProcessors() * 2;
+		final Semaphore semaphore = new Semaphore(maxQueue);
 
 		for (final Revision latestRevisionId : mediaWikiBot.queryLatestRevisionsByPageTitles(byPopularity, true,
 				WikiCache.FAST)) {
@@ -260,8 +297,8 @@ public class WikiStats {
 						final ParsedPage page = (ParsedPage) latestRevisionId.getPage();
 						final String pageTitle = page.getTitle();
 
-						TextChunkList textChunks = revisionAuthorshipCalculator.getAuthorship(page,
-								wikiCache.queryRevision(latestRevisionId.getId()), month.getEnd());
+						TextChunkList textChunks = revisionAuthorshipCalculator.getAuthorship(page, latestRevisionId,
+								month.getEnd());
 						if (textChunks == null) {
 							System.out.println("Skip article: " + pageTitle);
 							return;
@@ -330,17 +367,23 @@ public class WikiStats {
 							pagesAnalyzed.incrementAndGet();
 						}
 
-						try {
-							long prevLastWrite = lastWrite.get();
-							if (System.currentTimeMillis() - prevLastWrite > updateEachMs) {
-								if (lastWrite.compareAndSet(prevLastWrite, System.currentTimeMillis())) {
-									write(statisticsKey, month, pagesAnalyzed.intValue(), hitsAnalyzed.longValue(),
-											contributors, counters, byContributor, userCountF,
-											byContributorArticleAuthorship, 5, 1000);
+						{
+							final int analyzed = pagesAnalyzed.get();
+							final int logged = pagesLogged.get();
+							if (analyzed - logged > MIN_PAGES_DIFFERENCE) {
+								if (pagesLogged.compareAndSet(logged, analyzed)) {
+									/*
+									 * if month already analyzed, we should not
+									 * repeat writing of intermediate data
+									 */
+									if (!isMonthDone(statisticsKey, month, analyzed)) {
+										write(statisticsKey, month, pagesAnalyzed.intValue(), hitsAnalyzed.longValue(),
+												contributors, counters, byContributor, userCountF,
+												byContributorArticleAuthorship, 5, 1000);
+										setMonthDone(statisticsKey, month, analyzed);
+									}
 								}
 							}
-						} catch (Exception exc) {
-							log.error("Unable to save WikiStats data: " + exc, exc);
 						}
 					} catch (Exception exc) {
 						log.error("Unable to calculate WikiStats data for " + latestRevisionId + ": " + exc, exc);
@@ -352,10 +395,12 @@ public class WikiStats {
 			});
 		}
 
-		semaphore.acquire(8);
+		semaphore.acquire(maxQueue);
 
 		write(statisticsKey, month, pagesAnalyzed.intValue(), hitsAnalyzed.longValue(), contributors, counters,
 				byContributor, userCountF, byContributorArticleAuthorship, 5, 1000);
+
+		setMonthDone(statisticsKey, month, pagesAnalyzed.get());
 	}
 
 	public void setLocale(Locale locale) {
@@ -364,6 +409,19 @@ public class WikiStats {
 
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
 		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	private void setMonthDone(StatisticsKey statisticsKey, Month month, int analyzed) {
+		synchronized (doneMonth) {
+			TObjectIntMap<Month> done = doneMonth.get(statisticsKey);
+			if (done == null) {
+				done = new TObjectIntHashMap<Month>(16, 1, 0);
+				doneMonth.put(statisticsKey, done);
+			}
+			if (done.get(month) < analyzed) {
+				done.put(month, analyzed);
+			}
+		}
 	}
 
 	public void setRevisionAuthorshipCalculator(RevisionAuthorshipCalculator revisionAuthorshipCalculator) {
@@ -447,6 +505,8 @@ public class WikiStats {
 						return byContributorByArticleProcents.get(contributor).size();
 					}
 				}, byContributorByArticleProcents, 10, 10000);
+
+		setMonthDone(statisticsKey, month, pagesAnalyzed.get());
 	}
 
 	private void write(StatisticsKey statisticsKey, Month month, int pagesAnalyzed, long hitsAnalyzed,
@@ -559,11 +619,17 @@ public class WikiStats {
 				buffer.append("|{{Сокрытие|title=Список статей|hidden=1|content=\n");
 
 				for (int i = 0; i < toOutpuFull; i++) {
-					String pageTitle = pageTitles.get(i);
-					double procents = byArticleProcents.get(pageTitle);
-					double articleProCent = 100 * procents;
+					final String pageTitle = pageTitles.get(i);
+					final double procents = byArticleProcents.get(pageTitle);
+					final double articleProCent = 100 * procents;
 					final long articleVisits = pageVisits.get(pageTitle);
-					double articlePoints = procents * articleVisits;
+					final long articlePoints = Math.round(procents * articleVisits);
+
+					if (articlePoints == 0) {
+						toOutpuFull = i;
+						toOutputShort = pageTitles.size() - toOutpuFull;
+						break;
+					}
 
 					buffer.append("* [[" + pageTitle + "]] (" + integerFormat.format(articleVisits) + ") — "
 							+ decimalFormat.format(articleProCent) + "% (" + integerFormat.format(articlePoints)
@@ -577,10 +643,10 @@ public class WikiStats {
 
 				if (toOutputShort > 0) {
 					for (int i = toOutpuFull; i < pageTitles.size(); i++) {
-						String pageTitle = pageTitles.get(i);
-						double procents = byArticleProcents.get(pageTitle);
+						final String pageTitle = pageTitles.get(i);
+						final double procents = byArticleProcents.get(pageTitle);
 						final long articleVisits = pageVisits.get(pageTitle);
-						double articlePoints = procents * articleVisits;
+						final double articlePoints = procents * articleVisits;
 
 						statArticlesCount.addValue(1);
 						statArticlesAuthorship.addValue(procents);
@@ -588,15 +654,26 @@ public class WikiStats {
 						statArticlesPoints.addValue(articlePoints);
 					}
 
-					buffer.append("* Оставшиеся статьи (" + integerFormat.format(statArticlesCount.getSum()) + "):\n");
-					buffer.append("** Средний вклад: " + decimalFormat.format(statArticlesAuthorship.getMean() * 100)
-							+ "% ± " + decimalFormat.format(statArticlesAuthorship.getStandardDeviation() * 100)
-							+ "%\n");
-					buffer.append("** Посещений: " + integerFormat.format(statArticlesVisits.getMean()) + " ± "
-							+ integerFormat.format(statArticlesVisits.getStandardDeviation()) + "\n");
-					buffer.append("** Баллов за статью: " + integerFormat.format(statArticlesPoints.getMean()) + " ± "
-							+ integerFormat.format(statArticlesPoints.getStandardDeviation()) + "\n");
-					buffer.append("** Итого за оставшиеся: " + integerFormat.format(statArticlesPoints.getSum()) + "\n");
+					final long sum = Math.round(statArticlesPoints.getSum());
+					if (sum != 0) {
+						if (toOutputShort < 5) {
+							// due to "articlePoints == 0" break
+							buffer.append("* За оставшиеся статьи (" + integerFormat.format(statArticlesCount.getSum())
+									+ ") — " + integerFormat.format(statArticlesPoints.getSum()) + "\n");
+						} else {
+							buffer.append("* Оставшиеся статьи (" + integerFormat.format(statArticlesCount.getSum())
+									+ "):\n");
+							buffer.append("** Средний вклад: "
+									+ decimalFormat.format(statArticlesAuthorship.getMean() * 100) + "% ± "
+									+ decimalFormat.format(statArticlesAuthorship.getStandardDeviation() * 100) + "%\n");
+							buffer.append("** Посещений: " + integerFormat.format(statArticlesVisits.getMean()) + " ± "
+									+ integerFormat.format(statArticlesVisits.getStandardDeviation()) + "\n");
+							buffer.append("** Баллов за статью: " + integerFormat.format(statArticlesPoints.getMean())
+									+ " ± " + integerFormat.format(statArticlesPoints.getStandardDeviation()) + "\n");
+							buffer.append("** Итого за оставшиеся: "
+									+ integerFormat.format(statArticlesPoints.getSum()) + "\n");
+						}
+					}
 				}
 
 				buffer.append("}}\n");
@@ -610,7 +687,9 @@ public class WikiStats {
 				break;
 			}
 		}
-		buffer.append("|}\n");
+		buffer.append("|}\n\n");
+
+		buffer.append("[[Категория:Википедия:Рейтинги авторов]]\n");
 
 		synchronized (places) {
 			Map<Month, TObjectIntMap<Contributor>> byMonth = places.get(statisticsKey);
@@ -626,4 +705,5 @@ public class WikiStats {
 				buffer.toString(), null, "Обновление статистики (статей/хитов: " + integerFormat.format(pagesAnalyzed)
 						+ " / " + integerFormat.format(hitsAnalyzed) + " )", false, false);
 	}
+
 }

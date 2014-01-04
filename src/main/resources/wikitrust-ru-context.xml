@@ -8,6 +8,9 @@
 
 	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.trust" />
 
+	<bean id="pageRevisionChunksLengthDao"
+		class="org.wikipedia.vlsergey.secretary.trust.PageRevisionChunksLengthDao"
+		p:sessionFactory-ref="sessionFactory" />
 	<bean id="revisionAuthorshipDao"
 		class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorshipDao"
 		p:sessionFactory-ref="sessionFactory" />

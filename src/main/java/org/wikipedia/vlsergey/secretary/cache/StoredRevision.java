@@ -27,6 +27,7 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Transient;
 
+import org.hibernate.annotations.Index;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
@@ -108,6 +109,7 @@ public class StoredRevision implements Revision {
 
 	@Override
 	@ManyToOne
+	@Index(name = "indxPage")
 	public StoredPage getPage() {
 		return page;
 	}

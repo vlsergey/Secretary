@@ -99,8 +99,8 @@ public abstract class HttpBot {
 
 	private URI site;
 
-	protected void get(final HttpGet getMethod, final ContentProcessable action) throws IOException, CookieException,
-			ProcessException {
+	protected synchronized void get(final HttpGet getMethod, final ContentProcessable action) throws IOException,
+			CookieException, ProcessException {
 		getMethod.getParams().setParameter("http.protocol.content-charset", MediaWikiBot.ENCODING);
 
 		getMethod.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
@@ -149,12 +149,12 @@ public abstract class HttpBot {
 	}
 
 	@PostConstruct
-	public void init() {
+	public synchronized void init() {
 		httpClient = httpManager.newLocalhostHttpClient();
 	}
 
-	private void onPostResponse(final ContentProcessable action, final HttpPost postMethod, HttpResponse response)
-			throws IOException {
+	private synchronized void onPostResponse(final ContentProcessable action, final HttpPost postMethod,
+			HttpResponse response) throws IOException {
 		try {
 			int statuscode = response.getStatusLine().getStatusCode();
 			if (action.followRedirects()
@@ -270,7 +270,7 @@ public abstract class HttpBot {
 		return out;
 	}
 
-	protected void post(final HttpPost postMethod, final ContentProcessable action) throws IOException,
+	protected synchronized void post(final HttpPost postMethod, final ContentProcessable action) throws IOException,
 			ProcessException, CookieException {
 		postMethod.getParams().setParameter("http.protocol.content-charset", MediaWikiBot.ENCODING);
 

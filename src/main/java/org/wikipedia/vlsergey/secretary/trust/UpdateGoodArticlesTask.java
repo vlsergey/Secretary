@@ -20,16 +20,14 @@ public class UpdateGoodArticlesTask implements Runnable {
 	public void run() {
 		revisionAuthorshipCalculator.updateGoodArticles();
 
-		try {
-			wikiStats.updateByTemplateIncluded(StatisticsKey.GOOD, "Шаблон:Хорошая статья", Month.MONTH_OF_2013_06);
-		} catch (Exception exc) {
-			log.error("Unable to update featured articles raiting: " + exc, exc);
-		}
-		try {
-			wikiStats.updateByTemplateIncluded(StatisticsKey.GOOD, "Шаблон:Хорошая статья", Month.MONTH_OF_2013_07);
-		} catch (Exception exc) {
-			log.error("Unable to update featured articles raiting: " + exc, exc);
-		}
+		// for (Month month : Month.MONTHES_ALL) {
+		// try {
+		// wikiStats.updateByTemplateIncluded(StatisticsKey.GOOD,
+		// "Шаблон:Хорошая статья", month);
+		// } catch (Exception exc) {
+		// log.error("Unable to update featured articles raiting: " + exc, exc);
+		// }
+		// }
 	}
 
 }

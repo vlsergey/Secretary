@@ -66,4 +66,9 @@ public class StoredRevisionPk implements Serializable {
 		this.revisionId = revisionId;
 	}
 
+	@Override
+	public String toString() {
+		return "RevisionKey [" + lang + "; " + revisionId + "]";
+	}
+
 }

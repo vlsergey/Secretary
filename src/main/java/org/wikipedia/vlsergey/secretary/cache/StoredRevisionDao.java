@@ -1,13 +1,19 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.hibernate.HibernateException;
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.hibernate3.HibernateCallback;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
@@ -120,6 +126,33 @@ public class StoredRevisionDao {
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
 	public StoredRevision getRevisionById(StoredRevisionPk key) {
 		return template.get(StoredRevision.class, key);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public int removePageRevisionsExcept(final Locale locale, final Long pageId, Set<Long> preserveRevisionIds) {
+
+		final StringBuilder idsBuilder = new StringBuilder();
+		for (Long id : preserveRevisionIds) {
+			if (idsBuilder.length() != 0) {
+				idsBuilder.append(",");
+			}
+			idsBuilder.append(id);
+		}
+
+		int updated = template.execute(new HibernateCallback<Integer>() {
+			@Override
+			public Integer doInHibernate(Session session) throws HibernateException, SQLException {
+				final SQLQuery query = session.createSQLQuery("DELETE FROM revision "
+						+ "WHERE lang=? AND page_lang=? AND page_pageid=? AND revisionid NOT IN ("
+						+ idsBuilder.toString() + ")");
+				query.setParameter(0, locale.getLanguage());
+				query.setParameter(1, locale.getLanguage());
+				query.setParameter(2, pageId);
+				return query.executeUpdate();
+			}
+		});
+
+		return updated;
 	}
 
 	public void setSessionFactory(SessionFactory sessionFactory) {

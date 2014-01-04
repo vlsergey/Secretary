@@ -51,7 +51,7 @@ public class WebCiteJob implements Runnable {
 	@Override
 	public void run() {
 		// webCiteErrorCleanup.errorCleanup("http://news.euro-coins.info/");
-		queuedLinkProcessor.clearQueue();
+		// queuedLinkProcessor.clearQueue();
 		queuedPageProcessor.run();
 	}
 

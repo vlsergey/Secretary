@@ -16,6 +16,11 @@ public class Month {
 	public static final Month MONTH_OF_2013_07 = new Month(MONTH_OF_2013_06,
 			parseDateUnasafe("2013-07-01T00:00:00.000+0000"), "июле 2013 года");
 
+	public static final Month MONTH_OF_2013_08 = new Month(MONTH_OF_2013_06,
+			parseDateUnasafe("2013-08-01T00:00:00.000+0000"), "августе 2013 года");
+
+	public static final Month[] MONTHES_ALL = { MONTH_OF_2013_06, MONTH_OF_2013_07, MONTH_OF_2013_08 };
+
 	public static Date parseDateUnasafe(String date) {
 		try {
 			return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(date);
@@ -55,6 +60,23 @@ public class Month {
 		this.end = calendar.getTime();
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Month other = (Month) obj;
+		if (begin == null) {
+			if (other.begin != null)
+				return false;
+		} else if (!begin.equals(other.begin))
+			return false;
+		return true;
+	}
+
 	public Date getEnd() {
 		return end;
 	}
@@ -73,6 +95,14 @@ public class Month {
 
 	public String getYearMinusMonth() {
 		return yearMinusMonth;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((begin == null) ? 0 : begin.hashCode());
+		return result;
 	}
 
 }

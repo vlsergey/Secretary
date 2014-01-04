@@ -5,7 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang.NullArgumentException;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +34,7 @@ public class WikiCache {
 	public static final RevisionPropery[] FAST = { RevisionPropery.IDS, RevisionPropery.TIMESTAMP,
 			RevisionPropery.USER, RevisionPropery.SIZE };
 
-	private static final Logger logger = LoggerFactory.getLogger(WikiCache.class);
+	private static final Logger log = LoggerFactory.getLogger(WikiCache.class);
 
 	private static boolean isCacheRecordValid(Revision stored) {
 		return stored != null && stored.hasContent() && StringUtils.isNotEmpty(stored.getXml())
@@ -127,7 +129,7 @@ public class WikiCache {
 
 					Revision revision = resultMap.get(latestRevisionId);
 					if (revision == null) {
-						logger.warn("Page #" + pageId + " has no revisions");
+						log.warn("Page #" + pageId + " has no revisions");
 						continue;
 					}
 
@@ -139,7 +141,7 @@ public class WikiCache {
 	}
 
 	public List<Revision> queryLatestContentByPageIds(Iterable<Long> pageIds) throws ActionException, ProcessException {
-		logger.info("queryLatestContentByPageIds: " + pageIds);
+		log.info("queryLatestContentByPageIds: " + pageIds);
 
 		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
 		for (Revision revision : mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, FAST)) {
@@ -155,7 +157,7 @@ public class WikiCache {
 		for (Long pageId : pageIds) {
 			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
 			if (latestRevisionId == null) {
-				logger.warn("Page #" + pageId + " has no revisions");
+				log.warn("Page #" + pageId + " has no revisions");
 				continue;
 			}
 
@@ -181,7 +183,7 @@ public class WikiCache {
 
 			Revision revision = resultMap.get(latestRevisionId);
 			if (revision == null) {
-				logger.warn("Page #" + pageId + " has no revisions");
+				log.warn("Page #" + pageId + " has no revisions");
 				continue;
 			}
 
@@ -201,7 +203,7 @@ public class WikiCache {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(Long pageId) {
-		logger.debug("queryLatestRevision(" + pageId + ")");
+		log.debug("queryLatestRevision(" + pageId + ")");
 
 		Revision latest = mediaWikiBot.queryLatestRevision(pageId, FAST);
 
@@ -223,7 +225,7 @@ public class WikiCache {
 	}
 
 	public Revision queryLatestRevision(String pageTitle) {
-		logger.debug("queryLatestRevision('" + pageTitle + "')");
+		log.debug("queryLatestRevision('" + pageTitle + "')");
 
 		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, false, FAST);
 
@@ -240,7 +242,7 @@ public class WikiCache {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public String queryLatestRevisionContent(Long pageId) throws JwbfException {
-		logger.debug("queryLatestRevisionContent(" + pageId + ")");
+		log.debug("queryLatestRevisionContent(" + pageId + ")");
 
 		Revision withContent = queryLatestRevision(pageId);
 		if (withContent == null)
@@ -251,7 +253,7 @@ public class WikiCache {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public String queryLatestRevisionContent(String pageTitle) throws JwbfException {
-		logger.debug("queryLatestRevisionContent('" + pageTitle + "')");
+		log.debug("queryLatestRevisionContent('" + pageTitle + "')");
 
 		Revision latest = queryLatestRevision(pageTitle);
 
@@ -265,7 +267,7 @@ public class WikiCache {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public StoredRevision queryRevision(Long revisionId) throws JwbfException {
-		logger.debug("queryRevision(" + revisionId + ")");
+		log.debug("queryRevision(" + revisionId + ")");
 
 		StoredRevision stored = storedRevisionDao.getRevisionById(getLocale(), revisionId);
 		if (isCacheRecordValid(stored)) {
@@ -283,8 +285,19 @@ public class WikiCache {
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
+	public StoredRevision queryRevision(Revision revision) {
+		if (revision == null) {
+			throw new NullArgumentException("revision");
+		}
+		if (revision instanceof StoredRevision) {
+			return ((StoredRevision) revision);
+		}
+		return queryRevision(revision.getId());
+	}
+
+	@Transactional(propagation = Propagation.NEVER)
 	public String queryRevisionContent(Long revisionId) throws JwbfException {
-		logger.debug("queryRevision(" + revisionId + ")");
+		log.debug("queryRevision(" + revisionId + ")");
 
 		Revision stored = storedRevisionDao.getRevisionById(getLocale(), revisionId);
 		if (stored != null && StringUtils.isNotEmpty(stored.getContent()))
@@ -345,6 +358,14 @@ public class WikiCache {
 				return result;
 			}
 		}.makeBatched(100);
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public int removePageRevisionsExcept(Page page, Set<Long> preserveRevisionIds) {
+		log.debug("Cleanup cache entites for " + page);
+		int result = storedRevisionDao.removePageRevisionsExcept(getLocale(), page.getId(), preserveRevisionIds);
+		log.info("Cleaned " + result + " cache entries of " + page);
+		return result;
 	}
 
 	public void setLocale(Locale locale) {

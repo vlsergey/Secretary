@@ -7,6 +7,7 @@
 		<mapping class="org.wikipedia.vlsergey.secretary.gost.BadLink" />
 		<mapping class="org.wikipedia.vlsergey.secretary.gost.ProtectGostRuEntry" />
 
+		<mapping class="org.wikipedia.vlsergey.secretary.trust.PageRevisionChunksLength" />
 		<mapping class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorship" />
 		<mapping class="org.wikipedia.vlsergey.secretary.trust.ToDateArticleRevision" />
 
