@@ -11,9 +11,7 @@ import org.wikipedia.vlsergey.secretary.books.ReplaceCiteBookWithSpecificTemplat
 import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
 import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
-import org.wikipedia.vlsergey.secretary.webcite.LinkDeactivationTask;
-import org.wikipedia.vlsergey.secretary.webcite.QueuedLinkProcessor;
-import org.wikipedia.vlsergey.secretary.webcite.WebCiteJob;
+import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
 
 public class Secretary {
 
@@ -22,34 +20,21 @@ public class Secretary {
 	public static void main(String[] args) throws Exception {
 		ApplicationContext appContext = new ClassPathXmlApplicationContext("application-context.xml");
 
-		runOfType(appContext, LinkDeactivationTask.class);
+		// runOfType(appContext, LinkDeactivationTask.class);
 
 		TaskScheduler taskScheduler = appContext.getBean(TaskScheduler.class);
 
 		taskScheduler.scheduleAtFixedRate(appContext.getBean(CountBooks.class), DateUtils.MILLIS_PER_DAY);
 		taskScheduler.scheduleAtFixedRate(appContext.getBean(BuildUnreviewedLists.class), DateUtils.MILLIS_PER_HOUR);
 
-		taskScheduler.scheduleWithFixedDelay(appContext.getBean(QueuedLinkProcessor.class),
-				DateUtils.MILLIS_PER_SECOND * 2);
-
-		scheduleWithFixedDelayOfType(appContext, WebCiteJob.class, DateUtils.MILLIS_PER_DAY);
-
 		// for (CountCiteWeb task :
 		// appContext.getBeansOfType(CountCiteWeb.class).values()) {
 		// taskScheduler.scheduleAtFixedRate(task, DateUtils.MILLIS_PER_DAY);
 		// }
 
-		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_DAY);
+		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_DAY);
-
-		/* Until done -- run hourly */
-		// scheduleWithFixedDelayOfType(appContext,
-		// UpdatePopularArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
-		// runOfType(appContext, UpdatePopularArticlesTask.class);
-
-		// UpdatePopularArticlesTask wikiStats =
-		// appContext.getBean(UpdatePopularArticlesTask.class);
-		// wikiStats.schedule();
+		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 
 		appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
 

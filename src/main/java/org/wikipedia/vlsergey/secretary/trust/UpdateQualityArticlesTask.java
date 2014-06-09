@@ -6,16 +6,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UpdateGoodArticlesTask implements Runnable {
+public class UpdateQualityArticlesTask implements Runnable {
 
-	private static final Log log = LogFactory.getLog(UpdateGoodArticlesTask.class);
+	private static final Log log = LogFactory.getLog(UpdateQualityArticlesTask.class);
 
 	@Autowired
 	private RevisionAuthorshipCalculator revisionAuthorshipCalculator;
 
 	@Override
 	public void run() {
-		revisionAuthorshipCalculator.updateGoodArticles();
+		revisionAuthorshipCalculator.updateQualityArticles();
 	}
 
 }

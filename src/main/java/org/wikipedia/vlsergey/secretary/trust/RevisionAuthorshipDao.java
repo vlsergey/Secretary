@@ -2,7 +2,6 @@ package org.wikipedia.vlsergey.secretary.trust;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Locale;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -14,6 +13,7 @@ import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
 @Repository
@@ -30,20 +30,20 @@ public class RevisionAuthorshipDao {
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public RevisionAuthorship findByRevision(Locale locale, Long revisionId) {
-		return template.get(RevisionAuthorship.class, new RevisionAuthorshipPk(locale, revisionId));
+	public RevisionAuthorship findByRevision(Project project, Long revisionId) {
+		return template.get(RevisionAuthorship.class, new RevisionAuthorshipPk(project, revisionId));
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public RevisionAuthorship findByRevision(Locale locale, Revision revision) {
-		return template.get(RevisionAuthorship.class, new RevisionAuthorshipPk(locale, revision.getId()));
+	public RevisionAuthorship findByRevision(Project project, Revision revision) {
+		return template.get(RevisionAuthorship.class, new RevisionAuthorshipPk(project, revision.getId()));
 	}
 
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public List<Long> getAllRevisionIds(Locale locale) {
+	public List<Long> getAllRevisionIds(Project project) {
 		return template.find("SELECT key.revisionId " + "FROM RevisionAuthorship revisionAuthorship "
-				+ "WHERE key.lang=? " + "ORDER BY id", locale.getLanguage());
+				+ "WHERE key.project=? " + "ORDER BY id", project.getCode());
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
@@ -61,12 +61,12 @@ public class RevisionAuthorshipDao {
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
-	public synchronized void store(Locale locale, Revision revision, TextChunkList authorship) throws Exception {
+	public synchronized void store(Project project, Revision revision, TextChunkList authorship) throws Exception {
 
 		final byte[] data = authorship.toBinary();
 		log.debug("Store " + data.length + " bytes of authorship info for rev#" + revision);
 
-		final RevisionAuthorshipPk key = new RevisionAuthorshipPk(locale, revision.getId());
+		final RevisionAuthorshipPk key = new RevisionAuthorshipPk(project, revision.getId());
 		RevisionAuthorship already = findByKey(key);
 		if (already != null) {
 			already.setData(data);

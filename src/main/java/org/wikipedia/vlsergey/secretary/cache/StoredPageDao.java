@@ -1,13 +1,12 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
-import java.util.Locale;
-
 import org.hibernate.SessionFactory;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Repository
@@ -16,8 +15,8 @@ public class StoredPageDao {
 	protected HibernateTemplate template = null;
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	public StoredPage getByKey(Locale locale, Long pageId) {
-		return template.get(StoredPage.class, new StoredPagePk(locale, pageId));
+	public StoredPage getByKey(Project project, Long pageId) {
+		return template.get(StoredPage.class, new StoredPagePk(project, pageId));
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
@@ -26,9 +25,9 @@ public class StoredPageDao {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = false)
-	public StoredPage getOrCreate(Locale locale, Page withContent) {
+	public StoredPage getOrCreate(Project project, Page withContent) {
 
-		final StoredPagePk key = new StoredPagePk(locale, withContent.getId());
+		final StoredPagePk key = new StoredPagePk(project, withContent.getId());
 		StoredPage stored = getByKey(key);
 		if (stored == null) {
 			stored = new StoredPage();

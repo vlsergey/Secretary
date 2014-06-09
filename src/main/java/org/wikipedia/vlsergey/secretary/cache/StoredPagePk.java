@@ -1,21 +1,22 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
 import java.io.Serializable;
-import java.util.Locale;
+
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 
 public class StoredPagePk implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private String lang;
-
 	private Long pageId;
+
+	private String project;
 
 	public StoredPagePk() {
 	}
 
-	public StoredPagePk(Locale locale, Long pageId) {
-		this.lang = locale.getLanguage();
+	public StoredPagePk(Project project, Long pageId) {
+		this.project = project.getCode();
 		this.pageId = pageId;
 	}
 
@@ -28,10 +29,10 @@ public class StoredPagePk implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		StoredPagePk other = (StoredPagePk) obj;
-		if (lang == null) {
-			if (other.lang != null)
+		if (project == null) {
+			if (other.project != null)
 				return false;
-		} else if (!lang.equals(other.lang))
+		} else if (!project.equals(other.project))
 			return false;
 		if (pageId == null) {
 			if (other.pageId != null)
@@ -41,34 +42,34 @@ public class StoredPagePk implements Serializable {
 		return true;
 	}
 
-	public String getLang() {
-		return lang;
-	}
-
 	public Long getPageId() {
 		return pageId;
+	}
+
+	public String getProject() {
+		return project;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((lang == null) ? 0 : lang.hashCode());
+		result = prime * result + ((project == null) ? 0 : project.hashCode());
 		result = prime * result + ((pageId == null) ? 0 : pageId.hashCode());
 		return result;
-	}
-
-	public void setLang(String lang) {
-		this.lang = lang;
 	}
 
 	public void setPageId(Long pageId) {
 		this.pageId = pageId;
 	}
 
+	public void setProject(String lang) {
+		this.project = lang;
+	}
+
 	@Override
 	public String toString() {
-		return "PageKey [" + lang + "; " + pageId + "]";
+		return "PageKey [" + project + "; " + pageId + "]";
 	}
 
 }

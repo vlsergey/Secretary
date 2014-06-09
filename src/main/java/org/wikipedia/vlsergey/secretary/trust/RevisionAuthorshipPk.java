@@ -1,21 +1,22 @@
 package org.wikipedia.vlsergey.secretary.trust;
 
 import java.io.Serializable;
-import java.util.Locale;
+
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 
 public class RevisionAuthorshipPk implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private String lang;
+	private String project;
 
 	private Long revisionId;
 
 	public RevisionAuthorshipPk() {
 	}
 
-	public RevisionAuthorshipPk(Locale locale, Long revisionId) {
-		this.lang = locale.getLanguage();
+	public RevisionAuthorshipPk(Project project, Long revisionId) {
+		this.project = project.getCode();
 		this.revisionId = revisionId;
 	}
 
@@ -28,10 +29,10 @@ public class RevisionAuthorshipPk implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		RevisionAuthorshipPk other = (RevisionAuthorshipPk) obj;
-		if (lang == null) {
-			if (other.lang != null)
+		if (project == null) {
+			if (other.project != null)
 				return false;
-		} else if (!lang.equals(other.lang))
+		} else if (!project.equals(other.project))
 			return false;
 		if (revisionId == null) {
 			if (other.revisionId != null)
@@ -41,8 +42,8 @@ public class RevisionAuthorshipPk implements Serializable {
 		return true;
 	}
 
-	public String getLang() {
-		return lang;
+	public String getProject() {
+		return project;
 	}
 
 	public Long getRevisionId() {
@@ -53,13 +54,13 @@ public class RevisionAuthorshipPk implements Serializable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((lang == null) ? 0 : lang.hashCode());
+		result = prime * result + ((project == null) ? 0 : project.hashCode());
 		result = prime * result + ((revisionId == null) ? 0 : revisionId.hashCode());
 		return result;
 	}
 
-	public void setLang(String lang) {
-		this.lang = lang;
+	public void setProject(String lang) {
+		this.project = lang;
 	}
 
 	public void setRevisionId(Long revisionId) {

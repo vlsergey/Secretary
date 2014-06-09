@@ -3,7 +3,6 @@ package org.wikipedia.vlsergey.secretary.cache;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -18,6 +17,7 @@ import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
 @Repository
@@ -44,28 +44,28 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public List<StoredRevision> getOrCreate(Locale locale, Iterable<Revision> withContent) {
+	public List<StoredRevision> getOrCreate(Project project, Iterable<Revision> withContent) {
 		List<StoredRevision> result = new ArrayList<StoredRevision>();
 		for (Revision source : withContent) {
-			result.add(getOrCreate(locale, source));
+			result.add(getOrCreate(project, source));
 		}
 		return result;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public StoredRevision getOrCreate(Locale locale, Revision withContent) {
+	public StoredRevision getOrCreate(Project project, Revision withContent) {
 		final int segmentIndex = (int) (withContent.getId().longValue() % SEGMENTS);
 		final Lock lock = locks[segmentIndex];
 		lock.lock();
 		try {
-			return getOrCreateImpl(locale, withContent);
+			return getOrCreateImpl(project, withContent);
 		} finally {
 			lock.unlock();
 		}
 	}
 
-	private StoredRevision getOrCreateImpl(Locale locale, Revision withContent) {
-		final StoredRevisionPk key = new StoredRevisionPk(locale, withContent.getId());
+	private StoredRevision getOrCreateImpl(Project project, Revision withContent) {
+		final StoredRevisionPk key = new StoredRevisionPk(project, withContent.getId());
 		StoredRevision revisionImpl = getRevisionById(key);
 		if (revisionImpl == null) {
 			revisionImpl = new StoredRevision();
@@ -79,7 +79,7 @@ public class StoredRevisionDao {
 
 			StoredPage storedPage;
 			if (revisionImpl.getPage() == null) {
-				storedPage = storedPageDao.getOrCreate(locale, withContent.getPage());
+				storedPage = storedPageDao.getOrCreate(project, withContent.getPage());
 				revisionImpl.setPage(storedPage);
 			} else {
 				storedPage = revisionImpl.getPage();
@@ -119,8 +119,8 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public StoredRevision getRevisionById(Locale locale, Long revisionId) {
-		return getRevisionById(new StoredRevisionPk(locale, revisionId));
+	public StoredRevision getRevisionById(Project project, Long revisionId) {
+		return getRevisionById(new StoredRevisionPk(project, revisionId));
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = true)
@@ -129,7 +129,7 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public int removePageRevisionsExcept(final Locale locale, final Long pageId, Set<Long> preserveRevisionIds) {
+	public int removePageRevisionsExcept(final Project project, final Long pageId, Set<Long> preserveRevisionIds) {
 
 		final StringBuilder idsBuilder = new StringBuilder();
 		for (Long id : preserveRevisionIds) {
@@ -143,10 +143,10 @@ public class StoredRevisionDao {
 			@Override
 			public Integer doInHibernate(Session session) throws HibernateException, SQLException {
 				final SQLQuery query = session.createSQLQuery("DELETE FROM revision "
-						+ "WHERE lang=? AND page_lang=? AND page_pageid=? AND revisionid NOT IN ("
+						+ "WHERE project=? AND page_project=? AND page_pageid=? AND revisionid NOT IN ("
 						+ idsBuilder.toString() + ")");
-				query.setParameter(0, locale.getLanguage());
-				query.setParameter(1, locale.getLanguage());
+				query.setParameter(0, project.getCode());
+				query.setParameter(1, project.getCode());
 				query.setParameter(2, pageId);
 				return query.executeUpdate();
 			}
@@ -160,8 +160,8 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateCache(Locale locale, Revision withContent) {
-		getOrCreate(locale, withContent);
+	public void updateCache(Project project, Revision withContent) {
+		getOrCreate(project, withContent);
 	}
 
 	private boolean updateRequired(final Object newValue, final Object oldValue) {

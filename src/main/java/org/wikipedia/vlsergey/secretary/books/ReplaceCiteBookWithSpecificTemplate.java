@@ -29,12 +29,12 @@ import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.dom.Text;
+import org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
-import org.wikipedia.vlsergey.secretary.webcite.RefAwareParser;
 
 public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 

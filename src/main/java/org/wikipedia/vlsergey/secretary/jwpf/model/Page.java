@@ -17,12 +17,8 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
-import java.util.Set;
-
 public interface Page extends Comparable<Page> {
 	Long getId();
-
-	Set<? extends Page> getLinks();
 
 	Boolean getMissing();
 

@@ -2,9 +2,9 @@ package org.wikipedia.vlsergey.secretary.trust;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.Locale;
 
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 
 public class ToDateArticleRevisionPk implements Serializable {
 
@@ -12,15 +12,15 @@ public class ToDateArticleRevisionPk implements Serializable {
 
 	private long date;
 
-	private String lang;
-
 	private Long pageId;
+
+	private String project;
 
 	public ToDateArticleRevisionPk() {
 	}
 
-	public ToDateArticleRevisionPk(Locale locale, Page page, Date date) {
-		this.lang = locale.getLanguage();
+	public ToDateArticleRevisionPk(Project project, Page page, Date date) {
+		this.project = project.getCode();
 		this.pageId = page.getId();
 		this.date = date.getTime();
 	}
@@ -36,10 +36,10 @@ public class ToDateArticleRevisionPk implements Serializable {
 		ToDateArticleRevisionPk other = (ToDateArticleRevisionPk) obj;
 		if (date != other.date)
 			return false;
-		if (lang == null) {
-			if (other.lang != null)
+		if (project == null) {
+			if (other.project != null)
 				return false;
-		} else if (!lang.equals(other.lang))
+		} else if (!project.equals(other.project))
 			return false;
 		if (pageId == null) {
 			if (other.pageId != null)
@@ -53,12 +53,12 @@ public class ToDateArticleRevisionPk implements Serializable {
 		return date;
 	}
 
-	public String getLang() {
-		return lang;
-	}
-
 	public Long getPageId() {
 		return pageId;
+	}
+
+	public String getProject() {
+		return project;
 	}
 
 	@Override
@@ -66,7 +66,7 @@ public class ToDateArticleRevisionPk implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + (int) (date ^ (date >>> 32));
-		result = prime * result + ((lang == null) ? 0 : lang.hashCode());
+		result = prime * result + ((project == null) ? 0 : project.hashCode());
 		result = prime * result + ((pageId == null) ? 0 : pageId.hashCode());
 		return result;
 	}
@@ -75,12 +75,12 @@ public class ToDateArticleRevisionPk implements Serializable {
 		this.date = date;
 	}
 
-	public void setLang(String lang) {
-		this.lang = lang;
-	}
-
 	public void setPageId(Long pageId) {
 		this.pageId = pageId;
+	}
+
+	public void setProject(String lang) {
+		this.project = lang;
 	}
 
 }

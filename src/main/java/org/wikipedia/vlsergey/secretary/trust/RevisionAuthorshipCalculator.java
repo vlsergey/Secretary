@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -31,13 +30,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
+import org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.LastUserHashMap;
-import org.wikipedia.vlsergey.secretary.webcite.RefAwareParser;
 
 public class RevisionAuthorshipCalculator {
 
@@ -94,8 +94,8 @@ public class RevisionAuthorshipCalculator {
 		synchronized TextChunkList getAnonymChunks(Long revisionId) {
 			TextChunkList chunks = anonymChunksCache.get(revisionId);
 			if (chunks == null) {
-				chunks = TextChunkList
-						.toTextChunkList(getLocale(), "127.0.0.1", queryRevision(revisionId).getContent());
+				chunks = TextChunkList.toTextChunkList(getProject().getLocale(), "127.0.0.1", queryRevision(revisionId)
+						.getContent());
 				anonymChunksCache.put(revisionId, chunks);
 			}
 			return chunks;
@@ -128,10 +128,6 @@ public class RevisionAuthorshipCalculator {
 				revisionCache.put(revisionId, revision);
 			}
 			return revision;
-		}
-
-		public Revision queryRevisionInfo(Long revisionId) {
-			return revisionInfos.get(revisionId);
 		}
 
 		public Iterable<Revision> queryRevisionsInfo(Long rvStartId, Direction direction) {
@@ -252,9 +248,9 @@ public class RevisionAuthorshipCalculator {
 	// Executors.newSingleThreadExecutor();
 	private final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-	private Locale locale;
-
 	private MediaWikiBot mediaWikiBot;
+
+	private Project project;
 
 	private RefAwareParser refAwareParser;
 
@@ -314,9 +310,9 @@ public class RevisionAuthorshipCalculator {
 		if (oldRevisionId == null) {
 			// this is the first
 			final Revision newRevision = pageContext.queryRevision(newRevisionId);
-			final TextChunkList authorship = TextChunkList.toTextChunkList(getLocale(), newRevision.getUser(),
-					newRevision.getContent());
-			revisionAuthorshipDao.store(getLocale(), newRevision, authorship);
+			final TextChunkList authorship = TextChunkList.toTextChunkList(getProject().getLocale(),
+					newRevision.getUser(), newRevision.getContent());
+			revisionAuthorshipDao.store(getProject(), newRevision, authorship);
 			return authorship;
 		}
 
@@ -328,10 +324,10 @@ public class RevisionAuthorshipCalculator {
 
 		log.info("Get authorwhip for " + toString(newRevision) + ": calculate basing on difference with "
 				+ toString(oldRevision));
-		TextChunkList newAuthorship = TextChunkList.toTextChunkList(getLocale(), newRevision.getUser(),
+		TextChunkList newAuthorship = TextChunkList.toTextChunkList(getProject().getLocale(), newRevision.getUser(),
 				newRevision.getContent());
 		newAuthorship = join(oldAuthorship, newAuthorship);
-		revisionAuthorshipDao.store(getLocale(), newRevision, newAuthorship);
+		revisionAuthorshipDao.store(getProject(), newRevision, newAuthorship);
 		return newAuthorship;
 	}
 
@@ -346,9 +342,10 @@ public class RevisionAuthorshipCalculator {
 
 	private TextChunkList getAuthorshipFromDatabaseImpl(Long newRevisionId, Callable<String> contentF) {
 		try {
-			final RevisionAuthorship stored = revisionAuthorshipDao.findByRevision(getLocale(), newRevisionId);
+			final RevisionAuthorship stored = revisionAuthorshipDao.findByRevision(getProject(), newRevisionId);
 			if (stored != null && stored.getData() != null && stored.getData().length != 0) {
-				TextChunkList restored = TextChunkList.fromBinary(getLocale(), contentF.call(), stored.getData());
+				TextChunkList restored = TextChunkList.fromBinary(getProject().getLocale(), contentF.call(),
+						stored.getData());
 				if (restored != null) {
 					log.debug("Get authorwhip for rev#" + newRevisionId + ": found in DB");
 					return restored;
@@ -386,7 +383,7 @@ public class RevisionAuthorshipCalculator {
 			 * контрольной даты (если это не текущая последняя). Может быть, у
 			 * нас есть эта информация в кеше?
 			 */
-			final ToDateArticleRevision toDateRevisionInfo = toDateArticleRevisionDao.find(getLocale(), page,
+			final ToDateArticleRevision toDateRevisionInfo = toDateArticleRevisionDao.find(getProject(), page,
 					lastPossibleEditTimestamp);
 
 			if (toDateRevisionInfo != null) {
@@ -417,7 +414,7 @@ public class RevisionAuthorshipCalculator {
 
 			if (revisionToResearchId != null
 					&& !revisionToResearchId.equals(pageContext.queryLatestRevisionInfo().getId())) {
-				toDateArticleRevisionDao.store(getLocale(), page, lastPossibleEditTimestamp,
+				toDateArticleRevisionDao.store(getProject(), page, lastPossibleEditTimestamp,
 						revisionToResearchId.getId());
 			}
 		}
@@ -431,7 +428,7 @@ public class RevisionAuthorshipCalculator {
 			}
 		}
 
-		TLongIntMap chunkLengths = chunksLengthDao.findSafe(getLocale(), pageContext.pageId);
+		TLongIntMap chunkLengths = chunksLengthDao.findSafe(getProject(), pageContext.pageId);
 		{
 			// we need ALL revisions chunk lengths
 			List<Revision> missingLengths = new ArrayList<Revision>(pageContext.revisionsCount - chunkLengths.size());
@@ -443,7 +440,7 @@ public class RevisionAuthorshipCalculator {
 
 			if (!missingLengths.isEmpty()) {
 				for (Revision revision : wikiCache.queryRevisions(missingLengths)) {
-					final TextChunkList chunks = TextChunkList.toTextChunkList(getLocale(), "127.0.0.1",
+					final TextChunkList chunks = TextChunkList.toTextChunkList(getProject().getLocale(), "127.0.0.1",
 							revision.getContent());
 
 					chunkLengths.put(revision.getId(), chunks.length());
@@ -452,7 +449,7 @@ public class RevisionAuthorshipCalculator {
 					pageContext.anonymChunksCache.put(revision.getId(), chunks);
 					pageContext.revisionCache.put(revision.getId(), revision);
 				}
-				chunksLengthDao.store(getLocale(), pageContext.pageId, chunkLengths);
+				chunksLengthDao.store(getProject(), pageContext.pageId, chunkLengths);
 			}
 		}
 		pageContext.revisionChunkedLength.putAll(chunkLengths);
@@ -500,12 +497,12 @@ public class RevisionAuthorshipCalculator {
 		return result;
 	}
 
-	public Locale getLocale() {
-		return locale;
-	}
-
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
+	}
+
+	public Project getProject() {
+		return project;
 	}
 
 	public RefAwareParser getRefAwareParser() {
@@ -669,12 +666,12 @@ public class RevisionAuthorshipCalculator {
 		return newRevision;
 	}
 
-	public void setLocale(Locale locale) {
-		this.locale = locale;
-	}
-
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
 		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	public void setProject(Project project) {
+		this.project = project;
 	}
 
 	public void setRefAwareParser(RefAwareParser refAwareParser) {
@@ -742,6 +739,10 @@ public class RevisionAuthorshipCalculator {
 		updateByTemplateIncluded("Авторство хороших статей", "Шаблон:Хорошая статья");
 	}
 
+	public void updateQualityArticles() {
+		updateByTemplateIncluded("Авторство добротных статей", "Шаблон:Добротная статья");
+	}
+
 	private void write(String title, SortedMap<String, TextChunkList> results) {
 		StringBuilder stringBuilder = new StringBuilder();
 		for (String key : results.keySet()) {
@@ -754,4 +755,5 @@ public class RevisionAuthorshipCalculator {
 		mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/" + title, null, stringBuilder.toString(),
 				null, "Обновление статистики", true, false);
 	}
+
 }

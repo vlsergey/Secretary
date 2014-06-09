@@ -34,13 +34,13 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
+import org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
-import org.wikipedia.vlsergey.secretary.webcite.RefAwareParser;
 
 @Component
 public class CountBooks implements Runnable {

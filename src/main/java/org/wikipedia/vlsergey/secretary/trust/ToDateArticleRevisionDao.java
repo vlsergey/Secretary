@@ -2,7 +2,6 @@ package org.wikipedia.vlsergey.secretary.trust;
 
 import java.sql.SQLException;
 import java.util.Date;
-import java.util.Locale;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 
 @Repository
 @Transactional(readOnly = false)
@@ -25,9 +25,9 @@ public class ToDateArticleRevisionDao {
 	protected HibernateTemplate template = null;
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
-	public ToDateArticleRevision find(Locale locale, Page page, Date date) {
+	public ToDateArticleRevision find(Project project, Page page, Date date) {
 		final ToDateArticleRevision result = template.get(ToDateArticleRevision.class, new ToDateArticleRevisionPk(
-				locale, page, date));
+				project, page, date));
 		if (log.isDebugEnabled()) {
 			log.debug("Query up-to-date revision for " + page + " and date " + date + " => "
 					+ (result != null ? "rev#" + result.getRevisionId() : "(not found)"));
@@ -55,10 +55,10 @@ public class ToDateArticleRevisionDao {
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
-	public synchronized void store(Locale locale, Page page, Date date, Long revisionId) throws Exception {
+	public synchronized void store(Project project, Page page, Date date, Long revisionId) throws Exception {
 		log.debug("Store rev#" + revisionId + " as up-to-date for " + page + " and date " + date);
 
-		final ToDateArticleRevisionPk key = new ToDateArticleRevisionPk(locale, page, date);
+		final ToDateArticleRevisionPk key = new ToDateArticleRevisionPk(project, page, date);
 		ToDateArticleRevision toDateArticleRevision = findByKey(key);
 		if (toDateArticleRevision == null) {
 			toDateArticleRevision = new ToDateArticleRevision();

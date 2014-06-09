@@ -13,21 +13,9 @@ public class UpdateFeaturedArticlesTask implements Runnable {
 	@Autowired
 	private RevisionAuthorshipCalculator revisionAuthorshipCalculator;
 
-	@Autowired
-	private WikiStats wikiStats;
-
 	@Override
 	public void run() {
 		revisionAuthorshipCalculator.updateFeaturedArticles();
-
-		// for (Month month : Month.MONTHES_ALL) {
-		// try {
-		// wikiStats.updateByTemplateIncluded(StatisticsKey.FEATURED,
-		// "Шаблон:Избранная статья", month);
-		// } catch (Exception exc) {
-		// log.error("Unable to update featured articles raiting: " + exc, exc);
-		// }
-		// }
 	}
 
 }

@@ -17,11 +17,8 @@
  */
 package org.wikipedia.vlsergey.secretary.cache;
 
-import java.util.Set;
-
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.ManyToMany;
 import javax.persistence.Transient;
 
 import org.wikipedia.vlsergey.secretary.jwpf.model.AbstractPage;
@@ -30,8 +27,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.AbstractPage;
 public class StoredPage extends AbstractPage {
 
 	private StoredPagePk key;
-
-	private Set<StoredPage> links;
 
 	private Boolean missing = false;
 
@@ -51,12 +46,6 @@ public class StoredPage extends AbstractPage {
 	}
 
 	@Override
-	@ManyToMany
-	public Set<StoredPage> getLinks() {
-		return links;
-	}
-
-	@Override
 	public Boolean getMissing() {
 		return missing;
 	}
@@ -73,10 +62,6 @@ public class StoredPage extends AbstractPage {
 
 	public void setKey(StoredPagePk key) {
 		this.key = key;
-	}
-
-	public void setLinks(Set<StoredPage> links) {
-		this.links = links;
 	}
 
 	public void setMissing(Boolean missing) {

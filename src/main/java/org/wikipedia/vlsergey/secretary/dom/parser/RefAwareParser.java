@@ -1,10 +1,9 @@
-package org.wikipedia.vlsergey.secretary.webcite;
+package org.wikipedia.vlsergey.secretary.dom.parser;
 
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.cache.XmlCache;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Extension;
-import org.wikipedia.vlsergey.secretary.dom.parser.XmlParser;
 
 public class RefAwareParser extends XmlParser {
 

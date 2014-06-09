@@ -44,7 +44,6 @@ public class ParsedPage extends AbstractPage {
 		return id;
 	}
 
-	@Override
 	public Set<Page> getLinks() {
 		return links;
 	}

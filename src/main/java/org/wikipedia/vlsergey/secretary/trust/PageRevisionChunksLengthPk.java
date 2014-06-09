@@ -1,38 +1,39 @@
 package org.wikipedia.vlsergey.secretary.trust;
 
 import java.io.Serializable;
-import java.util.Locale;
+
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 
 public class PageRevisionChunksLengthPk implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	private String lang;
-
 	private Long pageId;
+
+	private String project;
 
 	public PageRevisionChunksLengthPk() {
 	}
 
-	public PageRevisionChunksLengthPk(Locale locale, Long pageId) {
-		this.lang = locale.getLanguage();
+	public PageRevisionChunksLengthPk(Project project, Long pageId) {
+		this.project = project.getCode();
 		this.pageId = pageId;
-	}
-
-	public String getLang() {
-		return lang;
 	}
 
 	public Long getPageId() {
 		return pageId;
 	}
 
-	public void setLang(String lang) {
-		this.lang = lang;
+	public String getProject() {
+		return project;
 	}
 
 	public void setPageId(Long pageId) {
 		this.pageId = pageId;
+	}
+
+	public void setProject(String lang) {
+		this.project = lang;
 	}
 
 }

@@ -6,6 +6,7 @@ import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 
 public class RevisionAuthorshipCalculatorTest {
@@ -15,7 +16,7 @@ public class RevisionAuthorshipCalculatorTest {
 		final Locale locale = new Locale("ru-RU");
 
 		final RevisionAuthorshipCalculator calculator = new RevisionAuthorshipCalculator();
-		calculator.setLocale(locale);
+		calculator.setProject(Project.RUWIKI);
 
 		String text1 = IoUtils.readToString(
 				RevisionAuthorshipCalculatorTest.class.getResourceAsStream("Санкт-Петербург-1.txt"), "utf-8");
@@ -49,7 +50,7 @@ public class RevisionAuthorshipCalculatorTest {
 		final Locale locale = new Locale("ru-RU");
 
 		final RevisionAuthorshipCalculator calculator = new RevisionAuthorshipCalculator();
-		calculator.setLocale(locale);
+		calculator.setProject(Project.RUWIKI);
 
 		TextChunkList baseRevision = TextChunkList.concatenate(Arrays.asList(new TextChunkList[] {
 				TextChunkList.toTextChunkList(locale, "A", "0 1 2 3 4"),
