@@ -19,6 +19,8 @@ import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.params.HttpClientParams;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.conn.params.ConnManagerPNames;
+import org.apache.http.conn.params.ConnPerRouteBean;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -169,8 +171,9 @@ public class HttpManager {
 
 		HttpParams connectionParameters = new BasicHttpParams();
 		setDefaultHttpClientParams(connectionParameters);
+		connectionParameters.setParameter(ConnManagerPNames.MAX_CONNECTIONS_PER_ROUTE, new ConnPerRouteBean(5));
 		ThreadSafeClientConnManager clientConnManager = new ThreadSafeClientConnManager(connectionParameters, registry);
-		clientConnManager.setDefaultMaxPerRoute(2);
+		clientConnManager.setDefaultMaxPerRoute(5);
 		clientConnManager.setMaxTotal(10);
 
 		DefaultHttpClient client = new DefaultHttpClient(clientConnManager);
@@ -181,7 +184,8 @@ public class HttpManager {
 
 	public void setDefaultHttpClientParams(final HttpParams clientParams) {
 		HttpClientParams.setRedirecting(clientParams, true);
-		HttpProtocolParams.setUserAgent(clientParams, "Secretary/JWBF");
+		HttpProtocolParams.setUserAgent(clientParams,
+				"SecretaryBot (https://github/vlsergey/Secretary; vlsergey@gmail.com) BasedOnJWBF");
 		HttpConnectionParams.setConnectionTimeout(clientParams, 60 * 1000);
 		HttpConnectionParams.setSoTimeout(clientParams, 5 * 60 * 1000);
 	}
