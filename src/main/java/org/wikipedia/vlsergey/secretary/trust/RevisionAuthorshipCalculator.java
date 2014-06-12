@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -26,6 +27,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang.NullArgumentException;
+import org.apache.commons.lang.mutable.MutableDouble;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -190,6 +192,8 @@ public class RevisionAuthorshipCalculator {
 	}
 
 	private static final int CONTEXT_CACHES_SIZE = 1000;
+
+	private static final DecimalFormat decimalFormat = new DecimalFormat("#####0.00");
 
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipCalculator.class);
 
@@ -676,10 +680,11 @@ public class RevisionAuthorshipCalculator {
 	}
 
 	public void updateBlockCodes() {
-		updateByTemplateIncluded("Авторство статей о блочных шифрах", "Шаблон:Карточка блочного шифра");
+		updateByTemplateIncluded("Авторство статей о блочных шифрах", "Шаблон:Карточка блочного шифра",
+				"Статьи о блочных шифрах");
 	}
 
-	private void updateByTemplateIncluded(final String statPageTitle, final String template) {
+	private void updateByTemplateIncluded(final String statPageTitle, final String template, String groupTitle) {
 
 		final SortedMap<String, TextChunkList> results = Collections
 				.synchronizedSortedMap(new TreeMap<String, TextChunkList>());
@@ -717,32 +722,61 @@ public class RevisionAuthorshipCalculator {
 			}
 		}
 
-		write(statPageTitle, results);
+		write(statPageTitle, results, groupTitle);
 	}
 
 	public void updateFeaturedArticles() {
-		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья");
+		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья", "Избранные статьи");
 	}
 
 	public void updateGoodArticles() {
-		updateByTemplateIncluded("Авторство хороших статей", "Шаблон:Хорошая статья");
+		updateByTemplateIncluded("Авторство хороших статей", "Шаблон:Хорошая статья", "Хорошие статьи");
 	}
 
 	public void updateQualityArticles() {
-		updateByTemplateIncluded("Авторство добротных статей", "Шаблон:Добротная статья");
+		updateByTemplateIncluded("Авторство добротных статей", "Шаблон:Добротная статья", "Добротные статьи");
 	}
 
-	private void write(String title, SortedMap<String, TextChunkList> results) {
-		StringBuilder stringBuilder = new StringBuilder();
-		for (String key : results.keySet()) {
-			stringBuilder.append("* [[" + key + "]]: " + toString(results.get(key), true) + "\n");
+	private void write(String title, SortedMap<String, TextChunkList> results, String groupTitle) {
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			for (String key : results.keySet()) {
+				stringBuilder.append("* [[" + key + "]]: " + toString(results.get(key), true) + "\n");
+			}
+
+			stringBuilder.append("\n");
+			stringBuilder.append("[[Категория:Википедия:Рейтинги авторов]]\n");
+
+			mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/" + title, null, stringBuilder.toString(),
+					null, "Обновление статистики", true, false);
 		}
 
-		stringBuilder.append("\n");
-		stringBuilder.append("[[Категория:Википедия:Рейтинги авторов]]\n");
+		{
+			SortedMap<String, MutableDouble> byUser = new TreeMap<String, MutableDouble>();
+			for (String key : results.keySet()) {
+				TextChunkList chunkList = results.get(key);
+				for (Entry<String, Double> entry : chunkList.getAuthorshipProcents().entrySet()) {
+					final String userName = entry.getKey();
+					if (byUser.containsKey(userName)) {
+						byUser.get(userName).add(entry.getValue().doubleValue());
+					} else {
+						byUser.put(userName, new MutableDouble(entry.getValue().doubleValue()));
+					}
+				}
+			}
 
-		mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/" + title, null, stringBuilder.toString(),
-				null, "Обновление статистики", true, false);
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.append("local result = {\n");
+			for (Entry<String, MutableDouble> entry : byUser.entrySet()) {
+				stringBuilder.append("\t{\"" + entry.getKey() + "\", "
+						+ decimalFormat.format(entry.getValue().doubleValue()) + "}");
+			}
+			stringBuilder.append("}\n");
+			stringBuilder.append("return result;\n");
+
+			mediaWikiBot.writeContent("Модуль:Вклад:" + groupTitle, null, stringBuilder.toString(), null,
+					"Обновление статистики", true, false);
+		}
 	}
 
 }
