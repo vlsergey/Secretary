@@ -76,8 +76,6 @@ public abstract class AbstractAPIAction implements ContentProcessable {
 
 	}
 
-	protected static Log log = LogFactory.getLog(AbstractAPIAction.class);
-
 	public static final int MAXLAG = 0;
 
 	private static final SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -155,6 +153,8 @@ public abstract class AbstractAPIAction implements ContentProcessable {
 	}
 
 	protected final boolean bot;
+
+	protected final Log log = LogFactory.getLog(getClass());
 
 	protected List<HttpRequestBase> msgs = new Vector<HttpRequestBase>();
 

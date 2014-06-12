@@ -28,8 +28,8 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 			RevisionPropery[] properties, String geicontinue) {
 		super(bot, properties);
 
-		log.info("[action=query; prop=revisions; generator=embeddedin]: " + embeddedIn + "; " + namespaces + "; "
-				+ Arrays.toString(properties) + "; " + geicontinue);
+		log.info("[action=query; prop=revisions; generator=embeddedin]: " + embeddedIn + "; "
+				+ Arrays.toString(namespaces) + "; " + Arrays.toString(properties) + "; " + geicontinue);
 
 		this.embeddedIn = embeddedIn;
 		this.namespaces = namespaces;

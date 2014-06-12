@@ -32,8 +32,8 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 			RevisionPropery[] properties, Long rvcontinue) {
 		super(bot, properties);
 
-		log.info("queryRevisionsByRevisionIds( " + generateXml + ", " + Arrays.toString(properties) + ", " + rvcontinue
-				+ " ): " + revids);
+		log.info("[action=query; list=revisions]: " + revids + "; " + generateXml + "; " + Arrays.toString(properties)
+				+ "; " + rvcontinue);
 
 		this.revids = revids;
 		this.generateXml = generateXml;
