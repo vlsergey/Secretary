@@ -31,22 +31,20 @@ public class XmlParser extends AbstractParser {
 
 	public ArticleFragment parse(Revision revision) throws Exception {
 		Document xmlDoc = documentBuilderPool.parse(new InputSource(new StringReader(revision.getXml())));
-		final ParseContext context = new ParseContext();
-		context.pageName = revision.getPage() != null ? revision.getPage().getTitle() : null;
-		return parseRoot(context, xmlDoc.getDocumentElement());
+		return parseRoot(xmlDoc.getDocumentElement());
 	}
 
 	public ArticleFragment parse(String xml) throws Exception {
 		Document xmlDoc = documentBuilderPool.parse(new InputSource(new StringReader(xml)));
-		return parseRoot(new ParseContext(), xmlDoc.getDocumentElement());
+		return parseRoot(xmlDoc.getDocumentElement());
 	}
 
-	protected Comment parseComment(ParseContext context, Element commentElement) {
-		Content content = parseContainer(context, commentElement);
+	protected Comment parseComment(Element commentElement) {
+		Content content = parseContainer(commentElement);
 		return newComment(content);
 	}
 
-	protected Content parseContainer(ParseContext context, Element containerElement) {
+	protected Content parseContainer(Element containerElement) {
 
 		if (containerElement.getChildNodes().getLength() == 0) {
 			return null;
@@ -61,7 +59,7 @@ public class XmlParser extends AbstractParser {
 			switch (node.getNodeType()) {
 
 			case Node.ELEMENT_NODE:
-				content = parseElement(context, (Element) node);
+				content = parseElement((Element) node);
 				break;
 
 			case Node.TEXT_NODE:
@@ -85,41 +83,41 @@ public class XmlParser extends AbstractParser {
 		return newArticleFragment(list);
 	}
 
-	public Content parseContainer(ParseContext context, String xml) throws Exception {
+	public Content parseContainer(String xml) throws Exception {
 		Document xmlDoc = documentBuilderPool.parse(new InputSource(new StringReader(xml)));
-		return parseContainer(context, xmlDoc.getDocumentElement());
+		return parseContainer(xmlDoc.getDocumentElement());
 	}
 
-	protected Content parseElement(ParseContext context, Element element) {
+	protected Content parseElement(Element element) {
 
 		if ("comment".equals(element.getNodeName())) {
-			return parseComment(context, element);
+			return parseComment(element);
 		}
 
 		if ("ext".equals(element.getNodeName())) {
-			return parseExtension(context, element);
+			return parseExtension(element);
 		}
 
 		if ("h".equals(element.getNodeName())) {
-			return parseHeader(context, element);
+			return parseHeader(element);
 		}
 
 		if ("ignore".equals(element.getNodeName())) {
-			return parseIgnore(context, element);
+			return parseIgnore(element);
 		}
 
 		if ("template".equals(element.getNodeName())) {
-			return parseTemplate(context, element, false);
+			return parseTemplate(element, false);
 		}
 
 		if ("tplarg".equals(element.getNodeName())) {
-			return parseTemplate(context, element, true);
+			return parseTemplate(element, true);
 		}
 
 		throw new UnsupportedOperationException("Unknown element: " + element.getNodeName());
 	}
 
-	protected Extension parseExtension(ParseContext context, Element extElement) {
+	protected Extension parseExtension(Element extElement) {
 		Content name = null;
 		Content attr = null;
 		Content inner = null;
@@ -130,22 +128,22 @@ public class XmlParser extends AbstractParser {
 			Node node = children.item(n);
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "attr".equals(node.getNodeName())) {
-				attr = parseContainer(context, (Element) node);
+				attr = parseContainer((Element) node);
 				continue;
 			}
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "name".equals(node.getNodeName())) {
-				name = parseContainer(context, (Element) node);
+				name = parseContainer((Element) node);
 				continue;
 			}
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "inner".equals(node.getNodeName())) {
-				inner = parseContainer(context, (Element) node);
+				inner = parseContainer((Element) node);
 				continue;
 			}
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "close".equals(node.getNodeName())) {
-				close = parseContainer(context, (Element) node);
+				close = parseContainer((Element) node);
 				continue;
 			}
 
@@ -155,24 +153,24 @@ public class XmlParser extends AbstractParser {
 		return newExtension(name, attr, inner, close);
 	}
 
-	protected Content parseHeader(ParseContext context, Element hElement) {
+	protected Content parseHeader(Element hElement) {
 		int id = Integer.parseInt(hElement.getAttribute("i"));
 		int level = Integer.parseInt(hElement.getAttribute("level"));
-		Content content = parseContainer(context, hElement);
+		Content content = parseContainer(hElement);
 
 		return newHeader(level, id, content);
 	}
 
-	protected Ignore parseIgnore(ParseContext context, Element ignoreElement) {
-		Content content = parseContainer(context, ignoreElement);
+	protected Ignore parseIgnore(Element ignoreElement) {
+		Content content = parseContainer(ignoreElement);
 		return newIgnore(content);
 	}
 
-	protected ArticleFragment parseRoot(ParseContext context, Element documentElement) {
+	protected ArticleFragment parseRoot(Element documentElement) {
 		if (!"root".equals(documentElement.getNodeName()))
 			throw new ParsingException("Root element name is not 'root': " + documentElement.getNodeName());
 
-		Content parsed = parseContainer(context, documentElement);
+		Content parsed = parseContainer(documentElement);
 		if (parsed instanceof ArticleFragment) {
 			return (ArticleFragment) parsed;
 		}
@@ -180,7 +178,7 @@ public class XmlParser extends AbstractParser {
 		return new ArticleFragment(Collections.singletonList(parsed));
 	}
 
-	protected Content parseTemplate(ParseContext context, Element element, boolean templateArgument) {
+	protected Content parseTemplate(Element element, boolean templateArgument) {
 		NodeList children = element.getChildNodes();
 
 		Content title = null;
@@ -190,12 +188,12 @@ public class XmlParser extends AbstractParser {
 			Node node = children.item(n);
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "title".equals(node.getNodeName())) {
-				title = parseContainer(context, (Element) node);
+				title = parseContainer((Element) node);
 				continue;
 			}
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "part".equals(node.getNodeName())) {
-				TemplatePart part = parseTemplatePart(context, (Element) node);
+				TemplatePart part = parseTemplatePart((Element) node);
 				if (part != null) {
 					parts.add(part);
 				}
@@ -212,7 +210,7 @@ public class XmlParser extends AbstractParser {
 		return newTemplate(title, parts);
 	}
 
-	protected TemplatePart parseTemplatePart(ParseContext context, Element partElement) {
+	protected TemplatePart parseTemplatePart(Element partElement) {
 		Content name = null;
 		String equals = null;
 		Content value = null;
@@ -227,12 +225,12 @@ public class XmlParser extends AbstractParser {
 			}
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "name".equals(node.getNodeName())) {
-				name = parseContainer(context, (Element) node);
+				name = parseContainer((Element) node);
 				continue;
 			}
 
 			if (node.getNodeType() == Node.ELEMENT_NODE && "value".equals(node.getNodeName())) {
-				value = parseContainer(context, (Element) node);
+				value = parseContainer((Element) node);
 				continue;
 			}
 

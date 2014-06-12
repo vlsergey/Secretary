@@ -45,12 +45,11 @@ public class XmlCache {
 		return project;
 	}
 
-	public String getXml(String pageTitle, String content) throws Exception {
+	public String getXml(String content) throws Exception {
 		if (StringUtils.isBlank(content) || StringUtils.isWhitespace(content))
 			return "<root>" + content + "</root>";
 
 		MessageDigest md = MessageDigest.getInstance("SHA-512");
-		md.update(pageTitle.getBytes("utf-8"));
 		byte[] digest = md.digest(content.getBytes("utf-8"));
 		String hash = Hex.encodeHexString(digest);
 
@@ -67,7 +66,7 @@ public class XmlCache {
 				return cacheItem.getXml();
 			}
 
-			ExpandTemplates expandTemplates = mediaWikiBot.expandTemplates(content, pageTitle, false, Prop.parsetree);
+			ExpandTemplates expandTemplates = mediaWikiBot.expandTemplates(content, null, false, Prop.parsetree);
 			final String xml = expandTemplates.getParsetree();
 			if (StringUtils.isNotEmpty(StringUtils.trimToEmpty(xml))) {
 				XmlCacheItem xmlCacheItem = new XmlCacheItem();

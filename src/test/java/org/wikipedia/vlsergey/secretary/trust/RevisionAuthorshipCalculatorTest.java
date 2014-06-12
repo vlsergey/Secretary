@@ -16,7 +16,7 @@ public class RevisionAuthorshipCalculatorTest {
 		final Locale locale = new Locale("ru-RU");
 
 		final RevisionAuthorshipCalculator calculator = new RevisionAuthorshipCalculator();
-		calculator.setProject(Project.RUWIKI);
+		calculator.setProject(Project.RUWIKIPEDIA);
 
 		String text1 = IoUtils.readToString(
 				RevisionAuthorshipCalculatorTest.class.getResourceAsStream("Санкт-Петербург-1.txt"), "utf-8");
@@ -50,7 +50,7 @@ public class RevisionAuthorshipCalculatorTest {
 		final Locale locale = new Locale("ru-RU");
 
 		final RevisionAuthorshipCalculator calculator = new RevisionAuthorshipCalculator();
-		calculator.setProject(Project.RUWIKI);
+		calculator.setProject(Project.RUWIKIPEDIA);
 
 		TextChunkList baseRevision = TextChunkList.concatenate(Arrays.asList(new TextChunkList[] {
 				TextChunkList.toTextChunkList(locale, "A", "0 1 2 3 4"),
