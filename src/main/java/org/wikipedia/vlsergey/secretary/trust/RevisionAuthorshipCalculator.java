@@ -30,10 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
-import org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -251,8 +250,6 @@ public class RevisionAuthorshipCalculator {
 	private MediaWikiBot mediaWikiBot;
 
 	private Project project;
-
-	private RefAwareParser refAwareParser;
 
 	@Autowired
 	private RevisionAuthorshipDao revisionAuthorshipDao;
@@ -505,10 +502,6 @@ public class RevisionAuthorshipCalculator {
 		return project;
 	}
 
-	public RefAwareParser getRefAwareParser() {
-		return refAwareParser;
-	}
-
 	private Long getRevisionToCompareWith(PageContext pageContext, Long newRevisionId) {
 
 		if (newRevisionId == null) {
@@ -674,10 +667,6 @@ public class RevisionAuthorshipCalculator {
 		this.project = project;
 	}
 
-	public void setRefAwareParser(RefAwareParser refAwareParser) {
-		this.refAwareParser = refAwareParser;
-	}
-
 	public void setWikiCache(WikiCache wikiCache) {
 		this.wikiCache = wikiCache;
 	}
@@ -697,7 +686,7 @@ public class RevisionAuthorshipCalculator {
 
 		List<Future<TextChunkList>> futures = new ArrayList<Future<TextChunkList>>();
 		for (final Revision latestRevisionIdContent : wikiCache.queryLatestContentByPageIds(mediaWikiBot
-				.queryEmbeddedInPageIds(template, Namespaces.MAIN))) {
+				.queryEmbeddedInPageIds(template, Namespace.MAIN))) {
 
 			final Page page = latestRevisionIdContent.getPage();
 			final String pageTitle = page.getTitle();

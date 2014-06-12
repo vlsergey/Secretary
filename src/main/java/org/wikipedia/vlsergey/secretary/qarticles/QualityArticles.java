@@ -59,7 +59,7 @@ public class QualityArticles implements Runnable {
 
 	private void runImpl() throws Exception {
 		Revision revision = wikiCache.queryLatestRevision(NOMINATIONS_PAGE);
-		ArticleFragment dom = new XmlParser().parse(revision.getXml());
+		ArticleFragment dom = new XmlParser().parse(revision);
 
 		for (Section section : dom.findTopLevelSections(2)) {
 			String title = section.getHeader().getName();

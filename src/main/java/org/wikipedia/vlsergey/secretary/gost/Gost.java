@@ -7,12 +7,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.http.BasicResponseHandler;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
@@ -136,13 +136,11 @@ public class Gost {
 
 	private long lastHttpTime = 0;
 
-	
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
 	private ProtectGostRuEntryDao protectGostRuEntryDao;
 
-	
 	private WikiCache wikiCache;
 
 	private void collectBadLinks() throws Exception {
@@ -153,7 +151,8 @@ public class Gost {
 	}
 
 	private void collectBadLinks(BadSite badSite) throws Exception {
-		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage("http", badSite.getUrlTemplate(), 0)) {
+		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage("http", badSite.getUrlTemplate(),
+				Namespace.MAIN)) {
 			final String badUrl = externalUrl.getUrl();
 			try {
 				BadLink badLink = badLinkDao.findByUrl(badUrl);
@@ -251,7 +250,8 @@ public class Gost {
 	}
 
 	private void fixBadLinks(final BadSite badSite) {
-		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage("http", badSite.getUrlTemplate(), 0)) {
+		for (ExternalUrl externalUrl : mediaWikiBot.queryExternalUrlUsage("http", badSite.getUrlTemplate(),
+				Namespace.MAIN)) {
 			Revision revision = wikiCache.queryLatestRevision(externalUrl.getPageId());
 			String content = revision.getContent();
 

@@ -1,0 +1,30 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	   					   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+
+	<bean id="wikidataCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
+		<property name="mediaWikiBot" ref="ruWikisourceBot" />
+		<property name="project" value="wikidata" />
+	</bean>
+
+	<bean id="wikidataXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
+		p:sessionFactory-ref="sessionFactory">
+		<property name="mediaWikiBot" ref="wikidataBot" />
+		<property name="project" value="wikidata" />
+	</bean>
+
+	<bean id="wikidataRefAwareParser" class="org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser">
+		<property name="xmlCache" ref="wikidataXmlCache" />
+	</bean>
+
+	<bean id="wikidataBot" class="org.wikipedia.vlsergey.secretary.jwpf.WikidataBot">
+		<property name="bot" value="0" />
+		<property name="login" value="Secretary" />
+		<property name="password" value="#{systemProperties.SecretaryPassword}" />
+		<property name="site" value="http://ru.wikisource.org/w" />
+		<property name="xmlParser" ref="wikidataRefAwareParser" />
+	</bean>
+
+</beans>

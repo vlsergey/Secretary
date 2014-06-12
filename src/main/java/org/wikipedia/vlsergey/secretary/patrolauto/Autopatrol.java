@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -47,7 +48,8 @@ public class Autopatrol implements Runnable {
 		trustedUsers.add("VPliousnine");
 		trustedUsers.add("Wesha");
 
-		for (Page page : mediaWikiBot.queryUnreviewedPages(new int[] { 100 }, FilterRedirects.ALL)) {
+		for (Page page : mediaWikiBot.queryUnreviewedPages(new Namespace[] { Namespace.RU_WIKI_PORTAL },
+				FilterRedirects.ALL)) {
 
 			Collection<Revision> allRevisions = mediaWikiBot.queryRevisionsByPageId(page.getId(), null,
 					Direction.NEWER, RevisionPropery.IDS, RevisionPropery.USER);

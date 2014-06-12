@@ -14,7 +14,7 @@ public class GostEntryPoint {
 		ExternalIpChecker.assertIpAddressesAreDifferent();
 
 		MediaWikiBot mediaWikiBot = appContext.getBean(MediaWikiBot.class);
-		mediaWikiBot.httpLogin();
+		mediaWikiBot.login();
 
 		Gost gost = appContext.getBean(Gost.class);
 		gost.run();

@@ -1,6 +1,6 @@
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
-public interface Namespaces {
+public enum Namespace {
 
 	/**
 	 * The Category namespace contains categories, dynamic lists of other pages.
@@ -14,13 +14,13 @@ public interface Namespaces {
 	 * namespace: [[:Category:Help]] produces Category:Help. See Help:Categories
 	 * for more details on category link syntax.
 	 */
-	int CATEGORY = 14;
+	CATEGORY(14),
 
 	/**
 	 * This is a talk namespace that is normally used for discussions related to
 	 * the associated category pages. It has no special properties.
 	 */
-	int CATEGORY_TALK = 15;
+	CATEGORY_TALK(15),
 
 	/**
 	 * The File namespace is used to store metadata for images, videos, sound
@@ -34,13 +34,13 @@ public interface Namespaces {
 	 * File:Wiki.png. The standard MediaWiki installation has alias "Image" for
 	 * File namespace - See Namespace aliases.
 	 */
-	int FILE = 6;
+	FILE(6),
 
 	/**
 	 * This is a talk namespace that is normally used for discussions related to
 	 * the associated media files. It has no special properties.
 	 */
-	int FILE_TALK = 7;
+	FILE_TALK(7),
 
 	/**
 	 * Namespace zero is the 'null' namespace, commonly called the
@@ -48,25 +48,29 @@ public interface Namespaces {
 	 * bulk of the content pages in a wiki. This namespace generally has no
 	 * special properties.
 	 */
-	int MAIN = 0;
+	MAIN(0),
 
 	/**
 	 * This namespace is normally used for meta-discussions related to the
 	 * operation and development of the wiki. It has no special properties.
 	 */
-	int PROJECT = 4;
+	PROJECT(4),
 
 	/**
 	 * This is a talk namespace that is normally used for discussions related to
 	 * the associated subject pages. It has no special properties.
 	 */
-	int PROJECT_TALK = 5;
+	PROJECT_TALK(5),
+
+	RU_WIKI_PORTAL(100),
+
+	RU_WIKI_PORTAL_TALK(100),
 
 	/**
 	 * The "Talk" namespace is the discussion namespace attached to the
 	 * mainspace. It has no special properties.
 	 */
-	int TALK = 1;
+	TALK(1),
 
 	/**
 	 * The Template namespace is used to hold templates, blocks of text or
@@ -75,13 +79,13 @@ public interface Namespaces {
 	 * namespace for transclusions: the wikicode {{Foo}} is equivalent to
 	 * {{Template:Foo}}.
 	 */
-	int TEMPLATE = 10;
+	TEMPLATE(10),
 
 	/**
 	 * This is a talk namespace that is normally used for discussions related to
 	 * the associated template pages. It has no special properties.
 	 */
-	int TEMPLATE_TALK = 11;
+	TEMPLATE_TALK(11),
 
 	/**
 	 * Each user has a corresponding page in the User namespace, which is linked
@@ -92,7 +96,7 @@ public interface Namespaces {
 	 * "User:UserName/Foo.css" can only be edited by the user themselves or by
 	 * administrators.
 	 */
-	int USER = 2;
+	USER(2),
 
 	/**
 	 * This namespace is the talkspace associated with the User namespace. Pages
@@ -102,6 +106,13 @@ public interface Namespaces {
 	 * user "UserName" loads a page, a notice is displayed at the top of the
 	 * page informing them of the edit.
 	 */
-	int USER_TALK = 3;
+	USER_TALK(3),
 
+	;
+
+	public final int id;
+
+	private Namespace(final int id) {
+		this.id = id;
+	}
 }

@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.text.ParseException;
+import java.util.Arrays;
 
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
@@ -9,6 +10,30 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class ExpandTemplates extends AbstractAPIAction {
+
+	/**
+	 * Which pieces of information to get
+	 */
+	public static enum Prop {
+
+		/**
+		 * Any categories present in the input that are not represented in the
+		 * wikitext output
+		 */
+		categories,
+
+		/**
+		 * The XML parse tree of the input
+		 */
+		parsetree,
+
+		/**
+		 * The expanded wikitext
+		 */
+		wikitext,
+
+		;
+	}
 
 	private String expandtemplates;
 
@@ -20,17 +45,17 @@ public class ExpandTemplates extends AbstractAPIAction {
 	 *            Wikitext to convert
 	 * @param title
 	 *            Title of page
-	 * @param generatexml
-	 *            Generate XML parse tree
 	 * @param includecomments
 	 *            Whether to include HTML comments in the output
+	 * @param prop
+	 *            Which pieces of information to get
 	 */
-	public ExpandTemplates(boolean bot, String text, String title, boolean generatexml, boolean includecomments) {
+	public ExpandTemplates(boolean bot, String text, String title, boolean includecomments, Prop... props) {
 		super(bot);
 
 		log.info("expandTemplates( '"
 				+ StringUtils.substring(text, 0, 32).replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
-				+ "...' ; " + title + "; " + generatexml + "; " + includecomments + ")");
+				+ "...' ; " + title + "; " + includecomments + "; " + Arrays.toString(props) + ")");
 
 		HttpPost postMethod = new HttpPost("/api.php");
 
@@ -41,8 +66,7 @@ public class ExpandTemplates extends AbstractAPIAction {
 		if (title != null)
 			setParameter(multipartEntity, "title", title);
 
-		if (generatexml)
-			setParameter(multipartEntity, "generatexml", "1");
+		setParameter(multipartEntity, "prop", toStringParameters(props));
 
 		if (includecomments)
 			setParameter(multipartEntity, "includecomments", "1");

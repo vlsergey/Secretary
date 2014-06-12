@@ -23,18 +23,15 @@
 
 	<import resource="books-context.xml" />
 	<import resource="bot-context.xml" />
-	<import resource="bot-ru-context.xml" />
-	<import resource="bot-uk-context.xml" />
-	<import resource="cache-context.xml" />
-	<import resource="cache-ru-context.xml" />
-	<import resource="cache-uk-context.xml" />
+	<import resource="bot-ruwiki-context.xml" />
+	<import resource="bot-ruwikisource-context.xml" />
+	<import resource="bot-wikidata-context.xml" />
+<!-- 	<import resource="bot-ukwiki-context.xml" /> -->
 	<!-- <import resource="gost-context.xml" /> -->
 	<!-- <import resource="patrolauto-context.xml" /> -->
 	<import resource="patrollists-context.xml" />
-	<import resource="webcite-context.xml" />
-	<import resource="webcite-ru-context.xml" />
-	<import resource="webcite-uk-context.xml" />
 
+	<import resource="wikidata-import-context.xml" />
 	<import resource="wikitrust-ru-context.xml" />
 
 </beans>

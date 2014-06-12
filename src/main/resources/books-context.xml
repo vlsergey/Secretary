@@ -5,13 +5,11 @@
 
 	<bean class="org.wikipedia.vlsergey.secretary.books.CountBooks">
 		<property name="mediaWikiBot" ref="ruWikipediaBot" />
-		<property name="refAwareParser" ref="ruRefAwareParser" />
 		<property name="wikiCache" ref="ruWikipediaCache" />
 	</bean>
 
 	<bean class="org.wikipedia.vlsergey.secretary.books.ReplaceCiteBookWithSpecificTemplate">
 		<property name="mediaWikiBot" ref="ruWikipediaBot" />
-		<property name="refAwareParser" ref="ruRefAwareParser" />
 		<property name="wikiCache" ref="ruWikipediaCache" />
 	</bean>
 

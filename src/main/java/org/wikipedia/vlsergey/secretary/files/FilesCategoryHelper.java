@@ -3,23 +3,20 @@ package org.wikipedia.vlsergey.secretary.files;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.functions.IteratorUtils;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 
 // @Component
 public class FilesCategoryHelper implements Runnable {
 
-	
 	private MediaWikiBot mediaWikiBot;
 
-	
 	private WikiCache wikiCache;
 
 	public MediaWikiBot getMediaWikiBot() {
@@ -49,7 +46,7 @@ public class FilesCategoryHelper implements Runnable {
 		SortedSet<Page> screenshot = new TreeSet<Page>();
 
 		for (Revision revision : wikiCache.queryLatestContentByPageIds(IteratorUtils.map(mediaWikiBot
-				.queryCategoryMembers("Категория:Файлы:Несвободные", CategoryMemberType.FILE, Namespaces.FILE),
+				.queryCategoryMembers("Категория:Файлы:Несвободные", CategoryMemberType.FILE, Namespace.FILE),
 				CategoryMember.pageIdF))) {
 			if (revision.getContent().contains("альбом")) {
 				albums.add(revision.getPage());

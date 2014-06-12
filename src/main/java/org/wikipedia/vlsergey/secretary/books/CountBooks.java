@@ -34,9 +34,8 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
-import org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -48,8 +47,6 @@ public class CountBooks implements Runnable {
 	private static final Log log = LogFactory.getLog(CountBooks.class);
 
 	private MediaWikiBot mediaWikiBot;
-
-	private RefAwareParser refAwareParser;
 
 	private WikiCache wikiCache;
 
@@ -120,10 +117,6 @@ public class CountBooks implements Runnable {
 		return mediaWikiBot;
 	}
 
-	public RefAwareParser getRefAwareParser() {
-		return refAwareParser;
-	}
-
 	public WikiCache getWikiCache() {
 		return wikiCache;
 	}
@@ -139,7 +132,7 @@ public class CountBooks implements Runnable {
 		// "Template:Книга", Namespaces.MAIN))) {
 
 		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
-				.queryPagesWithRevisionByEmbeddedIn("Template:Книга", new int[] { Namespaces.MAIN },
+				.queryPagesWithRevisionByEmbeddedIn("Template:Книга", new Namespace[] { Namespace.MAIN },
 						new RevisionPropery[] { RevisionPropery.IDS }))) {
 
 			final Page page = revision.getPage();
@@ -153,7 +146,7 @@ public class CountBooks implements Runnable {
 					}
 				}
 
-				ArticleFragment article = getRefAwareParser().parse(xmlContent);
+				ArticleFragment article = mediaWikiBot.getXmlParser().parse(revision);
 
 				Map<String, List<Template>> allTemplates = article.getAllTemplates();
 
@@ -253,10 +246,6 @@ public class CountBooks implements Runnable {
 
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
 		this.mediaWikiBot = mediaWikiBot;
-	}
-
-	public void setRefAwareParser(RefAwareParser refAwareParser) {
-		this.refAwareParser = refAwareParser;
 	}
 
 	public void setWikiCache(WikiCache wikiCache) {

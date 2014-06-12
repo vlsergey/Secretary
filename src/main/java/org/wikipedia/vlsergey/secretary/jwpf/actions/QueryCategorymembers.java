@@ -41,7 +41,7 @@ public class QueryCategorymembers extends AbstractQueryAction implements MultiAc
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "list", "categorymembers");
 
-		setParameter(multipartEntity, "cmprop", "ids");
+		setParameter(multipartEntity, "cmprop", "ids|title|sortkey|sortkeyprefix|type|timestamp");
 		setParameter(multipartEntity, "cmtitle", categoryTitle);
 		setParameter(multipartEntity, "cmnamespace", namespaces);
 		setParameter(multipartEntity, "cmtype", type);

@@ -241,31 +241,6 @@ public class WikiCache {
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
-	public String queryLatestRevisionContent(Long pageId) throws JwbfException {
-		log.debug("queryLatestRevisionContent(" + pageId + ")");
-
-		Revision withContent = queryLatestRevision(pageId);
-		if (withContent == null)
-			return null;
-
-		return withContent.getContent();
-	}
-
-	@Transactional(propagation = Propagation.NEVER)
-	public String queryLatestRevisionContent(String pageTitle) throws JwbfException {
-		log.debug("queryLatestRevisionContent('" + pageTitle + "')");
-
-		Revision latest = queryLatestRevision(pageTitle);
-
-		if (latest == null)
-			// deleted or not found
-			return null;
-
-		Revision stored = storedRevisionDao.getOrCreate(getProject(), latest);
-		return stored.getContent();
-	}
-
-	@Transactional(propagation = Propagation.NEVER)
 	public StoredRevision queryRevision(Long revisionId) throws JwbfException {
 		log.debug("queryRevision(" + revisionId + ")");
 

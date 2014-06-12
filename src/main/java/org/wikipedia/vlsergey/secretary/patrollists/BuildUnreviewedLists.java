@@ -12,7 +12,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Namespaces;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 
 public class BuildUnreviewedLists implements Runnable {
@@ -35,11 +35,11 @@ public class BuildUnreviewedLists implements Runnable {
 	public void run() {
 		try {
 
-			runImpl1(Namespaces.MAIN, "Articles", "статьи", false);
-			runImpl1(Namespaces.FILE, "Files", "файлы", true);
-			runImpl1(Namespaces.TEMPLATE, "Templates", "шаблоны", true);
-			runImpl1(Namespaces.CATEGORY, "Categories", "категории", true);
-			runImpl1(100, "Portals", "порталы", true);
+			runImpl1(Namespace.MAIN, "Articles", "статьи", false);
+			runImpl1(Namespace.FILE, "Files", "файлы", true);
+			runImpl1(Namespace.TEMPLATE, "Templates", "шаблоны", true);
+			runImpl1(Namespace.CATEGORY, "Categories", "категории", true);
+			runImpl1(Namespace.RU_WIKI_PORTAL, "Portals", "порталы", true);
 
 			updateStatistics(
 					"Непроверенные (неотпатрулированные) страницы (без перенаправлений), отсортированные по времени создания",
@@ -62,7 +62,7 @@ public class BuildUnreviewedLists implements Runnable {
 		}
 	}
 
-	private void runImpl1(int namespace, String namespaceTitle, String namespaceDesc, boolean ignoreRedirects)
+	private void runImpl1(Namespace namespace, String namespaceTitle, String namespaceDesc, boolean ignoreRedirects)
 			throws Exception {
 
 		if (ignoreRedirects) {
@@ -100,25 +100,27 @@ public class BuildUnreviewedLists implements Runnable {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	private Map<Long, String> startImpl2(int namespace, FilterRedirects filterRedirects, String description,
+	private Map<Long, String> startImpl2(Namespace namespace, FilterRedirects filterRedirects, String description,
 			String statisticsPage) throws Exception {
 		Map<Long, String> pages = new HashMap<Long, String>();
 
 		if (filterRedirects == FilterRedirects.ALL) {
 
-			for (Page page : mediaWikiBot.queryUnreviewedPages(new int[] { namespace }, FilterRedirects.REDIRECTS)) {
+			for (Page page : mediaWikiBot
+					.queryUnreviewedPages(new Namespace[] { namespace }, FilterRedirects.REDIRECTS)) {
 				pages.put(page.getId(), page.getTitle());
 			}
 
 			redirects.addAll(pages.keySet());
 
-			for (Page page : mediaWikiBot.queryUnreviewedPages(new int[] { namespace }, FilterRedirects.NONREDIRECTS)) {
+			for (Page page : mediaWikiBot.queryUnreviewedPages(new Namespace[] { namespace },
+					FilterRedirects.NONREDIRECTS)) {
 				pages.put(page.getId(), page.getTitle());
 			}
 
 		} else {
 
-			for (Page page : mediaWikiBot.queryUnreviewedPages(new int[] { namespace }, filterRedirects)) {
+			for (Page page : mediaWikiBot.queryUnreviewedPages(new Namespace[] { namespace }, filterRedirects)) {
 				pages.put(page.getId(), page.getTitle());
 			}
 

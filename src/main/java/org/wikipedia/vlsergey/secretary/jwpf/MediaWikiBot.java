@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.wikipedia.vlsergey.secretary.dom.parser.XmlParser;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.Edit;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.ExpandTemplates;
@@ -42,6 +43,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -96,14 +98,14 @@ public class MediaWikiBot extends HttpBot {
 	 *            namespace as
 	 * @return with numbers seperated by |
 	 */
-	private static String createNsString(int... namespaces) {
+	private static String createNsString(Namespace... namespaces) {
 		if (namespaces == null || namespaces.length == 0)
 			return null;
 
 		String namespaceString = new String();
 
-		for (int nsNumber : namespaces) {
-			namespaceString += nsNumber + "|";
+		for (Namespace ns : namespaces) {
+			namespaceString += ns.id + "|";
 		}
 
 		// remove last '|'
@@ -140,12 +142,14 @@ public class MediaWikiBot extends HttpBot {
 
 	private String password;
 
+	private XmlParser xmlParser;
+
 	public MediaWikiBot() {
 	}
 
-	public ExpandTemplates expandTemplates(final String text, final String title, final boolean generateXml,
-			final boolean includeComments) {
-		ExpandTemplates expandTemplates = new ExpandTemplates(isBot(), text, title, generateXml, includeComments);
+	public ExpandTemplates expandTemplates(final String text, final String title, final boolean includeComments,
+			ExpandTemplates.Prop... props) {
+		ExpandTemplates expandTemplates = new ExpandTemplates(isBot(), text, title, includeComments, props);
 		performAction(expandTemplates);
 		return expandTemplates;
 	}
@@ -158,8 +162,20 @@ public class MediaWikiBot extends HttpBot {
 		return password;
 	}
 
+	public XmlParser getXmlParser() {
+		return xmlParser;
+	}
+
+	public boolean isBot() {
+		return bot;
+	}
+
+	public boolean isLoggedIn() {
+		return loggedIn;
+	}
+
 	@PostConstruct
-	public void httpLogin() throws ActionException {
+	public void login() throws ActionException {
 		for (int i = 0; i < 5; i++) {
 			logger.info("Login as " + getLogin());
 			try {
@@ -188,14 +204,6 @@ public class MediaWikiBot extends HttpBot {
 			loggedIn = true;
 			return;
 		}
-	}
-
-	public boolean isBot() {
-		return bot;
-	}
-
-	public boolean isLoggedIn() {
-		return loggedIn;
 	}
 
 	/**
@@ -329,7 +337,7 @@ public class MediaWikiBot extends HttpBot {
 	}
 
 	public Iterable<CategoryMember> queryCategoryMembers(String categoryTitle, CategoryMemberType type,
-			int... namespaces) throws ActionException {
+			Namespace... namespaces) throws ActionException {
 		logger.info("queryCategoryMembers(" + categoryTitle + ", " + type + ", " + Arrays.toString(namespaces) + ")");
 
 		QueryCategorymembers a = new QueryCategorymembers(isBot(), categoryTitle, createNsString(namespaces),
@@ -337,19 +345,19 @@ public class MediaWikiBot extends HttpBot {
 		return performMultiAction(a);
 	}
 
-	public Iterable<Long> queryEmbeddedInPageIds(String template, int... namespaces) throws ActionException {
+	public Iterable<Long> queryEmbeddedInPageIds(String template, Namespace... namespaces) throws ActionException {
 		logger.info("queryEmbeddedInPageIds(" + template + ", " + Arrays.toString(namespaces) + ")");
 
 		QueryEmbeddedinPageIds a = new QueryEmbeddedinPageIds(isBot(), template, createNsString(namespaces));
 		return performMultiAction(a);
 	}
 
-	public Iterable<String> queryEmbeddedInPageTitles(String template, int... namespaces) throws ActionException {
+	public Iterable<String> queryEmbeddedInPageTitles(String template, Namespace... namespaces) throws ActionException {
 		QueryEmbeddedinTitles a = new QueryEmbeddedinTitles(isBot(), template, createNsString(namespaces));
 		return performMultiAction(a);
 	}
 
-	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol, String query, int... namespaces)
+	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol, String query, Namespace... namespaces)
 			throws ActionException {
 		QueryExturlusage a = new QueryExturlusage(isBot(), protocol, query, createNsString(namespaces));
 		return performMultiAction(a);
@@ -420,7 +428,7 @@ public class MediaWikiBot extends HttpBot {
 		}.makeBatched(isBot() ? 500 : 50);
 	}
 
-	public Iterable<ParsedPage> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, int[] namespaces,
+	public Iterable<ParsedPage> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, Namespace[] namespaces,
 			RevisionPropery[] properties) throws ActionException, ProcessException {
 
 		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn,
@@ -537,7 +545,7 @@ public class MediaWikiBot extends HttpBot {
 		return queryTokenEdit.getEditToken();
 	}
 
-	public Iterable<Page> queryUnreviewedPages(int[] namespaces, FilterRedirects filterRedirects)
+	public Iterable<Page> queryUnreviewedPages(Namespace[] namespaces, FilterRedirects filterRedirects)
 			throws ActionException {
 		return performMultiAction(new QueryUnreviewedPages(isBot(), null, null, namespaces, filterRedirects));
 	}
@@ -563,6 +571,10 @@ public class MediaWikiBot extends HttpBot {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	public void setXmlParser(XmlParser xmlParser) {
+		this.xmlParser = xmlParser;
 	}
 
 	public void writeContent(final Revision currentRevision, final String text, final String summary,

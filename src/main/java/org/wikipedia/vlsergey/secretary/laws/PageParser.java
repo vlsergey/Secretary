@@ -53,7 +53,7 @@ public class PageParser {
 		mediaWikiBot.setSite(new URI("http://ru.wikisource.org/w"));
 		mediaWikiBot.setLogin(System.getProperty("org.wikipedia.vlsergey.bot.login"));
 		mediaWikiBot.setPassword(System.getProperty("org.wikipedia.vlsergey.bot.password"));
-		mediaWikiBot.httpLogin();
+		mediaWikiBot.login();
 	}
 
 	private String addHyperlinks(String wiki) throws ParseException {

@@ -4,15 +4,27 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
 	   					   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
 
+	<bean id="ukWikipediaCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
+		<property name="mediaWikiBot" ref="ukWikipediaBot" />
+		<property name="project" value="ukwiki" />
+	</bean>
+
+	<bean id="ukWikipediaXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
+		p:sessionFactory-ref="sessionFactory">
+		<property name="mediaWikiBot" ref="ukWikipediaBot" />
+		<property name="project" value="ukwiki" />
+	</bean>
+
+	<bean id="ukRefAwareParser" class="org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser">
+		<property name="xmlCache" ref="ukWikipediaXmlCache" />
+	</bean>
+
 	<bean id="ukWikipediaBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot">
 		<property name="bot" value="0" />
 		<property name="login" value="Secretary" />
 		<property name="password" value="#{systemProperties.SecretaryPassword}" />
 		<property name="site" value="http://uk.wikipedia.org/w" />
-	</bean>
-
-	<bean id="ukRefAwareParser" class="org.wikipedia.vlsergey.secretary.webcite.RefAwareParser">
-		<property name="xmlCache" ref="ukWikipediaXmlCache" />
+		<property name="xmlParser" ref="ukRefAwareParser" />
 	</bean>
 
 </beans>

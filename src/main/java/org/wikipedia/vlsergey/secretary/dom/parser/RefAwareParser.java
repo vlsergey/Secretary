@@ -14,16 +14,16 @@ public class RefAwareParser extends XmlParser {
 	}
 
 	@Override
-	protected Extension parseExtension(Element extElement) {
-		Extension extension = super.parseExtension(extElement);
+	protected Extension parseExtension(ParseContext context, Element extElement) {
+		Extension extension = super.parseExtension(context, extElement);
 
 		if (extension.getName().toWiki(true).trim().equals("ref") && extension.getInner() != null) {
 
 			try {
 				// need additional parsing of included wikitext
 				final String wikiText = extension.getInner().toWiki(false);
-				final String xml = xmlCache.getXml(wikiText);
-				final Content innerParsed = parseContainer(xml);
+				final String xml = xmlCache.getXml(context.pageName, wikiText);
+				final Content innerParsed = parseContainer(context, xml);
 				extension.setInner(innerParsed);
 			} catch (Exception exc) {
 				throw new RuntimeException("Unable to parse inner content of REF: " + exc, exc);

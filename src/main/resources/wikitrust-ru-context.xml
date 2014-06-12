@@ -21,18 +21,8 @@
 	<bean id="ruRevisionAuthorshipCalculator"
 		class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorshipCalculator">
 		<property name="mediaWikiBot" ref="ruWikipediaBot" />
-		<property name="locale" value="ru" />
-		<property name="wikiCache" ref="ruWikipediaCache" />
-		<property name="refAwareParser" ref="ruRefAwareParser" />
-	</bean>
-
-
-	<bean id="ruWikiStats" class="org.wikipedia.vlsergey.secretary.trust.WikiStats">
-		<property name="mediaWikiBot" ref="ruWikipediaBot" />
-		<property name="locale" value="ru" />
-		<property name="revisionAuthorshipCalculator" ref="ruRevisionAuthorshipCalculator" />
+		<property name="project" value="ruwiki" />
 		<property name="wikiCache" ref="ruWikipediaCache" />
 	</bean>
-
 
 </beans>

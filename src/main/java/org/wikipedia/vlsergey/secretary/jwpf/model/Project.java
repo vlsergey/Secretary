@@ -4,9 +4,13 @@ import java.util.Locale;
 
 public class Project {
 
-	public static final Project RUWIKI = new Project(ProjectType.wiki, new Locale("ru-RU"));
+	public static final Project RUWIKIPEDIA = new Project(ProjectType.wiki, new Locale("ru-RU"));
 
-	public static final Project UKWIKI = new Project(ProjectType.wiki, new Locale("uk-UK"));
+	public static final Project RUWIKISOURCE = new Project(ProjectType.wiki, new Locale("ru-RU"));
+
+	public static final Project UKWIKIPEDIA = new Project(ProjectType.wiki, new Locale("uk-UK"));
+
+	public static final Project UKWIKISOURCE = new Project(ProjectType.wiki, new Locale("uk-UK"));
 
 	public static final Project WIKIDATA = new Project(ProjectType.wikidata, null);
 

@@ -39,6 +39,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ApiException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.xml.sax.InputSource;
@@ -195,6 +196,21 @@ public abstract class AbstractAPIAction extends MWAction {
 
 			first = false;
 			counter++;
+		}
+
+		return stringBuilder.toString();
+	}
+
+	protected String toStringParameters(Namespace[] namespaces) {
+		StringBuilder stringBuilder = new StringBuilder();
+
+		boolean first = true;
+		for (Namespace namespace : namespaces) {
+			if (!first)
+				stringBuilder.append("|");
+			stringBuilder.append(namespace.id);
+
+			first = false;
 		}
 
 		return stringBuilder.toString();

@@ -6,15 +6,6 @@
 		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
 	">
 
-	<bean id="ukWikipediaCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
-		<property name="mediaWikiBot" ref="ukWikipediaBot" />
-		<property name="locale" value="uk" />
-	</bean>
-
-	<bean id="ukWikipediaXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
-		p:sessionFactory-ref="sessionFactory">
-		<property name="mediaWikiBot" ref="ukWikipediaBot" />
-		<property name="locale" value="uk" />
-	</bean>
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.wikidata" />
 
 </beans>

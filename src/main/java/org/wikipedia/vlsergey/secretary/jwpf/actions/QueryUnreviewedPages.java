@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
@@ -26,7 +27,7 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 
 	private final FilterRedirects filterRedirects;
 
-	private final int[] namespaces;
+	private final Namespace[] namespaces;
 
 	private String nextStart;
 
@@ -36,7 +37,7 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 
 	private final String urstart;
 
-	public QueryUnreviewedPages(boolean bot, String urstart, String urend, int[] namespaces,
+	public QueryUnreviewedPages(boolean bot, String urstart, String urend, Namespace[] namespaces,
 			FilterRedirects filterRedirects) {
 		super(bot);
 		log.info("GetUnreviewedPages: " + urstart + "; " + urend + "; " + Arrays.toString(namespaces) + "; "
