@@ -5,8 +5,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Function;
 
-public abstract class MultiresultFunction<A, B> extends Function<Iterable<A>, Iterable<B>> {
+public abstract class MultiresultFunction<A, B> implements Function<Iterable<A>, Iterable<B>> {
 
 	public MultiresultFunction<A, B> makeBatched(final int batchSize) {
 		final MultiresultFunction<A, B> sourceFunction = this;
