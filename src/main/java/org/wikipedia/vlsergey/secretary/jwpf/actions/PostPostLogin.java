@@ -58,10 +58,15 @@ public class PostPostLogin extends AbstractAPIAction {
 	 */
 	protected PostPostLogin(boolean isBot, final TicketData ticketData, String username, final String password) {
 		super(isBot);
-		HttpPost pm = new HttpPost("/api.php?action=login&format=xml");
 
+		log.info("[action=login]: " + username + "; " + ticketData.getToken());
+
+		HttpPost pm = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
-		setParameter(multipartEntity, "maxlag", MAXLAG);
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
+
+		setParameter(multipartEntity, "action", "login");
 		setParameter(multipartEntity, "lgname", username);
 		setParameter(multipartEntity, "lgpassword", password);
 		setParameter(multipartEntity, "lgtoken", ticketData.getToken());

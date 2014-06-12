@@ -30,8 +30,10 @@ public class Review extends AbstractAPIAction {
 	public Review(boolean bot, Revision revision, String token, String comment, Boolean unapprove, Integer flag_accuracy) {
 		super(bot);
 
-		HttpPost postMethod = new HttpPost("/api.php");
+		log.info("[action=review]: " + revision + "; " + token + "; " + comment + "; " + unapprove + "; "
+				+ flag_accuracy);
 
+		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
 		setMaxLag(multipartEntity);
 		setFormatXml(multipartEntity);

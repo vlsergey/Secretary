@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -8,12 +9,13 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public class QueryExturlusage extends AbstractQueryAction implements MultiAction<ExternalUrl> {
 
-	private final String namespaces;
+	private final Namespace[] namespaces;
 
 	private String nextOffset = null;
 
@@ -23,14 +25,15 @@ public class QueryExturlusage extends AbstractQueryAction implements MultiAction
 
 	private List<ExternalUrl> result;
 
-	public QueryExturlusage(boolean bot, String protocol, String query, String namespaces) {
+	public QueryExturlusage(boolean bot, String protocol, String query, Namespace[] namespaces) {
 		this(bot, protocol, query, namespaces, null);
 	}
 
-	private QueryExturlusage(boolean bot, String protocol, String query, String namespaces, String offset) {
+	private QueryExturlusage(boolean bot, String protocol, String query, Namespace[] namespaces, String euoffset) {
 		super(bot);
 
-		log.info("queryExturlusage(" + protocol + "; " + query + "; " + namespaces + "; " + offset + ")");
+		log.info("[action=query; list=exturlusage; euprop=ids|title|url]: " + protocol + "; " + query + "; "
+				+ Arrays.toString(namespaces) + "; " + euoffset);
 
 		this.protocol = protocol;
 		this.query = query;
@@ -47,10 +50,10 @@ public class QueryExturlusage extends AbstractQueryAction implements MultiAction
 		setParameter(multipartEntity, "euprop", "ids|title|url");
 		setParameter(multipartEntity, "euprotocol", protocol);
 		setParameter(multipartEntity, "euquery", query);
-		setParameter(multipartEntity, "eunamespace", namespaces);
+		setParameter(multipartEntity, "eunamespace", toStringParameters(namespaces));
 
-		if (offset != null)
-			setParameter(multipartEntity, "euoffset", offset);
+		if (euoffset != null)
+			setParameter(multipartEntity, "euoffset", euoffset);
 
 		if (isBot()) {
 			setParameter(multipartEntity, "eulimit", "5000");

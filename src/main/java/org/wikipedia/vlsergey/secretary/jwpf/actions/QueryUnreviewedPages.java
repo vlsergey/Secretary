@@ -40,8 +40,9 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 	public QueryUnreviewedPages(boolean bot, String urstart, String urend, Namespace[] namespaces,
 			FilterRedirects filterRedirects) {
 		super(bot);
-		log.info("GetUnreviewedPages: " + urstart + "; " + urend + "; " + Arrays.toString(namespaces) + "; "
-				+ filterRedirects);
+
+		log.info("[action=query; list=unreviewedpages]: " + urstart + "; " + urend + "; " + Arrays.toString(namespaces)
+				+ "; " + filterRedirects);
 
 		this.urstart = urstart;
 		this.urend = urend;
@@ -49,7 +50,6 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 		this.filterRedirects = filterRedirects;
 
 		HttpPost postMethod = new HttpPost("/api.php");
-
 		MultipartEntity multipartEntity = new MultipartEntity();
 		setMaxLag(multipartEntity);
 		setFormatXml(multipartEntity);

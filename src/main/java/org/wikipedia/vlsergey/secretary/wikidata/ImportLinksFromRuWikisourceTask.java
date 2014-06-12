@@ -14,6 +14,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.apache.commons.lang.NullArgumentException;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,6 +86,11 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			}
 
 			return false;
+		}
+
+		@Override
+		public String toString() {
+			return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
 		}
 
 		public boolean update(Template titleTemplate) {
@@ -196,37 +203,40 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		if (StringUtils.isNotEmpty(dictionary.titleTemplate)) {
 			ArticleFragment article = ruWikisourceBot.getXmlParser().parse(revision);
-			final List<Template> titleTemplates = article.getAllTemplates().get(dictionary.titleTemplate);
-			if (titleTemplates == null || titleTemplates.isEmpty()) {
-				log.warn(revision.getPage() + " doesn't have «" + dictionary.titleTemplate + "» template");
-				return false;
-			}
-			Template titleTemplate = titleTemplates.get(0);
 
-			final Circle circle;
-			List<Circle> matched = findByTitleTemplate(circles, titleTemplate);
-			if (matched.size() > 1) {
-				circles.removeAll(matched);
-				circle = Circle.merge(matched);
-				circles.add(circle);
-				matched.clear();
-				matched.add(circle);
-				hasChanges = true;
-			} else if (matched.isEmpty()) {
-				circle = new Circle();
-				circles.add(circle);
-				matched.add(circle);
-				hasChanges = true;
-			} else {
-				circle = matched.get(0);
-			}
+			synchronized (this) {
+				final List<Template> titleTemplates = article.getAllTemplates().get(dictionary.titleTemplate);
+				if (titleTemplates == null || titleTemplates.isEmpty()) {
+					log.warn(revision.getPage() + " doesn't have «" + dictionary.titleTemplate + "» template");
+					return false;
+				}
+				Template titleTemplate = titleTemplates.get(0);
 
-			if (!circle.hasLink(dictionary, link)) {
-				circle.addLink(dictionary, link);
-				hasChanges = true;
-			}
+				final Circle circle;
+				List<Circle> matched = findByTitleTemplate(circles, titleTemplate);
+				if (matched.size() > 1) {
+					circles.removeAll(matched);
+					circle = Circle.merge(matched);
+					circles.add(circle);
+					matched.clear();
+					matched.add(circle);
+					hasChanges = true;
+				} else if (matched.isEmpty()) {
+					circle = new Circle();
+					circles.add(circle);
+					matched.add(circle);
+					hasChanges = true;
+				} else {
+					circle = matched.get(0);
+				}
 
-			hasChanges = circle.update(titleTemplate) || hasChanges;
+				if (!circle.hasLink(dictionary, link)) {
+					circle.addLink(dictionary, link);
+					hasChanges = true;
+				}
+
+				hasChanges = circle.update(titleTemplate) || hasChanges;
+			}
 		}
 
 		return hasChanges;
@@ -285,6 +295,10 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 					}
 				}
 			}
+		}
+
+		for (Circle circle : circles) {
+			System.out.println(circle);
 		}
 	}
 }

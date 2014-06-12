@@ -47,6 +47,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ApiException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.CookieException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
+import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 import org.xml.sax.InputSource;
 
 public abstract class AbstractAPIAction implements ContentProcessable {
@@ -143,6 +144,14 @@ public abstract class AbstractAPIAction implements ContentProcessable {
 		} catch (UnsupportedEncodingException e) {
 			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
 		}
+	}
+
+	protected static String toLog(String text) {
+		if (text == null) {
+			return "null";
+		}
+		return "«" + StringUtils.substring(text, 0, 32).replace("\t", "\\t").replace("\r", "\\r").replace("\n", "\\n")
+				+ "…»";
 	}
 
 	protected final boolean bot;

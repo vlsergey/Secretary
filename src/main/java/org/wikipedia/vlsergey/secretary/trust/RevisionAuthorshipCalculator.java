@@ -685,8 +685,8 @@ public class RevisionAuthorshipCalculator {
 				.synchronizedSortedMap(new TreeMap<String, TextChunkList>());
 
 		List<Future<TextChunkList>> futures = new ArrayList<Future<TextChunkList>>();
-		for (final Revision latestRevisionIdContent : wikiCache.queryLatestContentByPageIds(mediaWikiBot
-				.queryEmbeddedInPageIds(template, Namespace.MAIN))) {
+		for (final Revision latestRevisionIdContent : wikiCache.queryByEmbeddedIn(template,
+				new Namespace[] { Namespace.MAIN })) {
 
 			final Page page = latestRevisionIdContent.getPage();
 			final String pageTitle = page.getTitle();

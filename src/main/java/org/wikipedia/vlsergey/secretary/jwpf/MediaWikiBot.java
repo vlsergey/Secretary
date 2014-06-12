@@ -23,8 +23,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.ExpandTemplates;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.MultiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.PostLogin;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryAllusers;
-import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinPageIds;
-import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryExturlusage;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRedirectsByPageTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers;
@@ -88,32 +86,6 @@ public class MediaWikiBot extends HttpBot {
 			if (singleRevision != null)
 				result.add(singleRevision);
 		}
-	}
-
-	/**
-	 * helper method generating a namespace string as required by the MW-api.
-	 * 
-	 * @param namespaces
-	 *            namespace as
-	 * @return with numbers seperated by |
-	 */
-	private static String createNsString(Namespace... namespaces) {
-		if (namespaces == null || namespaces.length == 0)
-			return null;
-
-		String namespaceString = new String();
-
-		for (Namespace ns : namespaces) {
-			namespaceString += ns.id + "|";
-		}
-
-		// remove last '|'
-		if (namespaceString.endsWith("|")) {
-			namespaceString = namespaceString.substring(0, namespaceString.length() - 1);
-		}
-
-		return namespaceString;
-
 	}
 
 	private static Revision getSingleRevision(final List<ParsedPage> results) {
@@ -335,21 +307,9 @@ public class MediaWikiBot extends HttpBot {
 		return performMultiAction(queryAllusers);
 	}
 
-	public Iterable<Long> queryEmbeddedInPageIds(String template, Namespace... namespaces) throws ActionException {
-		logger.info("queryEmbeddedInPageIds(" + template + ", " + Arrays.toString(namespaces) + ")");
-
-		QueryEmbeddedinPageIds a = new QueryEmbeddedinPageIds(isBot(), template, createNsString(namespaces));
-		return performMultiAction(a);
-	}
-
-	public Iterable<String> queryEmbeddedInPageTitles(String template, Namespace... namespaces) throws ActionException {
-		QueryEmbeddedinTitles a = new QueryEmbeddedinTitles(isBot(), template, createNsString(namespaces));
-		return performMultiAction(a);
-	}
-
 	public Iterable<ExternalUrl> queryExternalUrlUsage(String protocol, String query, Namespace... namespaces)
 			throws ActionException {
-		QueryExturlusage a = new QueryExturlusage(isBot(), protocol, query, createNsString(namespaces));
+		QueryExturlusage a = new QueryExturlusage(isBot(), protocol, query, namespaces);
 		return performMultiAction(a);
 	}
 
@@ -429,8 +389,7 @@ public class MediaWikiBot extends HttpBot {
 	public Iterable<ParsedPage> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, Namespace[] namespaces,
 			RevisionPropery[] properties) throws ActionException, ProcessException {
 
-		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn,
-				createNsString(namespaces), properties);
+		QueryRevisionsByEmbeddedIn query = new QueryRevisionsByEmbeddedIn(isBot(), embeddedIn, namespaces, properties);
 		return performMultiAction(query);
 	}
 

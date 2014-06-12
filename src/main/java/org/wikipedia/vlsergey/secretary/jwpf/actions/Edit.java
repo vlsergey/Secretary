@@ -34,6 +34,9 @@ public class Edit extends AbstractAPIAction {
 			throw new IllegalArgumentException("Current revision must have timestamp to prevent edit conflicts");
 		}
 
+		log.info("[action=edit]: " + page + "; " + revision + "; " + token + "; " + toLog(text) + "; " + summary + "; "
+				+ minor + ")");
+
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
@@ -69,6 +72,9 @@ public class Edit extends AbstractAPIAction {
 	public Edit(boolean bot, String pageTitle, String token, String prependText, String text, String appendText,
 			String summary, boolean minor, boolean nocreate) {
 		super(bot);
+
+		log.info("[action=edit]: " + pageTitle + "; " + token + "; " + toLog(prependText) + "; " + toLog(text) + "; "
+				+ toLog(appendText) + "; " + summary + "; " + minor + "; " + nocreate + ")");
 
 		HttpPost postMethod = new HttpPost("/api.php");
 

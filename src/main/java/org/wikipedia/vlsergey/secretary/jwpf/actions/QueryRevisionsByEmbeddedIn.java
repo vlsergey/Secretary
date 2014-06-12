@@ -5,6 +5,7 @@ import java.util.Arrays;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
@@ -14,20 +15,21 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 
 	private String geicontinue = null;
 
-	private final String namespaces;
+	private final Namespace[] namespaces;
 
 	private final RevisionPropery[] properties;
 
-	public QueryRevisionsByEmbeddedIn(boolean bot, String embeddedIn, String namespaces, RevisionPropery[] properties) {
+	public QueryRevisionsByEmbeddedIn(boolean bot, String embeddedIn, Namespace[] namespaces,
+			RevisionPropery[] properties) {
 		this(bot, embeddedIn, namespaces, properties, null);
 	}
 
-	private QueryRevisionsByEmbeddedIn(boolean bot, String embeddedIn, String namespaces, RevisionPropery[] properties,
-			String geicontinue) {
+	private QueryRevisionsByEmbeddedIn(boolean bot, String embeddedIn, Namespace[] namespaces,
+			RevisionPropery[] properties, String geicontinue) {
 		super(bot, properties);
 
-		log.info("queryRevisionsByEmbeddedIn(" + embeddedIn + "; " + namespaces + " ;" + Arrays.toString(properties)
-				+ "; " + geicontinue + ")");
+		log.info("[action=query; prop=revisions; generator=embeddedin]: " + embeddedIn + "; " + namespaces + "; "
+				+ Arrays.toString(properties) + "; " + geicontinue);
 
 		this.embeddedIn = embeddedIn;
 		this.namespaces = namespaces;
@@ -43,7 +45,7 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 
 		setParameter(multipartEntity, "generator", "embeddedin");
 		setParameter(multipartEntity, "geititle", embeddedIn);
-		setParameter(multipartEntity, "geinamespace", namespaces);
+		setParameter(multipartEntity, "geinamespace", toStringParameters(namespaces));
 		setParameter(multipartEntity, "geilimit", String.valueOf(bot ? 5000 : 500));
 
 		if (geicontinue != null) {

@@ -70,22 +70,21 @@ public class QueryLogevents extends AbstractQueryAction implements MultiAction<L
 			String... letype) {
 		super(bot);
 
-		if (log.isInfoEnabled())
-			log.info("GetLogEvents: " + letitle + "; " + leuser + "; " + lestart + "; " + leend + "; "
-					+ Arrays.toString(letype));
-
-		HttpPost postMethod = new HttpPost("/api.php");
-		MultipartEntity multipartEntity = new MultipartEntity();
-
 		this.ledir = ledir;
 		this.leend = leend;
 		this.letitle = letitle;
 		this.letype = letype;
 		this.leuser = leuser;
 
-		setParameter(multipartEntity, "action", "query");
-		setMaxLag(multipartEntity);
+		log.info("[action=query; list=logevents]: " + letitle + "; " + leuser + "; " + lestart + "; " + leend + "; "
+				+ ledir + "; " + Arrays.toString(letype));
+
+		HttpPost postMethod = new HttpPost("/api.php");
+		MultipartEntity multipartEntity = new MultipartEntity();
 		setFormatXml(multipartEntity);
+		setMaxLag(multipartEntity);
+
+		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "list", "logevents");
 
 		if (ledir != null)

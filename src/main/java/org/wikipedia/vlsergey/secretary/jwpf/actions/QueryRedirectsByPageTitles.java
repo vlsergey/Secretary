@@ -14,8 +14,9 @@ public class QueryRedirectsByPageTitles extends AbstractQueryAction {
 	public Map<String, String> redirects;
 
 	public QueryRedirectsByPageTitles(boolean bot, Iterable<String> pageTitles) {
-
 		super(bot);
+
+		log.info("[action=query; redirects=redirects]: " + pageTitles);
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();

@@ -40,6 +40,11 @@ public class QueryAllusers extends AbstractQueryAction implements MultiAction<Us
 			Collection<String> augroup, Collection<String> auexcludegroup, Collection<String> aurights,
 			Collection<UserProperty> auprop, Boolean auwitheditsonly, Boolean auactiveusers) {
 		super(bot);
+
+		log.info("[action=query; list=allusers]: " + aufrom + "; " + auto + "; " + auprefix + "; " + audir + "; "
+				+ augroup + "; " + auexcludegroup + "; " + aurights + "; " + auprop + "; " + auwitheditsonly + "; "
+				+ auactiveusers);
+
 		this.aufrom = aufrom;
 		this.auto = auto;
 		this.auprefix = auprefix;

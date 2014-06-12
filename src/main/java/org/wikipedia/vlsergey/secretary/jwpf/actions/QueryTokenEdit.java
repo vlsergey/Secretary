@@ -8,15 +8,19 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public class QueryTokenEdit extends AbstractQueryAction {
+
 	String editToken;
 
 	public QueryTokenEdit(boolean bot, Revision revision) {
 		super(bot);
-		HttpPost postMethod = new HttpPost("/api.php");
 
+		log.info("[action=query; prop=info; intoken=edit]: " + revision);
+
+		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
 		setMaxLag(multipartEntity);
 		setFormatXml(multipartEntity);
+
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "info");
 		setParameter(multipartEntity, "revids", "" + revision.getId());
@@ -29,11 +33,14 @@ public class QueryTokenEdit extends AbstractQueryAction {
 
 	public QueryTokenEdit(boolean bot, String pageTitle) {
 		super(bot);
-		HttpPost postMethod = new HttpPost("/api.php");
 
+		log.info("[action=query; prop=info; intoken=edit]: " + pageTitle);
+
+		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
 		setMaxLag(multipartEntity);
 		setFormatXml(multipartEntity);
+
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "info");
 		setParameter(multipartEntity, "titles", pageTitle);

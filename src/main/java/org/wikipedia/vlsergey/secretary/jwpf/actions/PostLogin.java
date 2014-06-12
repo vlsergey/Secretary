@@ -64,11 +64,13 @@ public class PostLogin extends AbstractAPIAction {
 		this.username = username;
 		this.password = password;
 
-		HttpPost pm = new HttpPost("/api.php");
+		log.info("[action=login]: " + username);
 
+		HttpPost pm = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
 		setFormatXml(multipartEntity);
 		setMaxLag(multipartEntity);
+
 		setParameter(multipartEntity, "action", "login");
 		setParameter(multipartEntity, "lgname", username);
 		setParameter(multipartEntity, "lgpassword", password);

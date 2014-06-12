@@ -51,8 +51,9 @@ public class QueryRevisionsByCategoryMembers extends AbstractQueryRevisionsActio
 			RevisionPropery[] properties, String gcmcontinue) {
 		super(bot, properties);
 
-		log.info("queryRevisionsByCategoryMembers(" + gcmtitle + "; " + Arrays.toString(gcmnamespace) + " ;" + gcmtype
-				+ " ;" + Arrays.toString(properties) + "; " + gcmcontinue + ")");
+		log.info("[action=query; prop=revisions; generator=categorymembers]: " + gcmtitle + "; "
+				+ Arrays.toString(gcmnamespace) + "; " + gcmtype + "; " + Arrays.toString(properties) + "; "
+				+ gcmcontinue);
 
 		this.gcmtitle = gcmtitle;
 		this.gcmnamespace = gcmnamespace;

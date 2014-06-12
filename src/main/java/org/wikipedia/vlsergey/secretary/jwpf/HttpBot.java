@@ -21,6 +21,7 @@ package org.wikipedia.vlsergey.secretary.jwpf;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketException;
 import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
@@ -36,14 +37,13 @@ import org.apache.http.HeaderElement;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
+import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.AbstractHttpClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.ContentProcessable;
@@ -62,8 +62,6 @@ public abstract class HttpBot {
 
 	private static final Log log = LogFactory.getLog(HttpBot.class);
 
-	private static final Logger logger = LoggerFactory.getLogger(HttpBot.class);
-
 	/**
 	 * Returns the character set from the <tt>Content-Type</tt> header.
 	 * 
@@ -72,7 +70,7 @@ public abstract class HttpBot {
 	 * @return String The character set.
 	 */
 	protected static String getContentCharSet(Header contentheader) {
-		logger.trace("enter getContentCharSet( Header contentheader )");
+		log.trace("enter getContentCharSet( Header contentheader )");
 
 		String encoding = null;
 		if (contentheader != null) {
@@ -90,8 +88,8 @@ public abstract class HttpBot {
 		}
 		if (encoding == null) {
 			encoding = MediaWikiBot.ENCODING;
-			if (logger.isDebugEnabled()) {
-				logger.debug("Default charset used: " + encoding);
+			if (log.isDebugEnabled()) {
+				log.debug("Default charset used: " + encoding);
 			}
 		}
 		return encoding;
@@ -117,8 +115,9 @@ public abstract class HttpBot {
 				try {
 					action.validateReturningCookies(httpClient.getCookieStore().getCookies(), getMethod);
 
-					logger.debug("" + getMethod.getURI());
-					logger.debug("GET: " + httpResponse.getStatusLine().toString());
+					// logger.debug("" + getMethod.getURI());
+					// logger.debug("GET: " +
+					// httpResponse.getStatusLine().toString());
 
 					InputStream inputStream = httpResponse.getEntity().getContent();
 					String contentEncoding = httpResponse.getEntity().getContentEncoding() != null ? httpResponse
@@ -134,7 +133,7 @@ public abstract class HttpBot {
 					int statuscode = httpResponse.getStatusLine().getStatusCode();
 
 					if (statuscode == HttpStatus.SC_NOT_FOUND) {
-						logger.warn("Not Found: " + getMethod.getRequestLine().getUri());
+						log.warn("Not Found: " + getMethod.getRequestLine().getUri());
 
 						throw new FileNotFoundException(getMethod.getRequestLine().getUri());
 					}
@@ -175,12 +174,12 @@ public abstract class HttpBot {
 					if ((newuri == null) || (newuri.equals(""))) {
 						newuri = "/";
 					}
-					logger.debug("Redirect target: " + newuri);
+					log.debug("Redirect target: " + newuri);
 
 					HttpPost redirect = new HttpPost(newuri);
 					redirect.setEntity(postMethod.getEntity());
 					redirect.setHeader("Accept-Encoding", GZIP_CONTENT_ENCODING);
-					logger.info("GET: " + redirect.getURI());
+					log.trace("GET: " + redirect.getURI());
 					httpClient.execute(redirect, new ResponseHandler<Object>() {
 						@Override
 						public Object handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
@@ -224,7 +223,7 @@ public abstract class HttpBot {
 
 			action.validateReturningCookies(httpClient.getCookieStore().getCookies(), postMethod);
 
-			logger.debug(postMethod.getURI() + " || " + "POST: " + response.getStatusLine().toString());
+			log.trace(postMethod.getURI() + " || " + "POST: " + response.getStatusLine().toString());
 		} catch (CookieException exc) {
 			throw new ClientProtocolException(exc);
 		} catch (ProcessException exc) {
@@ -264,7 +263,7 @@ public abstract class HttpBot {
 					httpMethod.setURI(uri);
 				}
 
-				logger.debug("path is: " + httpMethod.getURI());
+				// logger.debug("path is: " + httpMethod.getURI());
 			}
 
 			try {
@@ -276,9 +275,21 @@ public abstract class HttpBot {
 							post((HttpPost) httpMethod, contentProcessable);
 						}
 						break;
+					} catch (NoHttpResponseException exc) {
+						log.info("NoHttpResponseException, wait 6 seconds");
+						try {
+							Thread.sleep(5 * 1000);
+						} catch (InterruptedException e) {
+						}
+					} catch (SocketException exc) {
+						log.info("SocketException, wait 6 seconds");
+						try {
+							Thread.sleep(5 * 1000);
+						} catch (InterruptedException e) {
+						}
 					} catch (DatabaseLagException exc) {
 						log.info("Database lag occured: " + exc.databaseLag);
-						int retryAfter = 5;
+						int retryAfter = 6;
 						try {
 							retryAfter = Integer.parseInt(exc.retryAfter.getValue());
 						} catch (Exception exc2) {
