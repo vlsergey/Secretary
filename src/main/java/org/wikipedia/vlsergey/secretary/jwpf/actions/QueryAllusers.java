@@ -56,10 +56,11 @@ public class QueryAllusers extends AbstractQueryAction implements MultiAction<Us
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "list", "allusers");
-		setParameter(multipartEntity, "format", "xml");
 
 		if (aufrom != null)
 			setParameter(multipartEntity, "aufrom", aufrom);

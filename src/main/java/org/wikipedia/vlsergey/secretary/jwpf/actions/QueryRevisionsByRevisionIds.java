@@ -41,6 +41,8 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
@@ -58,8 +60,6 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 		if (rvcontinue != null) {
 			setParameter(multipartEntity, "rvcontinue", rvcontinue.toString());
 		}
-
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 

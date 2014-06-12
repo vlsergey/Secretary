@@ -38,8 +38,9 @@ public class QueryExturlusage extends AbstractQueryAction implements MultiAction
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
-		setParameter(multipartEntity, "format", "xml");
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "list", "exturlusage");
 

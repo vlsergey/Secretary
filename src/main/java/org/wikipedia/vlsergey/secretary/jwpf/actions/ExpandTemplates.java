@@ -60,6 +60,8 @@ public class ExpandTemplates extends AbstractAPIAction {
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 		setParameter(multipartEntity, "action", "expandtemplates");
 		setParameter(multipartEntity, "text", text);
 
@@ -70,8 +72,6 @@ public class ExpandTemplates extends AbstractAPIAction {
 
 		if (includecomments)
 			setParameter(multipartEntity, "includecomments", "1");
-
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);

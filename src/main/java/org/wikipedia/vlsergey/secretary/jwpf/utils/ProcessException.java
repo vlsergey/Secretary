@@ -18,8 +18,6 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf.utils;
 
-import org.wikipedia.vlsergey.secretary.jwpf.actions.MWAction;
-
 /**
  * 
  * This exception can be used in children of {@link MWAction} to handle

@@ -11,6 +11,8 @@ public class QueryRevisionsByRevision extends AbstractQueryRevisionsAction {
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
@@ -21,8 +23,6 @@ public class QueryRevisionsByRevision extends AbstractQueryRevisionsAction {
 		if (rvgeneratexml) {
 			setParameter(multipartEntity, "rvgeneratexml", "1");
 		}
-
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);

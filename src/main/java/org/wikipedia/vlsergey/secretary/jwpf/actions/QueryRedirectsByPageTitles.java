@@ -19,11 +19,12 @@ public class QueryRedirectsByPageTitles extends AbstractQueryAction {
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "redirects", "redirects");
 		setParameter(multipartEntity, "titles", toStringParameters(pageTitles));
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);

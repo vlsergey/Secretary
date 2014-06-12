@@ -118,11 +118,11 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private static enum Dictionary {
 
-		ВИКИПЕДИЯ(Project.RUWIKISOURCE, StringUtils.EMPTY, StringUtils.EMPTY),
+		ВИКИПЕДИЯ(Project.RUWIKISOURCE, StringUtils.EMPTY, StringUtils.EMPTY, null),
 
-		ЛЕНТАПЕДИЯ(Project.RUWIKISOURCE, "Лентапедия/", StringUtils.EMPTY),
+		ЛЕНТАПЕДИЯ(Project.RUWIKISOURCE, "Лентапедия/", StringUtils.EMPTY, "лентапедия"),
 
-		ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ(Project.RUWIKISOURCE, "Лентапедия/", "/Полная версия"),
+		ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ(Project.RUWIKISOURCE, "Лентапедия/", "/Полная версия", "лентапедия"),
 
 		;
 
@@ -132,10 +132,13 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		public final String suffix;
 
-		private Dictionary(Project project, String prefix, String suffix) {
+		public final String titleTemplate;
+
+		private Dictionary(Project project, String prefix, String suffix, String titleTemplate) {
 			this.project = project;
 			this.prefix = prefix;
 			this.suffix = suffix;
+			this.titleTemplate = titleTemplate;
 		}
 
 		public String getPageTitle(String link) {
@@ -208,40 +211,43 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private boolean collectFromPage(List<Circle> circles, Dictionary dictionary, final String link, Revision revision)
 			throws Exception {
-		ArticleFragment article = ruWikisourceBot.getXmlParser().parse(revision);
-		final List<Template> titleTemplates = article.getAllTemplates().get("лентапедия");
-		if (titleTemplates == null || titleTemplates.isEmpty()) {
-			log.warn(revision.getPage() + " doesn't have 'лентапедия' template");
-			return false;
-		}
-		Template titleTemplate = titleTemplates.get(0);
-
 		boolean hasChanges = false;
 
-		final Circle circle;
-		List<Circle> matched = findByTitleTemplate(circles, titleTemplate);
-		if (matched.size() > 1) {
-			circles.removeAll(matched);
-			circle = Circle.merge(matched);
-			circles.add(circle);
-			matched.clear();
-			matched.add(circle);
-			hasChanges = true;
-		} else if (matched.isEmpty()) {
-			circle = new Circle();
-			circles.add(circle);
-			matched.add(circle);
-			hasChanges = true;
-		} else {
-			circle = matched.get(0);
+		if (StringUtils.isNotEmpty(dictionary.titleTemplate)) {
+			ArticleFragment article = ruWikisourceBot.getXmlParser().parse(revision);
+			final List<Template> titleTemplates = article.getAllTemplates().get(dictionary.titleTemplate);
+			if (titleTemplates == null || titleTemplates.isEmpty()) {
+				log.warn(revision.getPage() + " doesn't have «" + dictionary.titleTemplate + "» template");
+				return false;
+			}
+			Template titleTemplate = titleTemplates.get(0);
+
+			final Circle circle;
+			List<Circle> matched = findByTitleTemplate(circles, titleTemplate);
+			if (matched.size() > 1) {
+				circles.removeAll(matched);
+				circle = Circle.merge(matched);
+				circles.add(circle);
+				matched.clear();
+				matched.add(circle);
+				hasChanges = true;
+			} else if (matched.isEmpty()) {
+				circle = new Circle();
+				circles.add(circle);
+				matched.add(circle);
+				hasChanges = true;
+			} else {
+				circle = matched.get(0);
+			}
+
+			if (!circle.hasLink(dictionary, link)) {
+				circle.addLink(dictionary, link);
+				hasChanges = true;
+			}
+
+			hasChanges = circle.update(titleTemplate) || hasChanges;
 		}
 
-		if (!circle.hasLink(dictionary, link)) {
-			circle.addLink(dictionary, link);
-			hasChanges = true;
-		}
-
-		hasChanges = circle.update(titleTemplate) || hasChanges;
 		return hasChanges;
 	}
 

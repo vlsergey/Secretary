@@ -26,11 +26,15 @@ import java.util.AbstractList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.Vector;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.StringBody;
 import org.w3c.dom.Document;
@@ -41,10 +45,11 @@ import org.w3c.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ApiException;
+import org.wikipedia.vlsergey.secretary.jwpf.utils.CookieException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.xml.sax.InputSource;
 
-public abstract class AbstractAPIAction extends MWAction {
+public abstract class AbstractAPIAction implements ContentProcessable {
 
 	protected static class ListAdapter<T extends Node> extends AbstractList<T> {
 
@@ -70,10 +75,24 @@ public abstract class AbstractAPIAction extends MWAction {
 
 	}
 
+	protected static Log log = LogFactory.getLog(AbstractAPIAction.class);
+
+	public static final int MAXLAG = 0;
+
 	private static final SimpleDateFormat timestampDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
 	static {
 		timestampDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+	}
+
+	protected static String encode(String string) {
+		try {
+			String result = URLEncoder.encode(string, MediaWikiBot.CHARSET.name());
+			return result;
+		} catch (UnsupportedEncodingException e) {
+			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
+		}
+
 	}
 
 	protected static synchronized String format(Date date) {
@@ -110,7 +129,25 @@ public abstract class AbstractAPIAction extends MWAction {
 		}
 	}
 
+	protected static void setParameter(MultipartEntity multipartEntity, String name, int value) {
+		try {
+			multipartEntity.addPart(name, new StringBody(Integer.toString(value)));
+		} catch (UnsupportedEncodingException e) {
+			throw new Error("MediaWiki '" + MediaWikiBot.ENCODING + "' charset not supported by Java VM");
+		}
+	}
+
+	protected static void setParameter(MultipartEntity multipartEntity, String name, String value) {
+		try {
+			multipartEntity.addPart(name, new StringBody(value, MediaWikiBot.CHARSET));
+		} catch (UnsupportedEncodingException e) {
+			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
+		}
+	}
+
 	protected final boolean bot;
+
+	protected List<HttpRequestBase> msgs = new Vector<HttpRequestBase>();
 
 	public AbstractAPIAction(boolean bot) {
 		super();
@@ -127,6 +164,16 @@ public abstract class AbstractAPIAction extends MWAction {
 			log.error("MediaWiki encoding not supported: '" + MediaWikiBot.CHARSET + "': " + exc.getMessage(), exc);
 			throw new Error(exc.getMessage(), exc);
 		}
+	}
+
+	@Override
+	public boolean followRedirects() {
+		return true;
+	}
+
+	@Override
+	public final List<HttpRequestBase> getMessages() {
+		return msgs;
 	}
 
 	protected boolean isBot() {
@@ -158,6 +205,14 @@ public abstract class AbstractAPIAction extends MWAction {
 	@Override
 	public final void processReturningText(final HttpRequestBase hm, final String s) throws ProcessException {
 		parseResult(s);
+	}
+
+	protected void setFormatXml(MultipartEntity multipartEntity) {
+		setParameter(multipartEntity, "format", "xml");
+	}
+
+	protected void setMaxLag(MultipartEntity multipartEntity) {
+		setParameter(multipartEntity, "maxlag", MAXLAG);
 	}
 
 	protected String toStringParameters(int[] parameters) {
@@ -229,6 +284,11 @@ public abstract class AbstractAPIAction extends MWAction {
 		}
 
 		return stringBuilder.toString();
+	}
+
+	@Override
+	public void validateReturningCookies(List<Cookie> cs, HttpRequestBase hm) throws CookieException {
+		// no op
 	}
 
 }

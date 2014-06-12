@@ -51,7 +51,8 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
-		setParameter(multipartEntity, "format", "xml");
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "list", "unreviewedpages");

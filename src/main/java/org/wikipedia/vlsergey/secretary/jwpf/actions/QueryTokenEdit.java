@@ -15,12 +15,12 @@ public class QueryTokenEdit extends AbstractQueryAction {
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "info");
 		setParameter(multipartEntity, "revids", "" + revision.getId());
 		setParameter(multipartEntity, "intoken", "edit");
-
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 
@@ -32,12 +32,12 @@ public class QueryTokenEdit extends AbstractQueryAction {
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "info");
 		setParameter(multipartEntity, "titles", pageTitle);
 		setParameter(multipartEntity, "intoken", "edit");
-
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 

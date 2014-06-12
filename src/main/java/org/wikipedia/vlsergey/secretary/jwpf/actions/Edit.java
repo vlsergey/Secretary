@@ -37,6 +37,9 @@ public class Edit extends AbstractAPIAction {
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
+
 		setParameter(multipartEntity, "action", "edit");
 		setParameter(multipartEntity, "title", page.getTitle());
 		setParameter(multipartEntity, "token", token);
@@ -57,8 +60,6 @@ public class Edit extends AbstractAPIAction {
 
 		setParameter(multipartEntity, "basetimestamp", revision.getTimestamp());
 		setParameter(multipartEntity, "nocreate", "1");
-
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 

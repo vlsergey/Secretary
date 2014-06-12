@@ -29,6 +29,8 @@ import java.util.zip.GZIPInputStream;
 import javax.annotation.PostConstruct;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.http.Header;
 import org.apache.http.HeaderElement;
 import org.apache.http.HttpResponse;
@@ -55,7 +57,10 @@ import org.wikipedia.vlsergey.secretary.utils.IoUtils;
  * @author Thomas Stock
  */
 public abstract class HttpBot {
+
 	private static final String GZIP_CONTENT_ENCODING = "gzip";
+
+	private static final Log log = LogFactory.getLog(HttpBot.class);
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpBot.class);
 
@@ -188,6 +193,12 @@ public abstract class HttpBot {
 				}
 			}
 
+			final Header databaseLag = response.getFirstHeader("X-Database-Lag");
+			final Header retryAfter = response.getFirstHeader("Retry-After");
+			if (databaseLag != null) {
+				throw new DatabaseLagException(databaseLag, retryAfter);
+			}
+
 			InputStream inputStream = response.getEntity().getContent();
 			String out;
 			try {
@@ -257,10 +268,30 @@ public abstract class HttpBot {
 			}
 
 			try {
-				if (httpMethod instanceof HttpGet) {
-					get((HttpGet) httpMethod, contentProcessable);
-				} else {
-					post((HttpPost) httpMethod, contentProcessable);
+				while (true) {
+					try {
+						if (httpMethod instanceof HttpGet) {
+							get((HttpGet) httpMethod, contentProcessable);
+						} else {
+							post((HttpPost) httpMethod, contentProcessable);
+						}
+						break;
+					} catch (DatabaseLagException exc) {
+						log.info("Database lag occured: " + exc.databaseLag);
+						int retryAfter = 5;
+						try {
+							retryAfter = Integer.parseInt(exc.retryAfter.getValue());
+						} catch (Exception exc2) {
+							// ignore
+						}
+						if (retryAfter != 0) {
+							log.info("Waiting for " + retryAfter + " seconds");
+							try {
+								Thread.sleep(retryAfter * 1000);
+							} catch (InterruptedException e) {
+							}
+						}
+					}
 				}
 			} catch (IOException e1) {
 				throw new ActionException(e1);

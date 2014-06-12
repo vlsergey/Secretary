@@ -11,13 +11,14 @@ public class QueryRevisionsByPageIds extends AbstractQueryRevisionsAction {
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
 
 		setParameter(multipartEntity, "pageids", toStringParameters(pageIds));
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);

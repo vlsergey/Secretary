@@ -35,6 +35,8 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
@@ -49,7 +51,6 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 		}
 
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);

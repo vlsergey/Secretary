@@ -37,7 +37,9 @@ public class QueryCategorymembers extends AbstractQueryAction implements MultiAc
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
 
-		setParameter(multipartEntity, "format", "xml");
+		setFormatXml(multipartEntity);
+		setMaxLag(multipartEntity);
+
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "list", "categorymembers");
 

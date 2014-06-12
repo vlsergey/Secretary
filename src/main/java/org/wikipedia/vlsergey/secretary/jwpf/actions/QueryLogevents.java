@@ -84,8 +84,9 @@ public class QueryLogevents extends AbstractQueryAction implements MultiAction<L
 		this.leuser = leuser;
 
 		setParameter(multipartEntity, "action", "query");
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 		setParameter(multipartEntity, "list", "logevents");
-		setParameter(multipartEntity, "format", "xml");
 
 		if (ledir != null)
 			setParameter(multipartEntity, "ledir", ledir.getQueryString());

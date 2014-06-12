@@ -27,6 +27,8 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction impleme
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
@@ -40,7 +42,6 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction impleme
 
 		setParameter(multipartEntity, "rvlimit", "" + getLimit());
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);

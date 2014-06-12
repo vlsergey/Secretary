@@ -179,7 +179,7 @@ public class MediaWikiBot extends HttpBot {
 		for (int i = 0; i < 5; i++) {
 			logger.info("Login as " + getLogin());
 			try {
-				PostLogin postLogin = new PostLogin(getLogin(), getPassword());
+				PostLogin postLogin = new PostLogin(isBot(), getLogin(), getPassword());
 				performAction(postLogin);
 
 				if (postLogin.needConfirmation()) {

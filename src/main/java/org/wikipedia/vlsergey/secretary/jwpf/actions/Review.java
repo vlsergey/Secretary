@@ -33,8 +33,10 @@ public class Review extends AbstractAPIAction {
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
+
 		setParameter(multipartEntity, "action", "review");
-		setParameter(multipartEntity, "format", "xml");
 		setParameter(multipartEntity, "token", token);
 
 		setParameter(multipartEntity, "revid", revision.getId().toString());

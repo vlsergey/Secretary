@@ -18,32 +18,24 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.text.ParseException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.mime.MultipartEntity;
-import org.jdom.DataConversionException;
-import org.jdom.Document;
-import org.jdom.Element;
-import org.jdom.JDOMException;
-import org.jdom.input.SAXBuilder;
+import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ActionException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.LoginData;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.TicketData;
-import org.xml.sax.InputSource;
 
 /**
  * 
  * @author Thomas Stock
  * @supportedBy MediaWiki 1.9.x
  */
-public class PostPostLogin extends MWAction {
+public class PostPostLogin extends AbstractAPIAction {
 
 	private static final Log log = LogFactory.getLog(PostPostLogin.class);
 
@@ -64,35 +56,18 @@ public class PostPostLogin extends MWAction {
 	 * @param pw
 	 *            password
 	 */
-	protected PostPostLogin(final TicketData ticketData, String username,
-			final String password) {
+	protected PostPostLogin(boolean isBot, final TicketData ticketData, String username, final String password) {
+		super(isBot);
 		HttpPost pm = new HttpPost("/api.php?action=login&format=xml");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setParameter(multipartEntity, "maxlag", MAXLAG);
 		setParameter(multipartEntity, "lgname", username);
 		setParameter(multipartEntity, "lgpassword", password);
 		setParameter(multipartEntity, "lgtoken", ticketData.getToken());
 
 		pm.setEntity(multipartEntity);
 		msgs.add(pm);
-	}
-
-	private void findContent(final Element api) {
-		Element login = api.getChild("login");
-		String result = login.getAttributeValue("result");
-		if (result.equalsIgnoreCase(success)) {
-			try {
-				this.login = new LoginData(login.getAttribute("lguserid")
-						.getIntValue(), login.getAttributeValue("lgusername"),
-						login.getAttributeValue("lgtoken"));
-			} catch (DataConversionException e) {
-				e.printStackTrace();
-			}
-		} else if (result.equalsIgnoreCase(wrongPass)) {
-			exceptionText = "Wrong Password";
-		} else if (result.equalsIgnoreCase(notExists)) {
-			exceptionText = "No sutch User";
-		}
 	}
 
 	public LoginData getLoginData() throws ActionException {
@@ -102,28 +77,22 @@ public class PostPostLogin extends MWAction {
 		return login;
 	}
 
-	/**
-	 * @param s
-	 *            incomming
-	 * @return after testing
-	 */
 	@Override
-	public void processReturningText(final HttpRequestBase hm, final String s)
-			throws ProcessException {
-		SAXBuilder builder = new SAXBuilder();
-		Element root = null;
-		try {
-			Reader i = new StringReader(s);
-			Document doc = builder.build(new InputSource(i));
-
-			root = doc.getRootElement();
-
-		} catch (JDOMException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+	protected void parseAPI(org.w3c.dom.Element root) throws ProcessException, ParseException {
+		Element login = (Element) root.getElementsByTagName("login").item(0);
+		String result = login.getAttribute("result");
+		if (result.equalsIgnoreCase(success)) {
+			try {
+				this.login = new LoginData(Integer.parseInt(login.getAttribute("lguserid")),
+						login.getAttribute("lgusername"), login.getAttribute("lgtoken"));
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+			}
+		} else if (result.equalsIgnoreCase(wrongPass)) {
+			exceptionText = "Wrong Password";
+		} else if (result.equalsIgnoreCase(notExists)) {
+			exceptionText = "No sutch User";
 		}
-		log.debug(s);
-		findContent(root);
 	}
+
 }

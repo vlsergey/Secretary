@@ -12,6 +12,8 @@ public class QueryRevisionsByPageTitles extends AbstractQueryRevisionsAction {
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setMaxLag(multipartEntity);
+		setFormatXml(multipartEntity);
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "revisions");
@@ -22,7 +24,6 @@ public class QueryRevisionsByPageTitles extends AbstractQueryRevisionsAction {
 
 		setParameter(multipartEntity, "titles", toStringParameters(pageTitles));
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
-		setParameter(multipartEntity, "format", "xml");
 
 		postMethod.setEntity(multipartEntity);
 		msgs.add(postMethod);
