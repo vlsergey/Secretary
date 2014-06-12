@@ -23,11 +23,12 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.ExpandTemplates;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.MultiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.PostLogin;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryAllusers;
-import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryCategorymembers;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinPageIds;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryEmbeddedinTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryExturlusage;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRedirectsByPageTitles;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByEmbeddedIn;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageId;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageIds;
@@ -38,8 +39,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevisionIds
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryUnreviewedPages;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.Review;
-import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
-import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ExternalUrl;
 import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
@@ -336,15 +335,6 @@ public class MediaWikiBot extends HttpBot {
 		return performMultiAction(queryAllusers);
 	}
 
-	public Iterable<CategoryMember> queryCategoryMembers(String categoryTitle, CategoryMemberType type,
-			Namespace... namespaces) throws ActionException {
-		logger.info("queryCategoryMembers(" + categoryTitle + ", " + type + ", " + Arrays.toString(namespaces) + ")");
-
-		QueryCategorymembers a = new QueryCategorymembers(isBot(), categoryTitle, createNsString(namespaces),
-				type.getQueryString());
-		return performMultiAction(a);
-	}
-
 	public Iterable<Long> queryEmbeddedInPageIds(String template, Namespace... namespaces) throws ActionException {
 		logger.info("queryEmbeddedInPageIds(" + template + ", " + Arrays.toString(namespaces) + ")");
 
@@ -426,6 +416,14 @@ public class MediaWikiBot extends HttpBot {
 				return result;
 			}
 		}.makeBatched(isBot() ? 500 : 50);
+	}
+
+	public Iterable<ParsedPage> queryPagesWithRevisionByCategoryMembers(String title, Namespace[] namespaces,
+			CmType type, RevisionPropery[] properties) throws ActionException, ProcessException {
+
+		QueryRevisionsByCategoryMembers query = new QueryRevisionsByCategoryMembers(isBot(), title, namespaces, type,
+				properties);
+		return performMultiAction(query);
 	}
 
 	public Iterable<ParsedPage> queryPagesWithRevisionByEmbeddedIn(String embeddedIn, Namespace[] namespaces,

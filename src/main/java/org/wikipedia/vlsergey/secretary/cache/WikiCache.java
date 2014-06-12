@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
@@ -76,6 +78,16 @@ public class WikiCache {
 				pageTitle, null, direction, FAST));
 
 		return queryRevisionsImplF().apply(revisionIdHolders);
+	}
+
+	public Iterable<Revision> queryByCaterogyMembers(String title, Namespace[] namespaces, CmType type) {
+		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByCategoryMembers(title, namespaces,
+				type, new RevisionPropery[] { RevisionPropery.IDS }));
+	}
+
+	public Iterable<Revision> queryByEmbeddedIn(String title, Namespace[] namespaces) {
+		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByEmbeddedIn(title, namespaces,
+				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
 	public Iterable<Revision> queryContentByPagesAndRevisions(Iterable<ParsedPage> pagesWithLatestsRevisions)

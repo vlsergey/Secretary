@@ -38,7 +38,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Component
@@ -131,9 +130,7 @@ public class CountBooks implements Runnable {
 		// wikiCache.queryLatestContentByPageIds(mediaWikiBot.queryEmbeddedInPageIds(
 		// "Template:Книга", Namespaces.MAIN))) {
 
-		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
-				.queryPagesWithRevisionByEmbeddedIn("Template:Книга", new Namespace[] { Namespace.MAIN },
-						new RevisionPropery[] { RevisionPropery.IDS }))) {
+		for (Revision revision : wikiCache.queryByEmbeddedIn("Template:Книга", new Namespace[] { Namespace.MAIN })) {
 
 			final Page page = revision.getPage();
 			final String title = page.getTitle();

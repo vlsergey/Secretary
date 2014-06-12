@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,8 +26,7 @@ import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.WikidataBot;
-import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
-import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -177,23 +175,6 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 	@Autowired
 	private WikidataBot wikidataBot;
 
-	private boolean collectFromPage(CategoryMember categoryMember, List<Circle> circles, Map<String, String> errors)
-			throws Exception {
-
-		final String pageTitle = categoryMember.getPageTitle();
-		Dictionary dictionary = pageTitle.endsWith("/Полная версия") ? Dictionary.ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ
-				: Dictionary.ЛЕНТАПЕДИЯ;
-		final String link;
-		if (dictionary == Dictionary.ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ) {
-			link = StringUtils.substringBetween(pageTitle, "Лентапедия/", "/Полная версия");
-		} else {
-			link = StringUtils.substringAfter(pageTitle, "Лентапедия/");
-		}
-
-		Revision revision = ruWikisourceCache.queryLatestRevision(pageTitle);
-		return collectFromPage(circles, dictionary, link, revision);
-	}
-
 	private boolean collectFromPage(List<Circle> circles, Dictionary dictionary, String link) throws Exception {
 		final WikiCache wikiCache;
 		if (dictionary.project == Project.RUWIKIPEDIA) {
@@ -272,14 +253,23 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private void runImpl() throws Exception {
 		List<Circle> circles = new ArrayList<Circle>();
-		Map<String, String> errors = new LinkedHashMap<String, String>();
 
-		for (CategoryMember categoryMember : ruWikisourceBot.queryCategoryMembers("Category:Лентапедия",
-				CategoryMemberType.PAGE, Namespace.MAIN)) {
-			if (!categoryMember.getPageTitle().startsWith("Лентапедия/")) {
+		for (Revision revision : ruWikisourceCache.queryByCaterogyMembers("Category:Лентапедия",
+				new Namespace[] { Namespace.MAIN }, CmType.page)) {
+			if (!revision.getPage().getTitle().startsWith("Лентапедия/")) {
 				continue;
 			}
-			collectFromPage(categoryMember, circles, errors);
+
+			final String pageTitle = revision.getPage().getTitle();
+			Dictionary dictionary = pageTitle.endsWith("/Полная версия") ? Dictionary.ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ
+					: Dictionary.ЛЕНТАПЕДИЯ;
+			final String link;
+			if (dictionary == Dictionary.ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ) {
+				link = StringUtils.substringBetween(pageTitle, "Лентапедия/", "/Полная версия");
+			} else {
+				link = StringUtils.substringAfter(pageTitle, "Лентапедия/");
+			}
+			collectFromPage(circles, dictionary, link, revision);
 		}
 
 		boolean hasChanges = true;
@@ -297,5 +287,4 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			}
 		}
 	}
-
 }

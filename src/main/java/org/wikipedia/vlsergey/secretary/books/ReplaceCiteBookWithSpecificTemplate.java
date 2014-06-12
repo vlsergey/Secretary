@@ -32,7 +32,6 @@ import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
@@ -327,18 +326,14 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	@Override
 	public void run() {
-		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
-				.queryPagesWithRevisionByEmbeddedIn("Template:Книга", new Namespace[] { Namespace.MAIN },
-						new RevisionPropery[] { RevisionPropery.IDS }))) {
+		for (Revision revision : wikiCache.queryByEmbeddedIn("Template:Книга", new Namespace[] { Namespace.MAIN })) {
 			try {
 				process(revision);
 			} catch (Exception exc) {
 				log.error("Unable to process with " + revision + ": " + exc, exc);
 			}
 		}
-		for (Revision revision : wikiCache.queryContentByPagesAndRevisions(mediaWikiBot
-				.queryPagesWithRevisionByEmbeddedIn("Template:Cite book", new Namespace[] { Namespace.MAIN },
-						new RevisionPropery[] { RevisionPropery.IDS }))) {
+		for (Revision revision : wikiCache.queryByEmbeddedIn("Template:Cite book", new Namespace[] { Namespace.MAIN })) {
 			try {
 				process(revision);
 			} catch (Exception exc) {

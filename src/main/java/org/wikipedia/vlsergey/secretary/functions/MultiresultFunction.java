@@ -53,20 +53,4 @@ public abstract class MultiresultFunction<A, B> extends Function<Iterable<A>, It
 			}
 		};
 	}
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public MultiresultFunction<A, B> sortResults() {
-		final MultiresultFunction<A, B> sourceFunction = this;
-		return new MultiresultFunction<A, B>() {
-			@Override
-			public Iterable<B> apply(Iterable<A> a) {
-				List<B> results = new ArrayList<B>();
-				for (B b : sourceFunction.apply(a)) {
-					results.add(b);
-				}
-				Collections.sort((List<Comparable>) results);
-				return results;
-			}
-		};
-	}
 }
