@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
-import org.wikipedia.vlsergey.secretary.cache.XmlCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
@@ -30,6 +30,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.WikidataBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMember;
 import org.wikipedia.vlsergey.secretary.jwpf.model.CategoryMemberType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
@@ -87,7 +88,8 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			return false;
 		}
 
-		public void update(Template titleTemplate) {
+		public boolean update(Template titleTemplate) {
+			boolean hasChanges = false;
 			for (TemplatePart templatePart : titleTemplate.getParameters()) {
 				final String name = templatePart.getCanonicalName();
 				final String strValue = templatePart.getValue().toWiki(true).trim();
@@ -105,20 +107,40 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 					unknownValues.get(name).add(templatePart.getValue());
 					continue;
 				}
-				addLink(dictionary, strValue);
+				if (!hasLink(dictionary, strValue)) {
+					addLink(dictionary, strValue);
+					hasChanges = true;
+				}
 			}
+			return hasChanges;
 		}
 	}
 
 	private static enum Dictionary {
 
-		ВИКИПЕДИЯ,
+		ВИКИПЕДИЯ(Project.RUWIKISOURCE, StringUtils.EMPTY, StringUtils.EMPTY),
 
-		ЛЕНТАПЕДИЯ,
+		ЛЕНТАПЕДИЯ(Project.RUWIKISOURCE, "Лентапедия/", StringUtils.EMPTY),
 
-		ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ,
+		ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ(Project.RUWIKISOURCE, "Лентапедия/", "/Полная версия"),
 
 		;
+
+		public final String prefix;
+
+		public final Project project;
+
+		public final String suffix;
+
+		private Dictionary(Project project, String prefix, String suffix) {
+			this.project = project;
+			this.prefix = prefix;
+			this.suffix = suffix;
+		}
+
+		public String getPageTitle(String link) {
+			return prefix + link + suffix;
+		}
 	}
 
 	private static final Set<String> IGNORED_FIELDS = new HashSet<String>(Arrays.asList("id", "обновлено",
@@ -150,33 +172,9 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 	private WikiCache ruWikisourceCache;
 
 	@Autowired
-	@Qualifier("ruWikisourceXmlCache")
-	private XmlCache ruWikisourceXmlCache;
-
-	@Autowired
 	private WikidataBot wikidataBot;
 
-	private Circle findByTitleTemplate(List<Circle> circles, Template titleTemplate) {
-		List<Circle> matched = new LinkedList<Circle>();
-		for (Circle circle : circles) {
-			if (circle.matches(titleTemplate)) {
-				matched.add(circle);
-			}
-		}
-		if (matched.size() > 1) {
-			circles.removeAll(matched);
-			Circle circle = Circle.merge(matched);
-			circles.add(circle);
-			matched.clear();
-			matched.add(circle);
-		}
-		if (matched.isEmpty()) {
-			return null;
-		}
-		return matched.get(0);
-	}
-
-	private void processPage(CategoryMember categoryMember, List<Circle> circles, Map<String, String> errors)
+	private boolean collectFromPage(CategoryMember categoryMember, List<Circle> circles, Map<String, String> errors)
 			throws Exception {
 
 		final String pageTitle = categoryMember.getPageTitle();
@@ -189,22 +187,72 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			link = StringUtils.substringAfter(pageTitle, "Лентапедия/");
 		}
 
-		Revision revision = ruWikisourceCache.queryLatestRevision(categoryMember.getPageId());
+		Revision revision = ruWikisourceCache.queryLatestRevision(pageTitle);
+		return collectFromPage(circles, dictionary, link, revision);
+	}
+
+	private boolean collectFromPage(List<Circle> circles, Dictionary dictionary, String link) throws Exception {
+		final WikiCache wikiCache;
+		if (dictionary.project == Project.RUWIKIPEDIA) {
+			wikiCache = ruWikipediaCache;
+		} else if (dictionary.project == Project.RUWIKIPEDIA) {
+			wikiCache = ruWikisourceCache;
+		} else {
+			throw new IllegalArgumentException("Unknown project: " + dictionary.project);
+		}
+
+		String title = dictionary.getPageTitle(link);
+		Revision revision = wikiCache.queryLatestRevision(title);
+		return collectFromPage(circles, dictionary, link, revision);
+	}
+
+	private boolean collectFromPage(List<Circle> circles, Dictionary dictionary, final String link, Revision revision)
+			throws Exception {
 		ArticleFragment article = ruWikisourceBot.getXmlParser().parse(revision);
 		final List<Template> titleTemplates = article.getAllTemplates().get("лентапедия");
 		if (titleTemplates == null || titleTemplates.isEmpty()) {
 			log.warn(revision.getPage() + " doesn't have 'лентапедия' template");
-			return;
+			return false;
 		}
 		Template titleTemplate = titleTemplates.get(0);
 
-		Circle circle = findByTitleTemplate(circles, titleTemplate);
-		if (circle == null) {
+		boolean hasChanges = false;
+
+		final Circle circle;
+		List<Circle> matched = findByTitleTemplate(circles, titleTemplate);
+		if (matched.size() > 1) {
+			circles.removeAll(matched);
+			circle = Circle.merge(matched);
+			circles.add(circle);
+			matched.clear();
+			matched.add(circle);
+			hasChanges = true;
+		} else if (matched.isEmpty()) {
 			circle = new Circle();
 			circles.add(circle);
+			matched.add(circle);
+			hasChanges = true;
+		} else {
+			circle = matched.get(0);
 		}
-		circle.addLink(dictionary, link);
-		circle.update(titleTemplate);
+
+		if (!circle.hasLink(dictionary, link)) {
+			circle.addLink(dictionary, link);
+			hasChanges = true;
+		}
+
+		hasChanges = circle.update(titleTemplate) || hasChanges;
+		return hasChanges;
+	}
+
+	private List<Circle> findByTitleTemplate(List<Circle> circles, Template titleTemplate) {
+		List<Circle> matched = new LinkedList<Circle>();
+		for (Circle circle : circles) {
+			if (circle.matches(titleTemplate)) {
+				matched.add(circle);
+			}
+		}
+		return matched;
 	}
 
 	@Override
@@ -225,8 +273,23 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			if (!categoryMember.getPageTitle().startsWith("Лентапедия/")) {
 				continue;
 			}
-			processPage(categoryMember, circles, errors);
+			collectFromPage(categoryMember, circles, errors);
 		}
 
+		boolean hasChanges = true;
+		while (hasChanges) {
+			hasChanges = false;
+			for (int i = 0; i < circles.size(); i++) {
+				Circle circle = circles.get(i);
+				Set<Dictionary> copyKeys = new HashSet<Dictionary>(circle.links.keySet());
+				for (Dictionary dictionary : copyKeys) {
+					Set<String> copyValues = new LinkedHashSet<String>(circle.links.get(dictionary));
+					for (String link : copyValues) {
+						hasChanges = collectFromPage(circles, dictionary, link) || hasChanges;
+					}
+				}
+			}
+		}
 	}
+
 }
