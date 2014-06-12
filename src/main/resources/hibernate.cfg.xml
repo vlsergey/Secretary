@@ -9,6 +9,5 @@
 
 		<mapping class="org.wikipedia.vlsergey.secretary.trust.PageRevisionChunksLength" />
 		<mapping class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorship" />
-		<mapping class="org.wikipedia.vlsergey.secretary.trust.ToDateArticleRevision" />
 	</session-factory>
 </hibernate-configuration>

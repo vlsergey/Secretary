@@ -4,6 +4,7 @@ import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Calendar;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -193,7 +195,8 @@ public class RevisionAuthorshipCalculator {
 
 	private static final int CONTEXT_CACHES_SIZE = 1000;
 
-	private static final DecimalFormat decimalFormat = new DecimalFormat("#####0.00");
+	private static final DecimalFormat decimalFormat = new DecimalFormat("#####0.00",
+			DecimalFormatSymbols.getInstance(Locale.US));
 
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipCalculator.class);
 
@@ -258,9 +261,6 @@ public class RevisionAuthorshipCalculator {
 	@Autowired
 	private RevisionAuthorshipDao revisionAuthorshipDao;
 
-	@Autowired
-	private ToDateArticleRevisionDao toDateArticleRevisionDao;
-
 	private WikiCache wikiCache;
 
 	public RevisionAuthorshipCalculator() {
@@ -287,7 +287,7 @@ public class RevisionAuthorshipCalculator {
 		final Lock lock = articleLocks[lockIndex];
 		lock.lock();
 		try {
-			return getAuthorshipImpl(page, latestRevisionInfo, lastPossibleEditTimestamp);
+			return getAuthorshipImpl(page, latestRevisionInfo);
 		} finally {
 			lock.unlock();
 		}
@@ -358,12 +358,10 @@ public class RevisionAuthorshipCalculator {
 		return null;
 	}
 
-	private TextChunkList getAuthorshipImpl(Page page, final Revision latestRevisionInfo,
-			final Date lastPossibleEditTimestamp) throws Exception, InterruptedException, ExecutionException {
+	private TextChunkList getAuthorshipImpl(Page page, final Revision latestRevisionInfo) throws Exception,
+			InterruptedException, ExecutionException {
 
-		if (latestRevisionInfo.getTimestamp() != null
-				&& (lastPossibleEditTimestamp == null || latestRevisionInfo.getTimestamp().before(
-						lastPossibleEditTimestamp))) {
+		{
 			/*
 			 * если контрольная дата не установлена или если текущая последняя
 			 * версия сделана до контрольной даты -- значит изучаем последнюю
@@ -378,27 +376,6 @@ public class RevisionAuthorshipCalculator {
 			if (chunks != null) {
 				return chunks;
 			}
-		} else {
-			/*
-			 * Нужно узнать, какая именно версия сделана ДО установленной
-			 * контрольной даты (если это не текущая последняя). Может быть, у
-			 * нас есть эта информация в кеше?
-			 */
-			final ToDateArticleRevision toDateRevisionInfo = toDateArticleRevisionDao.find(getProject(), page,
-					lastPossibleEditTimestamp);
-
-			if (toDateRevisionInfo != null) {
-				TextChunkList chunks = getAuthorshipFromDatabaseImpl(toDateRevisionInfo.getRevisionId(),
-						new Callable<String>() {
-							@Override
-							public String call() throws Exception {
-								return wikiCache.queryRevision(toDateRevisionInfo.getRevisionId()).getContent();
-							}
-						});
-				if (chunks != null) {
-					return chunks;
-				}
-			}
 		}
 
 		final String pageTitle = page.getTitle();
@@ -407,18 +384,7 @@ public class RevisionAuthorshipCalculator {
 			return null;
 		}
 
-		Revision revisionToResearchId = null;
-		if (lastPossibleEditTimestamp == null) {
-			revisionToResearchId = pageContext.queryLatestRevision();
-		} else {
-			revisionToResearchId = pageContext.getRevisionInfoJustBefore(lastPossibleEditTimestamp);
-
-			if (revisionToResearchId != null
-					&& !revisionToResearchId.equals(pageContext.queryLatestRevisionInfo().getId())) {
-				toDateArticleRevisionDao.store(getProject(), page, lastPossibleEditTimestamp,
-						revisionToResearchId.getId());
-			}
-		}
+		Revision revisionToResearchId = pageContext.queryLatestRevision();
 
 		if (revisionToResearchId == null) {
 			return null;
@@ -768,8 +734,10 @@ public class RevisionAuthorshipCalculator {
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.append("local result = {\n");
 			for (Entry<String, MutableDouble> entry : byUser.entrySet()) {
-				stringBuilder.append("\t{\"" + entry.getKey() + "\", "
-						+ decimalFormat.format(entry.getValue().doubleValue()) + "}");
+				final double value = entry.getValue().doubleValue();
+				if (value > 0.1) {
+					stringBuilder.append("\t{\"" + entry.getKey() + "\", " + decimalFormat.format(value) + "},\n");
+				}
 			}
 			stringBuilder.append("}\n");
 			stringBuilder.append("return result;\n");

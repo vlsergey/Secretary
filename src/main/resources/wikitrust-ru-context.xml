@@ -14,9 +14,6 @@
 	<bean id="revisionAuthorshipDao"
 		class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorshipDao"
 		p:sessionFactory-ref="sessionFactory" />
-	<bean id="toDateArticleRevisionDao"
-		class="org.wikipedia.vlsergey.secretary.trust.ToDateArticleRevisionDao"
-		p:sessionFactory-ref="sessionFactory" />
 
 	<bean id="ruRevisionAuthorshipCalculator"
 		class="org.wikipedia.vlsergey.secretary.trust.RevisionAuthorshipCalculator">
