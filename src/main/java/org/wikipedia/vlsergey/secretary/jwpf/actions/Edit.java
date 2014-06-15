@@ -45,7 +45,6 @@ public class Edit extends AbstractAPIAction {
 
 		setParameter(multipartEntity, "action", "edit");
 		setParameter(multipartEntity, "title", page.getTitle());
-		setParameter(multipartEntity, "token", token);
 		setParameter(multipartEntity, "text", text);
 
 		setParameter(multipartEntity, "summary", summary);
@@ -63,6 +62,7 @@ public class Edit extends AbstractAPIAction {
 
 		setParameter(multipartEntity, "basetimestamp", revision.getTimestamp());
 		setParameter(multipartEntity, "nocreate", "1");
+		setParameter(multipartEntity, "token", token);
 
 		postMethod.setEntity(multipartEntity);
 
