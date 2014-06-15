@@ -534,7 +534,7 @@ public class MediaWikiBot extends HttpBot {
 		this.xmlParser = xmlParser;
 	}
 
-	public void writeContent(final Revision currentRevision, final String text, final String summary,
+	public synchronized void writeContent(final Revision currentRevision, final String text, final String summary,
 			final boolean minor) throws ActionException, ProcessException {
 		logger.info("writeContent: " + currentRevision.getPage().getTitle());
 		if (!isLoggedIn())
@@ -546,7 +546,7 @@ public class MediaWikiBot extends HttpBot {
 		performAction(edit);
 	}
 
-	public void writeContent(final String pageTitle, final String prependText, final String text,
+	public synchronized void writeContent(final String pageTitle, final String prependText, final String text,
 			final String appendText, final String summary, final boolean minor, final boolean nocreate)
 			throws ActionException, ProcessException {
 		logger.info("writeContent: " + pageTitle);
