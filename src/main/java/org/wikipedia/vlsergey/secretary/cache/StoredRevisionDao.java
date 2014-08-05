@@ -40,11 +40,11 @@ public class StoredRevisionDao {
 
 	@SuppressWarnings("unchecked")
 	public List<Long> getAllRevisionIds() {
-		return template.find("SELECT revisions.id FROM Revision revisions ORDER BY id");
+		return (List) template.find("SELECT revisions.id FROM Revision revisions ORDER BY id");
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public List<StoredRevision> getOrCreate(Project project, Iterable<Revision> withContent) {
+	public List<StoredRevision> getOrCreate(Project project, Iterable<? extends Revision> withContent) {
 		List<StoredRevision> result = new ArrayList<StoredRevision>();
 		for (Revision source : withContent) {
 			result.add(getOrCreate(project, source));

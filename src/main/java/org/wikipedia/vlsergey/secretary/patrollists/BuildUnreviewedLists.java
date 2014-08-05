@@ -59,6 +59,10 @@ public class BuildUnreviewedLists implements Runnable {
 
 		} catch (Exception exc) {
 			logger.error("" + exc, exc);
+		} finally {
+			this.allNamespacesNoRedirects.clear();
+			this.allNamespacesRedirects.clear();
+			this.redirects.clear();
 		}
 	}
 

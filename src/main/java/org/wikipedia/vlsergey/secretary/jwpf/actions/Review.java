@@ -25,7 +25,7 @@ import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
-public class Review extends AbstractAPIAction {
+public class Review extends AbstractApiXmlAction {
 
 	public Review(boolean bot, Revision revision, String token, String comment, Boolean unapprove, Integer flag_accuracy) {
 		super(bot);

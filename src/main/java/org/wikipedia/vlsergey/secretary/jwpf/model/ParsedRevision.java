@@ -26,7 +26,7 @@ import javax.persistence.Transient;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
 import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
-public class ParsedRevisionImpl implements Revision {
+public class ParsedRevision implements Revision {
 
 	private Boolean anon;
 
@@ -52,7 +52,7 @@ public class ParsedRevisionImpl implements Revision {
 
 	private String user = null;
 
-	public ParsedRevisionImpl(Page page) {
+	public ParsedRevision(Page page) {
 		this.page = page;
 	}
 

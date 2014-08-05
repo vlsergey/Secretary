@@ -26,10 +26,11 @@
 	<import resource="bot-ruwiki-context.xml" />
 	<import resource="bot-ruwikisource-context.xml" />
 	<import resource="bot-wikidata-context.xml" />
-<!-- 	<import resource="bot-ukwiki-context.xml" /> -->
+	<!-- <import resource="bot-ukwiki-context.xml" /> -->
 	<!-- <import resource="gost-context.xml" /> -->
 	<!-- <import resource="patrolauto-context.xml" /> -->
 	<import resource="patrollists-context.xml" />
+	<!-- <import resource="tasks-context.xml" /> -->
 
 	<import resource="wikidata-import-context.xml" />
 	<import resource="wikitrust-ru-context.xml" />

@@ -42,7 +42,7 @@ public class RevisionAuthorshipDao {
 	@SuppressWarnings("unchecked")
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)
 	public List<Long> getAllRevisionIds(Project project) {
-		return template.find("SELECT key.revisionId " + "FROM RevisionAuthorship revisionAuthorship "
+		return (List) template.find("SELECT key.revisionId " + "FROM RevisionAuthorship revisionAuthorship "
 				+ "WHERE key.project=? " + "ORDER BY id", project.getCode());
 	}
 

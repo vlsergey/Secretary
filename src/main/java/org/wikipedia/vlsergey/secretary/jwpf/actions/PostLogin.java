@@ -30,7 +30,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.LoginData;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.TicketData;
 
-public class PostLogin extends AbstractAPIAction {
+public class PostLogin extends AbstractApiXmlAction {
 
 	private static final Log log = LogFactory.getLog(PostLogin.class);
 

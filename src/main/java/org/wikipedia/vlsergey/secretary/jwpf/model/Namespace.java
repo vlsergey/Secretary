@@ -110,6 +110,8 @@ public enum Namespace {
 
 	;
 
+	public static final Namespace[] NSS_MAIN = new Namespace[] { Namespace.MAIN };
+
 	public final int id;
 
 	private Namespace(final int id) {

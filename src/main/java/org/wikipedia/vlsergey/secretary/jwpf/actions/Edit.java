@@ -26,7 +26,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
-public class Edit extends AbstractAPIAction {
+public class Edit extends AbstractApiXmlAction {
 
 	public Edit(boolean bot, Page page, Revision revision, String token, String text, String summary, boolean minor) {
 		super(bot);

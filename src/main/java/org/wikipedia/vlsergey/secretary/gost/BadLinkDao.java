@@ -14,13 +14,12 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 @Repository
 @Transactional(readOnly = false)
 public class BadLinkDao {
-	private static final Logger logger = LoggerFactory
-			.getLogger(BadLinkDao.class);
+	private static final Logger logger = LoggerFactory.getLogger(BadLinkDao.class);
 
 	protected HibernateTemplate template = null;
 
 	public List<BadLink> findAll() {
-		return template.find("SELECT links FROM BadLink links");
+		return (List) template.find("SELECT links FROM BadLink links");
 	}
 
 	@Transactional(readOnly = true, propagation = Propagation.REQUIRED)

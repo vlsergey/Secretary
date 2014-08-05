@@ -23,7 +23,7 @@
 		<property name="bot" value="0" />
 		<property name="login" value="Secretary" />
 		<property name="password" value="#{systemProperties.SecretaryPassword}" />
-		<property name="site" value="http://ru.wikisource.org/w" />
+		<property name="site" value="https://ru.wikisource.org/w" />
 		<property name="xmlParser" ref="ruWikisourceRefAwareParser" />
 	</bean>
 

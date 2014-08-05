@@ -15,7 +15,8 @@ public class UpdateQualityArticlesTask implements Runnable {
 
 	@Override
 	public void run() {
-		revisionAuthorshipCalculator.updateQualityArticles();
+		revisionAuthorshipCalculator.updateByTemplateIncluded("Авторство добротных статей", "Добротные статьи",
+				"Шаблон:Добротная статья", "Шаблон:Добротная статья и кандидат в хорошие");
 	}
 
 }

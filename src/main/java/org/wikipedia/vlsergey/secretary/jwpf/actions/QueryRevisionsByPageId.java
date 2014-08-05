@@ -1,5 +1,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
+import java.util.Arrays;
+
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
@@ -20,6 +22,9 @@ public class QueryRevisionsByPageId extends AbstractQueryRevisionsAction impleme
 	public QueryRevisionsByPageId(boolean bot, Long pageId, Long rvstartid, Direction direction,
 			RevisionPropery[] properties) {
 		super(bot, properties);
+
+		log.info("[action=query; prop=revisions]: " + pageId + "; " + rvstartid + "; " + direction + "; "
+				+ Arrays.toString(properties));
 
 		this.pageId = pageId;
 		this.direction = direction;

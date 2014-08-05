@@ -6,6 +6,8 @@ public enum ProjectType {
 
 	wikidata,
 
+	wikiqoute,
+
 	wikisource,
 
 	;

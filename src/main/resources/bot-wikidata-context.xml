@@ -5,7 +5,7 @@
 	   					   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
 
 	<bean id="wikidataCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
-		<property name="mediaWikiBot" ref="ruWikisourceBot" />
+		<property name="mediaWikiBot" ref="wikidataBot" />
 		<property name="project" value="wikidata" />
 	</bean>
 
@@ -19,11 +19,11 @@
 		<property name="xmlCache" ref="wikidataXmlCache" />
 	</bean>
 
-	<bean id="wikidataBot" class="org.wikipedia.vlsergey.secretary.jwpf.WikidataBot">
+	<bean id="wikidataBot" class="org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot">
 		<property name="bot" value="0" />
-		<property name="login" value="Secretary" />
-		<property name="password" value="#{systemProperties.SecretaryPassword}" />
-		<property name="site" value="http://ru.wikisource.org/w" />
+		<property name="login" value="Vlsergey" />
+		<property name="password" value="#{systemProperties.VlsergeyPassword}" />
+		<property name="site" value="https://www.wikidata.org/w" />
 		<property name="xmlParser" ref="wikidataRefAwareParser" />
 	</bean>
 

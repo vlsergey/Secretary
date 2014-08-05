@@ -645,37 +645,34 @@ public class RevisionAuthorshipCalculator {
 		return "rev#" + revision.getId() + " (" + revision.getTimestamp() + "; " + revision.getSize() + ")";
 	}
 
-	public void updateBlockCodes() {
-		updateByTemplateIncluded("Авторство статей о блочных шифрах", "Шаблон:Карточка блочного шифра",
-				"Статьи о блочных шифрах");
-	}
-
-	private void updateByTemplateIncluded(final String statPageTitle, final String template, String groupTitle) {
+	void updateByTemplateIncluded(final String statPageTitle, String groupTitle, final String... templates) {
 
 		final SortedMap<String, TextChunkList> results = Collections
 				.synchronizedSortedMap(new TreeMap<String, TextChunkList>());
 
 		List<Future<TextChunkList>> futures = new ArrayList<Future<TextChunkList>>();
-		for (final Revision latestRevisionIdContent : wikiCache.queryByEmbeddedIn(template,
-				new Namespace[] { Namespace.MAIN })) {
+		for (final String template : templates) {
+			for (final Revision latestRevisionIdContent : wikiCache.queryByEmbeddedIn(template,
+					new Namespace[] { Namespace.MAIN })) {
 
-			final Page page = latestRevisionIdContent.getPage();
-			final String pageTitle = page.getTitle();
+				final Page page = latestRevisionIdContent.getPage();
+				final String pageTitle = page.getTitle();
 
-			futures.add(executor.submit(new Callable<TextChunkList>() {
+				futures.add(executor.submit(new Callable<TextChunkList>() {
 
-				@Override
-				public TextChunkList call() throws Exception {
-					try {
-						TextChunkList chunks = getAuthorship(page, latestRevisionIdContent, null);
-						results.put(pageTitle, chunks);
-						return chunks;
-					} catch (Exception exc) {
-						log.warn("Unable to calculate authorship for page '" + pageTitle + "': " + exc, exc);
-						throw exc;
+					@Override
+					public TextChunkList call() throws Exception {
+						try {
+							TextChunkList chunks = getAuthorship(page, latestRevisionIdContent, null);
+							results.put(pageTitle, chunks);
+							return chunks;
+						} catch (Exception exc) {
+							log.warn("Unable to calculate authorship for page '" + pageTitle + "': " + exc, exc);
+							throw exc;
+						}
 					}
-				}
-			}));
+				}));
+			}
 		}
 
 		for (Future<?> future : futures) {
@@ -689,18 +686,6 @@ public class RevisionAuthorshipCalculator {
 		}
 
 		write(statPageTitle, results, groupTitle);
-	}
-
-	public void updateFeaturedArticles() {
-		updateByTemplateIncluded("Авторство избранных статей", "Шаблон:Избранная статья", "Избранные статьи");
-	}
-
-	public void updateGoodArticles() {
-		updateByTemplateIncluded("Авторство хороших статей", "Шаблон:Хорошая статья", "Хорошие статьи");
-	}
-
-	public void updateQualityArticles() {
-		updateByTemplateIncluded("Авторство добротных статей", "Шаблон:Добротная статья", "Добротные статьи");
 	}
 
 	private void write(String title, SortedMap<String, TextChunkList> results, String groupTitle) {

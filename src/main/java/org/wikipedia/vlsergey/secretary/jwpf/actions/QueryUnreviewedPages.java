@@ -67,8 +67,7 @@ public class QueryUnreviewedPages extends AbstractQueryAction implements MultiAc
 		if (filterRedirects != null)
 			setParameter(multipartEntity, "urfilterredir", filterRedirects.toString());
 
-		if (namespaces != null && namespaces.length > 0)
-			setParameter(multipartEntity, "urnamespace", toStringParameters(namespaces));
+		setParameter(multipartEntity, "urnamespace", namespaces);
 
 		postMethod.setEntity(multipartEntity);
 

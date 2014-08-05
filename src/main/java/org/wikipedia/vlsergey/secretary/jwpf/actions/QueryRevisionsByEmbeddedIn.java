@@ -45,7 +45,7 @@ public class QueryRevisionsByEmbeddedIn extends AbstractQueryRevisionsAction imp
 
 		setParameter(multipartEntity, "generator", "embeddedin");
 		setParameter(multipartEntity, "geititle", embeddedIn);
-		setParameter(multipartEntity, "geinamespace", toStringParameters(namespaces));
+		setParameter(multipartEntity, "geinamespace", namespaces);
 		setParameter(multipartEntity, "geilimit", String.valueOf(bot ? 5000 : 500));
 
 		if (geicontinue != null) {

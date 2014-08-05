@@ -23,7 +23,7 @@ import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
-public abstract class AbstractQueryAction extends AbstractAPIAction {
+public abstract class AbstractQueryAction extends AbstractApiXmlAction {
 
 	public AbstractQueryAction(boolean bot) {
 		super(bot);

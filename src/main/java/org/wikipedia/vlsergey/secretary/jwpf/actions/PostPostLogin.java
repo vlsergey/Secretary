@@ -35,7 +35,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.TicketData;
  * @author Thomas Stock
  * @supportedBy MediaWiki 1.9.x
  */
-public class PostPostLogin extends AbstractAPIAction {
+public class PostPostLogin extends AbstractApiXmlAction {
 
 	private static final Log log = LogFactory.getLog(PostPostLogin.class);
 

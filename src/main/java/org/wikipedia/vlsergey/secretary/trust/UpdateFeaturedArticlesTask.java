@@ -15,7 +15,7 @@ public class UpdateFeaturedArticlesTask implements Runnable {
 
 	@Override
 	public void run() {
-		revisionAuthorshipCalculator.updateFeaturedArticles();
+		revisionAuthorshipCalculator.updateByTemplateIncluded("Авторство избранных статей", "Избранные статьи", "Шаблон:Избранная статья");
 	}
 
 }

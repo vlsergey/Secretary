@@ -50,7 +50,7 @@ public class QueryExturlusage extends AbstractQueryAction implements MultiAction
 		setParameter(multipartEntity, "euprop", "ids|title|url");
 		setParameter(multipartEntity, "euprotocol", protocol);
 		setParameter(multipartEntity, "euquery", query);
-		setParameter(multipartEntity, "eunamespace", toStringParameters(namespaces));
+		setParameter(multipartEntity, "eunamespace", namespaces);
 
 		if (euoffset != null)
 			setParameter(multipartEntity, "euoffset", euoffset);

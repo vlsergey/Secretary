@@ -15,8 +15,7 @@ import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 @Repository
 @Transactional(readOnly = false)
 public class ProtectGostRuEntryDao {
-	private static final Logger logger = LoggerFactory
-			.getLogger(ProtectGostRuEntryDao.class);
+	private static final Logger logger = LoggerFactory.getLogger(ProtectGostRuEntryDao.class);
 
 	static String normalizeName(String name) {
 		name = StringUtils.trimToEmpty(name);
@@ -38,8 +37,7 @@ public class ProtectGostRuEntryDao {
 		if (StringUtils.isEmpty(name))
 			return Collections.emptyList();
 
-		return template.find("SELECT entries "
-				+ "FROM ProtectGostRuEntry entries " + "WHERE name=?", name);
+		return (List) template.find("SELECT entries " + "FROM ProtectGostRuEntry entries " + "WHERE name=?", name);
 	}
 
 	public void setSessionFactory(SessionFactory sessionFactory) {

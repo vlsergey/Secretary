@@ -8,7 +8,7 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
-public class ExpandTemplates extends AbstractAPIAction {
+public class ExpandTemplates extends AbstractApiXmlAction {
 
 	/**
 	 * Which pieces of information to get
@@ -62,10 +62,7 @@ public class ExpandTemplates extends AbstractAPIAction {
 		setFormatXml(multipartEntity);
 		setParameter(multipartEntity, "action", "expandtemplates");
 		setParameter(multipartEntity, "text", text);
-
-		if (title != null)
-			setParameter(multipartEntity, "title", title);
-
+		setParameter(multipartEntity, "title", title);
 		setParameter(multipartEntity, "prop", toStringParameters(props));
 
 		if (includecomments)

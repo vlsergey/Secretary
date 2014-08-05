@@ -15,7 +15,8 @@ public class UpdateGoodArticlesTask implements Runnable {
 
 	@Override
 	public void run() {
-		revisionAuthorshipCalculator.updateGoodArticles();
+		revisionAuthorshipCalculator.updateByTemplateIncluded("Авторство хороших статей", "Хорошие статьи",
+				"Шаблон:Хорошая статья", "Шаблон:Хорошая статья и кандидат в избранные");
 	}
 
 }

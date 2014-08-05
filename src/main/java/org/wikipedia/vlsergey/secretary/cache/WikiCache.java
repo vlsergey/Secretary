@@ -20,6 +20,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -38,12 +39,6 @@ public class WikiCache {
 
 	private static final Logger log = LoggerFactory.getLogger(WikiCache.class);
 
-	private static boolean isCacheRecordValid(Revision stored) {
-		return stored != null && stored.hasContent() && StringUtils.isNotEmpty(stored.getXml())
-				&& StringUtils.isNotEmpty(stored.getUser()) && stored.getTimestamp() != null
-				&& stored.getTimestamp().getTime() != 0 && stored.getSize() != null && stored.getSize().longValue() > 0;
-	}
-
 	private MediaWikiBot mediaWikiBot;
 
 	private Project project;
@@ -57,6 +52,21 @@ public class WikiCache {
 
 	public Project getProject() {
 		return project;
+	}
+
+	private boolean isCacheRecordValid(Revision stored) {
+		if (stored == null) {
+			return false;
+		}
+
+		boolean doNotCheckXml = stored.getPage() != null && stored.getPage().getNamespace() != null
+				&& stored.getPage().getNamespace().intValue() == 0 && !project.isMainNamespaceHasXmlRepresentation();
+		if (!doNotCheckXml && !stored.hasXml()) {
+			return false;
+		}
+
+		return stored.hasContent() && StringUtils.isNotEmpty(stored.getUser()) && stored.getTimestamp() != null
+				&& stored.getTimestamp().getTime() != 0 && stored.getSize() != null && stored.getSize().longValue() > 0;
 	}
 
 	public Iterable<Revision> queryAllRevisions(Long pageId, Direction direction) {
@@ -85,8 +95,13 @@ public class WikiCache {
 				type, new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
-	public Iterable<Revision> queryByEmbeddedIn(String title, Namespace[] namespaces) {
+	public Iterable<Revision> queryByEmbeddedIn(String title, Namespace... namespaces) {
 		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByEmbeddedIn(title, namespaces,
+				new RevisionPropery[] { RevisionPropery.IDS }));
+	}
+
+	public Iterable<Revision> queryByLinks(Long pageId, Namespace... namespaces) {
+		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByLinks(pageId, namespaces,
 				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
@@ -327,7 +342,7 @@ public class WikiCache {
 					}
 				}
 
-				Iterable<Revision> revisionsWithContent = mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED)
+				Iterable<ParsedRevision> revisionsWithContent = mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED)
 						.apply(toLoad);
 				// update cache
 				for (Revision revision : storedRevisionDao.getOrCreate(getProject(), revisionsWithContent)) {

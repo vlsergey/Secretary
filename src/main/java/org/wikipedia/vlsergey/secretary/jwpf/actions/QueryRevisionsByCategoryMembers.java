@@ -71,16 +71,10 @@ public class QueryRevisionsByCategoryMembers extends AbstractQueryRevisionsActio
 
 		setParameter(multipartEntity, "generator", "categorymembers");
 		setParameter(multipartEntity, "gcmtitle", gcmtitle);
-		setParameter(multipartEntity, "gcmnamespace", toStringParameters(gcmnamespace));
+		setParameter(multipartEntity, "gcmnamespace", gcmnamespace);
 		setParameter(multipartEntity, "gcmlimit", String.valueOf(bot ? 5000 : 500));
-
-		if (gcmtype != null) {
-			setParameter(multipartEntity, "gcmtype", gcmtype.name());
-		}
-
-		if (gcmcontinue != null) {
-			setParameter(multipartEntity, "gcmcontinue", gcmcontinue);
-		}
+		setParameter(multipartEntity, "gcmtype", gcmtype);
+		setParameter(multipartEntity, "gcmcontinue", gcmcontinue);
 
 		setParameter(multipartEntity, "rvprop", toStringParameters(properties));
 

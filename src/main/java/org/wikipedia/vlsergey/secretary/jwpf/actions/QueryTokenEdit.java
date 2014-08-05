@@ -23,7 +23,9 @@ public class QueryTokenEdit extends AbstractQueryAction {
 
 		setParameter(multipartEntity, "action", "query");
 		setParameter(multipartEntity, "prop", "info");
-		setParameter(multipartEntity, "revids", "" + revision.getId());
+		if (revision != null) {
+			setParameter(multipartEntity, "revids", "" + revision.getId());
+		}
 		setParameter(multipartEntity, "intoken", "edit");
 
 		postMethod.setEntity(multipartEntity);

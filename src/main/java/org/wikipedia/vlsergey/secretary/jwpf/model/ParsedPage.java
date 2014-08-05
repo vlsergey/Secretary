@@ -34,7 +34,7 @@ public class ParsedPage extends AbstractPage {
 
 	private List<String> redirectedFrom;
 
-	private List<Revision> revisions;
+	private List<ParsedRevision> revisions;
 
 	private String title;
 
@@ -62,7 +62,7 @@ public class ParsedPage extends AbstractPage {
 		return redirectedFrom;
 	}
 
-	public List<Revision> getRevisions() {
+	public List<ParsedRevision> getRevisions() {
 		return revisions;
 	}
 
@@ -91,7 +91,7 @@ public class ParsedPage extends AbstractPage {
 		this.redirectedFrom = redirectedFrom;
 	}
 
-	public void setRevisions(List<Revision> revisions) {
+	public void setRevisions(List<ParsedRevision> revisions) {
 		this.revisions = revisions;
 	}
 

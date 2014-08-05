@@ -23,7 +23,7 @@
 		<property name="bot" value="0" />
 		<property name="login" value="Secretary" />
 		<property name="password" value="#{systemProperties.SecretaryPassword}" />
-		<property name="site" value="http://uk.wikipedia.org/w" />
+		<property name="site" value="https://uk.wikipedia.org/w" />
 		<property name="xmlParser" ref="ukRefAwareParser" />
 	</bean>
 

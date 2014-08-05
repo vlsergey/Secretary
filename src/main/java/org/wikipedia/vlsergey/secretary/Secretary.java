@@ -7,12 +7,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 import org.wikipedia.vlsergey.secretary.books.CountBooks;
-import org.wikipedia.vlsergey.secretary.books.ReplaceCiteBookWithSpecificTemplate;
 import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
 import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
-import org.wikipedia.vlsergey.secretary.wikidata.ImportLinksFromRuWikisourceTask;
 
 public class Secretary {
 
@@ -23,22 +21,27 @@ public class Secretary {
 
 		// runOfType(appContext, LinkDeactivationTask.class);
 
-		TaskScheduler taskScheduler = appContext.getBean(TaskScheduler.class);
+		// runOfType(appContext, BuildUnreviewedLists.class);
+		// runOfType(appContext, UpdateQualityArticlesTask.class);
+		// runOfType(appContext, UpdateGoodArticlesTask.class);
+		// runOfType(appContext, UpdateFeaturedArticlesTask.class);
+		// runOfType(appContext, ImportLinksFromRuWikisourceTask.class);
+		// runOfType(appContext, CountBooks.class);
 
-		taskScheduler.scheduleAtFixedRate(appContext.getBean(CountBooks.class), DateUtils.MILLIS_PER_DAY);
-		taskScheduler.scheduleAtFixedRate(appContext.getBean(BuildUnreviewedLists.class), DateUtils.MILLIS_PER_HOUR);
-
+		scheduleWithFixedDelayOfType(appContext, CountBooks.class, DateUtils.MILLIS_PER_DAY);
+		scheduleWithFixedDelayOfType(appContext, BuildUnreviewedLists.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 
-		appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
-		appContext.getBean(ImportLinksFromRuWikisourceTask.class).run();
+		// appContext.getBean(UpdateConstraintViolations.class).run();
 
-		while (true) {
-			Thread.sleep(10000);
-		}
+		// appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
+		// appContext.getBean(ImportLinksFromRuWikisourceTask.class).run();
 
+		// while (true) {
+		// Thread.sleep(10000);
+		// }
 	}
 
 	private static <T extends Runnable> void runOfType(ApplicationContext appContext, Class<T> cls) {

@@ -30,8 +30,7 @@ import org.apache.commons.lang.StringUtils;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
-import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevisionImpl;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionFlagged;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
@@ -78,9 +77,9 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 	}
 
 	protected void parsePageElement(ParsedPage page, Element element) throws ProcessException {
-		page.setRevisions(new ArrayList<Revision>());
+		page.setRevisions(new ArrayList<ParsedRevision>());
 		for (Element revElement : new ListAdapter<Element>(element.getElementsByTagName("rev"))) {
-			ParsedRevisionImpl revisionImpl = parseRevision(page, revElement);
+			ParsedRevision revisionImpl = parseRevision(page, revElement);
 			page.getRevisions().add(revisionImpl);
 		}
 	}
@@ -116,8 +115,8 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	}
 
-	protected ParsedRevisionImpl parseRevision(Page page, Element revisionElement) throws ProcessException {
-		ParsedRevisionImpl revisionImpl = new ParsedRevisionImpl(page);
+	protected ParsedRevision parseRevision(Page page, Element revisionElement) throws ProcessException {
+		ParsedRevision revisionImpl = new ParsedRevision(page);
 
 		if (StringUtils.isNotEmpty(revisionElement.getAttribute("parsetree"))) {
 			revisionImpl.setXml(revisionElement.getAttribute("parsetree"));
@@ -172,7 +171,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 		return revisionImpl;
 	}
 
-	protected RevisionFlagged parseRevisionFlagged(ParsedRevisionImpl revision, Element flaggedElement) {
+	protected RevisionFlagged parseRevisionFlagged(ParsedRevision revision, Element flaggedElement) {
 		/*
 		 * <flagged user="Klip game" timestamp="2012-05-04T17:01:13Z" level="0"
 		 * level_text="stable">

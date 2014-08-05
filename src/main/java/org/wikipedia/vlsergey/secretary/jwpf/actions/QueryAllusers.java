@@ -6,8 +6,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
@@ -16,8 +14,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.UserProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 public class QueryAllusers extends AbstractQueryAction implements MultiAction<User> {
-
-	private static final Log log = LogFactory.getLog(QueryAllusers.class);
 
 	public static final int MAX_FOR_BOTS = 5000;
 

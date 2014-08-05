@@ -231,10 +231,9 @@ public abstract class HttpBot {
 		}
 	}
 
-	protected final String performAction(final ContentProcessable contentProcessable) throws ActionException,
+	protected final void performAction(final ContentProcessable contentProcessable) throws ActionException,
 			ProcessException {
 		List<HttpRequestBase> msgs = contentProcessable.getMessages();
-		String out = "";
 		Iterator<HttpRequestBase> it = msgs.iterator();
 		while (it.hasNext()) {
 			HttpRequestBase httpMethod = it.next();
@@ -307,9 +306,7 @@ public abstract class HttpBot {
 			} catch (IOException e1) {
 				throw new ActionException(e1);
 			}
-
 		}
-		return out;
 	}
 
 	protected void post(final HttpPost postMethod, final ContentProcessable action) throws IOException,
