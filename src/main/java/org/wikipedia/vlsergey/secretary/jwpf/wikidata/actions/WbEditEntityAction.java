@@ -10,6 +10,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.AbstractApiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 /**
  * API module to create a single new Wikibase entity and modify it with
@@ -45,7 +46,7 @@ public class WbEditEntityAction extends AbstractApiAction {
 	/**
 	 * The identifier for the entity, including the prefix.
 	 */
-	public String id;
+	public EntityId id;
 
 	/**
 	 * If set, a new entity will be created. Set this to the type of the entity
@@ -87,7 +88,9 @@ public class WbEditEntityAction extends AbstractApiAction {
 	}
 
 	public void build() {
-		log.info("[action=wbeditentity]: " + ToStringBuilder.reflectionToString(this, ToStringStyle.SIMPLE_STYLE));
+		log.info("[action=wbeditentity]: "
+				+ ToStringBuilder.reflectionToString(this,
+						ToStringStyle.SIMPLE_STYLE));
 
 		HttpPost postMethod = new HttpPost("/api.php");
 		MultipartEntity multipartEntity = new MultipartEntity();
@@ -96,7 +99,7 @@ public class WbEditEntityAction extends AbstractApiAction {
 
 		setParameter(multipartEntity, "action", "wbeditentity");
 
-		setParameter(multipartEntity, "id", id);
+		setParameter(multipartEntity, "id", id.toString());
 		setParameter(multipartEntity, "site", site);
 		setParameter(multipartEntity, "title", title);
 		setParameter(multipartEntity, "baserevid", baserevid);
@@ -117,7 +120,8 @@ public class WbEditEntityAction extends AbstractApiAction {
 		JSONObject jsonObject = new JSONObject(s);
 
 		if (jsonObject.has("error")) {
-			throw new ProcessException(jsonObject.getJSONObject("error").getString("info"));
+			throw new ProcessException(jsonObject.getJSONObject("error")
+					.getString("info"));
 		}
 		if (!jsonObject.has("entity")) {
 			throw new ProcessException("No 'entity' in response");

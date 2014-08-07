@@ -10,9 +10,27 @@ public interface Statement {
 
 	Rank getRank();
 
+	default StringValue getStringValue() {
+		return getMainSnak().getStringValue();
+	}
+
 	boolean hasMainSnak();
 
-	boolean isWikibaseEntityIdValue(String entityId);
+	default boolean hasValue() {
+		return hasMainSnak() && getMainSnak().getSnakType() == SnakType.value;
+	}
+
+	default boolean isWikibaseEntityIdValue(String entityId) {
+		if (hasMainSnak()) {
+			if (getMainSnak().hasSnakType()
+					&& getMainSnak().getSnakType() == SnakType.value) {
+				return entityId.equals("Q"
+						+ getMainSnak().getWikibaseEntityIdValue()
+								.getNumericId());
+			}
+		}
+		return false;
+	}
 
 	void setMainSnak(ApiSnak mainSnak);
 

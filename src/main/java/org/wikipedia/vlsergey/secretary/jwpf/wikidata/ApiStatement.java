@@ -14,7 +14,8 @@ public class ApiStatement extends ApiValue implements Statement {
 
 	private static final Snak[] SNAKS_EMTPY = new Snak[0];
 
-	public static ApiStatement newStringValueStatement(EntityId property, String value) {
+	public static ApiStatement newStringValueStatement(EntityId property,
+			String value) {
 		ApiStatement statement = new ApiStatement();
 		statement.setType(ValueType.statement);
 		statement.setRank(Rank.normal);
@@ -22,11 +23,13 @@ public class ApiStatement extends ApiValue implements Statement {
 		return statement;
 	}
 
-	public static ApiStatement newWikibaseEntityIdValueStatement(EntityId property, EntityId entityId) {
+	public static ApiStatement newWikibaseEntityIdValueStatement(
+			EntityId property, EntityId entityId) {
 		ApiStatement statement = new ApiStatement();
 		statement.setType(ValueType.statement);
 		statement.setRank(Rank.normal);
-		statement.setMainSnak(ApiSnak.newWikibaseEntityIdValueSnak(property, entityId));
+		statement.setMainSnak(ApiSnak.newWikibaseEntityIdValueSnak(property,
+				entityId));
 		return statement;
 	}
 
@@ -40,7 +43,8 @@ public class ApiStatement extends ApiValue implements Statement {
 
 	@Override
 	public void addQualifier(String propertyCode, ApiSnak qualifier) {
-		putToNamedMapArray(jsonObject, KEY_QUALIFIERS, propertyCode, qualifier.jsonObject);
+		putToNamedMapArray(jsonObject, KEY_QUALIFIERS, propertyCode,
+				qualifier.jsonObject);
 	}
 
 	@Override
@@ -63,16 +67,6 @@ public class ApiStatement extends ApiValue implements Statement {
 	@Override
 	public boolean hasMainSnak() {
 		return jsonObject.has(KEY_MAINSNAK);
-	}
-
-	@Override
-	public boolean isWikibaseEntityIdValue(String entityId) {
-		if (hasMainSnak()) {
-			if (getMainSnak().hasSnakType() && getMainSnak().getSnakType() == SnakType.value) {
-				return entityId.equals("Q" + getMainSnak().getWikibaseEntityIdValue().getNumericId());
-			}
-		}
-		return false;
 	}
 
 	@Override

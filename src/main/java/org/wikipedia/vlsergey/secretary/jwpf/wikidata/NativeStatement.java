@@ -43,11 +43,6 @@ public class NativeStatement extends NativeValue implements Statement {
 	}
 
 	@Override
-	public boolean isWikibaseEntityIdValue(String entityId) {
-		throw new UnsupportedOperationException("NYI");
-	}
-
-	@Override
 	public void setMainSnak(ApiSnak mainSnak) {
 		throw new UnsupportedOperationException("NYI");
 	}
