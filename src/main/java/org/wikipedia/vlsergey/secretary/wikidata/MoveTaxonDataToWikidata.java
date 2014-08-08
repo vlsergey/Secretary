@@ -135,6 +135,10 @@ public class MoveTaxonDataToWikidata implements Runnable {
 
 		ArticleFragment fragment = ruWikipediaBot.getXmlParser()
 				.parse(revision);
+		if (!fragment.getAllTemplates().containsKey(TEMPLATE.toLowerCase())) {
+			return;
+		}
+
 		for (Template template : fragment.getAllTemplates().get(
 				TEMPLATE.toLowerCase())) {
 			for (PropertyDescriptor descriptor : parametersToMove) {
