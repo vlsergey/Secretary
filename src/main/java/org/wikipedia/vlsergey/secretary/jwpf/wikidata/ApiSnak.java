@@ -14,6 +14,17 @@ public class ApiSnak extends ApiValue implements Snak {
 
 	public static final String KEY_SNAKTYPE = "snaktype";
 
+	public static ApiSnak newSnak(EntityId property, SnakType snakType) {
+		if (snakType == SnakType.value) {
+			throw new IllegalArgumentException();
+		}
+
+		ApiSnak apiSnak = new ApiSnak();
+		apiSnak.setProperty(property);
+		apiSnak.setSnakType(snakType);
+		return apiSnak;
+	}
+
 	public static ApiSnak newStringValueSnak(EntityId property, String value) {
 		ApiSnak apiSnak = new ApiSnak();
 		apiSnak.setProperty(property);
@@ -23,7 +34,8 @@ public class ApiSnak extends ApiValue implements Snak {
 		return apiSnak;
 	}
 
-	public static ApiSnak newWikibaseEntityIdValueSnak(EntityId property, EntityId entityId) {
+	public static ApiSnak newWikibaseEntityIdValueSnak(EntityId property,
+			EntityId entityId) {
 		ApiSnak apiSnak = new ApiSnak();
 		apiSnak.setProperty(property);
 		apiSnak.setSnakType(SnakType.value);
@@ -67,7 +79,8 @@ public class ApiSnak extends ApiValue implements Snak {
 
 	@Override
 	public WikibaseEntityIdValue getWikibaseEntityIdValue() {
-		return new WikibaseEntityIdValue(jsonObject.getJSONObject(KEY_DATAVALUE));
+		return new WikibaseEntityIdValue(
+				jsonObject.getJSONObject(KEY_DATAVALUE));
 	}
 
 	@Override

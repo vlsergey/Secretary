@@ -14,6 +14,14 @@ public class ApiStatement extends ApiValue implements Statement {
 
 	private static final Snak[] SNAKS_EMTPY = new Snak[0];
 
+	public static ApiStatement newStatement(EntityId property, SnakType snakType) {
+		ApiStatement statement = new ApiStatement();
+		statement.setType(ValueType.statement);
+		statement.setRank(Rank.normal);
+		statement.setMainSnak(ApiSnak.newSnak(property, snakType));
+		return statement;
+	}
+
 	public static ApiStatement newStringValueStatement(EntityId property,
 			String value) {
 		ApiStatement statement = new ApiStatement();
