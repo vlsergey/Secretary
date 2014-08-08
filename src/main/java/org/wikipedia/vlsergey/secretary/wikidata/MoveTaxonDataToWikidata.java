@@ -1,12 +1,14 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
@@ -32,21 +34,41 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
 @Component
 public class MoveTaxonDataToWikidata implements Runnable {
 
+	private static class PropertyDescriptor {
+		final EntityId property;
+		final String templateParameter;
+		final Function<String, String> toWikidata;
+
+		public PropertyDescriptor(String templateProperty, long propertyid) {
+			this.templateParameter = templateProperty;
+			this.property = EntityId.property(propertyid);
+			this.toWikidata = x -> x;
+		}
+
+		public PropertyDescriptor(String templateProperty, long propertyid,
+				Function<String, String> toWikidata) {
+			this.templateParameter = templateProperty;
+			this.property = EntityId.property(propertyid);
+			this.toWikidata = toWikidata;
+		}
+	}
+
 	private static final String NOVALUE = "(novalue)";
 
 	private static final Set<String> NOVALUES = new HashSet<>(Arrays.asList(
 			"notpl", "noipni"));
 
-	private static final Map<String, EntityId> parametersToMove = new LinkedHashMap<>();
+	private static final List<PropertyDescriptor> parametersToMove = new ArrayList<>();
 
 	private static final String TEMPLATE = "Таксон";
 
 	static {
-		parametersToMove.put("itis", EntityId.property(815));
-		parametersToMove.put("ncbi", EntityId.property(685));
-		parametersToMove.put("eol", EntityId.property(830));
-		parametersToMove.put("ipni", EntityId.property(961));
-		parametersToMove.put("tpl", EntityId.property(1070));
+		parametersToMove.add(new PropertyDescriptor("itis", 815));
+		parametersToMove.add(new PropertyDescriptor("ncbi", 685));
+		parametersToMove.add(new PropertyDescriptor("eol", 830));
+		parametersToMove.add(new PropertyDescriptor("ipni", 961, x -> x
+				.contains("-") ? x : x + "-1"));
+		parametersToMove.add(new PropertyDescriptor("tpl", 1070));
 	}
 
 	@Autowired
@@ -75,15 +97,16 @@ public class MoveTaxonDataToWikidata implements Runnable {
 		}
 	}
 
-	private void fillFromWikipedia(Template template, String parameterName,
-			Set<String> result) {
-		for (TemplatePart part : template.getParameters(parameterName)) {
+	private void fillFromWikipedia(Template template,
+			PropertyDescriptor descriptor, Set<String> result) {
+		for (TemplatePart part : template
+				.getParameters(descriptor.templateParameter)) {
 			String value = part.getValue().toWiki(true).trim();
 			if (StringUtils.isNotBlank(value)) {
 				if (NOVALUES.contains(value)) {
 					result.add(NOVALUE);
 				} else {
-					result.add(value);
+					result.add(descriptor.toWikidata.apply(value));
 				}
 			}
 		}
@@ -114,13 +137,11 @@ public class MoveTaxonDataToWikidata implements Runnable {
 				.parse(revision);
 		for (Template template : fragment.getAllTemplates().get(
 				TEMPLATE.toLowerCase())) {
-			for (Map.Entry<String, EntityId> entry : parametersToMove
-					.entrySet()) {
-				String parameterName = entry.getKey();
+			for (PropertyDescriptor descriptor : parametersToMove) {
 				LinkedHashSet<String> fromPediaSet = new LinkedHashSet<>();
-				fromPedia.put(entry.getKey(), fromPediaSet);
-				fillFromWikipedia(template, parameterName, fromPediaSet);
-				template.removeParameter(parameterName);
+				fromPedia.put(descriptor.templateParameter, fromPediaSet);
+				fillFromWikipedia(template, descriptor, fromPediaSet);
+				template.removeParameter(descriptor.templateParameter);
 			}
 		}
 
@@ -134,19 +155,20 @@ public class MoveTaxonDataToWikidata implements Runnable {
 				.getPage().getTitle(), EntityProperty.claims);
 
 		Map<String, Set<String>> fromData = new HashMap<>();
-		for (Map.Entry<String, EntityId> entry : parametersToMove.entrySet()) {
-			EntityId property = entry.getValue();
+		for (PropertyDescriptor descriptor : parametersToMove) {
+			EntityId property = descriptor.property;
 			LinkedHashSet<String> fromDataSet = new LinkedHashSet<>();
-			fromData.put(entry.getKey(), fromDataSet);
+			fromData.put(descriptor.templateParameter, fromDataSet);
 			fillFromWikidata(entity, property, fromDataSet);
 		}
 
 		final JSONObject newData = new JSONObject();
 
-		for (Map.Entry<String, EntityId> entry : parametersToMove.entrySet()) {
-			Set<String> fromPediaSet = fromPedia.get(entry.getKey());
-			fromPediaSet.removeAll(fromData.get(entry.getKey()));
-			fillToWikidata(fromPediaSet, entry.getValue(), newData);
+		for (PropertyDescriptor descriptor : parametersToMove) {
+			Set<String> fromPediaSet = fromPedia
+					.get(descriptor.templateParameter);
+			fromPediaSet.removeAll(fromData.get(descriptor.templateParameter));
+			fillToWikidata(fromPediaSet, descriptor.property, newData);
 		}
 
 		if (newData.length() != 0) {
