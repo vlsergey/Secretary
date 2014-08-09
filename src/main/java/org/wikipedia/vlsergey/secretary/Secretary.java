@@ -5,7 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
-import org.wikipedia.vlsergey.secretary.wikidata.MoveTaxonDataToWikidata;
+import org.wikipedia.vlsergey.secretary.wikidata.Dictinary428;
 
 public class Secretary {
 
@@ -35,7 +35,8 @@ public class Secretary {
 		// scheduleWithFixedDelayOfType(appContext,
 		// UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_DAY);
 
-		appContext.getBean(MoveTaxonDataToWikidata.class).run();
+		// appContext.getBean(MoveTaxonDataToWikidata.class).run();
+		appContext.getBean(Dictinary428.class).run();
 
 		// appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
 		// appContext.getBean(ImportLinksFromRuWikisourceTask.class).run();
