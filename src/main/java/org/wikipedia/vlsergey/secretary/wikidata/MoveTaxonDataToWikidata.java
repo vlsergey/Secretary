@@ -45,8 +45,7 @@ public class MoveTaxonDataToWikidata implements Runnable {
 			this.toWikidata = x -> x;
 		}
 
-		public PropertyDescriptor(String templateProperty, long propertyid,
-				Function<String, String> toWikidata) {
+		public PropertyDescriptor(String templateProperty, long propertyid, Function<String, String> toWikidata) {
 			this.templateParameter = templateProperty;
 			this.property = EntityId.property(propertyid);
 			this.toWikidata = toWikidata;
@@ -55,8 +54,7 @@ public class MoveTaxonDataToWikidata implements Runnable {
 
 	private static final String NOVALUE = "(novalue)";
 
-	private static final Set<String> NOVALUES = new HashSet<>(Arrays.asList(
-			"notpl", "noipni"));
+	private static final Set<String> NOVALUES = new HashSet<>(Arrays.asList("notpl", "noipni"));
 
 	private static final List<PropertyDescriptor> parametersToMove = new ArrayList<>();
 
@@ -66,8 +64,7 @@ public class MoveTaxonDataToWikidata implements Runnable {
 		parametersToMove.add(new PropertyDescriptor("itis", 815));
 		parametersToMove.add(new PropertyDescriptor("ncbi", 685));
 		parametersToMove.add(new PropertyDescriptor("eol", 830));
-		parametersToMove.add(new PropertyDescriptor("ipni", 961, x -> x
-				.contains("-") ? x : x + "-1"));
+		parametersToMove.add(new PropertyDescriptor("ipni", 961, x -> x.contains("-") ? x : x + "-1"));
 		parametersToMove.add(new PropertyDescriptor("tpl", 1070));
 	}
 
@@ -82,8 +79,7 @@ public class MoveTaxonDataToWikidata implements Runnable {
 	@Autowired
 	private WikidataBot wikidataBot;
 
-	private void fillFromWikidata(Entity entity, EntityId property,
-			Set<String> result) {
+	private void fillFromWikidata(Entity entity, EntityId property, Set<String> result) {
 		for (Statement statement : entity.getClaims(property)) {
 			switch (statement.getMainSnak().getSnakType()) {
 			case novalue:
@@ -97,32 +93,29 @@ public class MoveTaxonDataToWikidata implements Runnable {
 		}
 	}
 
-	private void fillFromWikipedia(Template template,
-			PropertyDescriptor descriptor, Set<String> result) {
-		for (TemplatePart part : template
-				.getParameters(descriptor.templateParameter)) {
-			String value = part.getValue().toWiki(true).trim();
-			if (StringUtils.isNotBlank(value)) {
-				if (NOVALUES.contains(value)) {
-					result.add(NOVALUE);
-				} else {
-					result.add(descriptor.toWikidata.apply(value));
+	private void fillFromWikipedia(Template template, PropertyDescriptor descriptor, Set<String> result) {
+		for (TemplatePart part : template.getParameters(descriptor.templateParameter)) {
+			if (part.getValue() != null) {
+				String value = part.getValue().toWiki(true).trim();
+				if (StringUtils.isNotBlank(value)) {
+					if (NOVALUES.contains(value)) {
+						result.add(NOVALUE);
+					} else {
+						result.add(descriptor.toWikidata.apply(value));
+					}
 				}
 			}
 		}
 	}
 
-	private void fillToWikidata(Set<String> source, EntityId property,
-			JSONObject result) {
+	private void fillToWikidata(Set<String> source, EntityId property, JSONObject result) {
 		if (!source.isEmpty()) {
 			for (String newValue : source) {
 				if (NOVALUE.equals(newValue)) {
-					ApiStatement statement = ApiStatement.newStatement(
-							property, SnakType.novalue);
+					ApiStatement statement = ApiStatement.newStatement(property, SnakType.novalue);
 					ApiEntity.putProperty(result, property, statement);
 				} else {
-					ApiStatement statement = ApiStatement
-							.newStringValueStatement(property, newValue);
+					ApiStatement statement = ApiStatement.newStringValueStatement(property, newValue);
 					ApiEntity.putProperty(result, property, statement);
 				}
 			}
@@ -133,14 +126,12 @@ public class MoveTaxonDataToWikidata implements Runnable {
 
 		Map<String, Set<String>> fromPedia = new HashMap<>();
 
-		ArticleFragment fragment = ruWikipediaBot.getXmlParser()
-				.parse(revision);
+		ArticleFragment fragment = ruWikipediaBot.getXmlParser().parse(revision);
 		if (!fragment.getAllTemplates().containsKey(TEMPLATE.toLowerCase())) {
 			return;
 		}
 
-		for (Template template : fragment.getAllTemplates().get(
-				TEMPLATE.toLowerCase())) {
+		for (Template template : fragment.getAllTemplates().get(TEMPLATE.toLowerCase())) {
 			for (PropertyDescriptor descriptor : parametersToMove) {
 				LinkedHashSet<String> fromPediaSet = new LinkedHashSet<>();
 				fromPedia.put(descriptor.templateParameter, fromPediaSet);
@@ -149,14 +140,17 @@ public class MoveTaxonDataToWikidata implements Runnable {
 			}
 		}
 
-		boolean allSetsAreEmptry = fromPedia.values().stream()
-				.allMatch(set -> set.isEmpty());
+		boolean allSetsAreEmptry = fromPedia.values().stream().allMatch(set -> set.isEmpty());
 		if (allSetsAreEmptry) {
 			return;
 		}
 
-		ApiEntity entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision
-				.getPage().getTitle(), EntityProperty.claims);
+		ApiEntity entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(),
+				EntityProperty.claims);
+
+		if (entity == null) {
+			return;
+		}
 
 		Map<String, Set<String>> fromData = new HashMap<>();
 		for (PropertyDescriptor descriptor : parametersToMove) {
@@ -169,26 +163,23 @@ public class MoveTaxonDataToWikidata implements Runnable {
 		final JSONObject newData = new JSONObject();
 
 		for (PropertyDescriptor descriptor : parametersToMove) {
-			Set<String> fromPediaSet = fromPedia
-					.get(descriptor.templateParameter);
+			Set<String> fromPediaSet = fromPedia.get(descriptor.templateParameter);
 			fromPediaSet.removeAll(fromData.get(descriptor.templateParameter));
 			fillToWikidata(fromPediaSet, descriptor.property, newData);
 		}
 
 		if (newData.length() != 0) {
-			wikidataBot
-					.wgEditEntity(entity, newData,
-							"Move [[Q6705326|Automatic taxobox]] parameters from ruwiki to Wikidata");
+			wikidataBot.wgEditEntity(entity, newData,
+					"Move [[Q6705326|Automatic taxobox]] parameters from ruwiki to Wikidata");
 		}
 
-		ruWikipediaBot.writeContent(revision, fragment.toWiki(false),
-				"Move [[Шаблон:Таксон]] parameters to Wikidata", true);
+		ruWikipediaBot.writeContent(revision, fragment.toWiki(false), "Move [[Шаблон:Таксон]] parameters to Wikidata",
+				true);
 	}
 
 	@Override
 	public void run() {
-		for (Revision revision : ruWikipediaCache.queryByEmbeddedIn("Шаблон:"
-				+ TEMPLATE, Namespace.NSS_MAIN)) {
+		for (Revision revision : ruWikipediaCache.queryByEmbeddedIn("Шаблон:" + TEMPLATE, Namespace.NSS_MAIN)) {
 			try {
 				process(revision);
 			} catch (Exception e) {
