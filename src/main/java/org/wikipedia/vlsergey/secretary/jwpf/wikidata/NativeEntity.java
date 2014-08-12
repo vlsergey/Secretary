@@ -19,6 +19,9 @@ public class NativeEntity extends NativeValue implements Entity {
 
 	@Override
 	public Statement[] getClaims(EntityId property) {
+		if (!jsonObject.has(KEY_CLAIMS)) {
+			return new Statement[0];
+		}
 
 		List<NativeStatement> statements = new ArrayList<>();
 		JSONArray claims = jsonObject.getJSONArray(KEY_CLAIMS);

@@ -6,7 +6,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByPageTitles extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByPageTitles(boolean bot, Iterable<String> pageTitles, boolean followRedirects,
+	public QueryRevisionsByPageTitles(boolean bot, Iterable<? extends String> pageTitles, boolean followRedirects,
 			RevisionPropery[] properties) {
 		super(bot, properties);
 

@@ -9,15 +9,14 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.actions.WbGetEntitiesActio
 
 public class WikidataBot extends MediaWikiBot {
 
-	public String queryTokenEdit(EntityId entityId) throws ActionException,
-			ProcessException {
+	public String queryTokenEdit(EntityId entityId) throws ActionException, ProcessException {
 		return queryTokenEdit(entityId.toString());
 	}
 
 	/**
 	 * Create entity in Wikidata
 	 */
-	public Entity wgCreateEntity(JSONObject data) {
+	public ApiEntity wgCreateEntity(JSONObject data) {
 		String token = queryTokenEdit("Q1");
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
 		action.new_ = "item";
@@ -31,7 +30,7 @@ public class WikidataBot extends MediaWikiBot {
 	/**
 	 * Edit entity in Wikidata
 	 */
-	public Entity wgEditEntity(Entity apiEntity, JSONObject data, String summary) {
+	public ApiEntity wgEditEntity(Entity apiEntity, JSONObject data, String summary) {
 		String token = queryTokenEdit(apiEntity.getId());
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
 		action.id = apiEntity.getId();
@@ -55,14 +54,12 @@ public class WikidataBot extends MediaWikiBot {
 			return null;
 		}
 		if (action.result.size() > 1) {
-			throw new RuntimeException("Too many entities returned by action ["
-					+ action + "]: " + action.result);
+			throw new RuntimeException("Too many entities returned by action [" + action + "]: " + action.result);
 		}
 		return action.result.values().iterator().next();
 	}
 
-	public ApiEntity wgGetEntityBySitelink(String site, String title,
-			EntityProperty... props) {
+	public ApiEntity wgGetEntityBySitelink(String site, String title, EntityProperty... props) {
 		WbGetEntitiesAction action = new WbGetEntitiesAction(isBot());
 		action.normalize = Boolean.TRUE;
 		action.sites = new String[] { site };
@@ -75,8 +72,7 @@ public class WikidataBot extends MediaWikiBot {
 			return null;
 		}
 		if (action.result.size() > 1) {
-			throw new RuntimeException("Too many entities returned by action ["
-					+ action + "]: " + action.result);
+			throw new RuntimeException("Too many entities returned by action [" + action + "]: " + action.result);
 		}
 		return action.result.values().iterator().next();
 	}

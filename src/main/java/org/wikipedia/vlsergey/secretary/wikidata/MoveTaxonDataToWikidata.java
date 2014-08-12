@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -149,7 +150,26 @@ public class MoveTaxonDataToWikidata implements Runnable {
 				EntityProperty.claims);
 
 		if (entity == null) {
-			return;
+			JSONObject data = new JSONObject();
+
+			{
+				final JSONObject labels = new JSONObject();
+				labels.put("language", "ru");
+				labels.put("value", revision.getPage().getTitle());
+				data.put("labels", Collections.singletonMap("ru", labels));
+			}
+			{
+				final JSONObject sitelink = new JSONObject();
+				sitelink.put("site", "ruwiki");
+				sitelink.put("title", revision.getPage().getTitle());
+				data.put("sitelinks", Collections.singletonMap("ruwiki", sitelink));
+			}
+			entity = wikidataBot.wgCreateEntity(data);
+			entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(), EntityProperty.claims);
+			if (entity == null) {
+				throw new RuntimeException();
+			}
+			// return;
 		}
 
 		Map<String, Set<String>> fromData = new HashMap<>();

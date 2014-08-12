@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -40,8 +41,7 @@ public class Dictinary428 implements Runnable {
 
 		SortedMap<EntityId, List<String>> map = new TreeMap<>();
 
-		for (Revision revision : wikidataCache.queryByBacklinks(12290021l,
-				Namespace.MAIN)) {
+		for (Revision revision : wikidataCache.queryByBacklinks(12290021l, Namespace.MAIN)) {
 
 			String content = revision.getContent();
 			JSONObject jsonObject = new JSONObject(content);
@@ -58,6 +58,19 @@ public class Dictinary428 implements Runnable {
 			}
 		}
 
-		System.out.println(map);
+		StringBuilder builder = new StringBuilder("local result = {};\n");
+		for (Map.Entry<EntityId, List<String>> entry : map.entrySet()) {
+			builder.append("result[\"" + entry.getKey().toString() + "\"] = {");
+			for (String value : entry.getValue()) {
+				builder.append("'");
+				builder.append(value.replace("'", "\\'"));
+				builder.append("', ");
+			}
+			builder.append("};\n");
+		}
+		builder.append("return result;\n");
+
+		ruWikipediaBot.writeContent("Модуль:Wikidata:Dictionary/P428", null, builder.toString(), null,
+				"Update dictionary of [[:d:Property:P428]]", true, false);
 	}
 }

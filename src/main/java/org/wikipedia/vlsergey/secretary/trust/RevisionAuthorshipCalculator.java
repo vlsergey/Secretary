@@ -38,6 +38,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.utils.LastUserHashMap;
@@ -56,12 +57,12 @@ public class RevisionAuthorshipCalculator {
 		final LastUserHashMap<Long, Revision> revisionCache = new LastUserHashMap<Long, Revision>(CONTEXT_CACHES_SIZE);
 
 		final TLongIntMap revisionChunkedLength = new TLongIntHashMap();
-		final Map<Long, Revision> revisionInfos = new HashMap<Long, Revision>();
+		final Map<Long, ParsedRevision> revisionInfos = new HashMap<Long, ParsedRevision>();
 
-		final List<Revision> revisionInfosNewer;
+		final List<ParsedRevision> revisionInfosNewer;
 		final List<Long> revisionInfosNewerIds;
 
-		final List<Revision> revisionInfosOlder;
+		final List<ParsedRevision> revisionInfosOlder;
 		final List<Long> revisionInfosOlderIds;
 
 		final int revisionsCount;
@@ -72,7 +73,7 @@ public class RevisionAuthorshipCalculator {
 			this.revisionInfosNewer = mediaWikiBot.queryRevisionsByPageTitle(pageTitle, null, Direction.NEWER,
 					WikiCache.FAST);
 			this.revisionInfosNewerIds = new ArrayList<Long>(revisionInfosNewer.size());
-			for (Revision revision : revisionInfosNewer) {
+			for (ParsedRevision revision : revisionInfosNewer) {
 				revisionInfosNewerIds.add(revision.getId());
 				revisionInfos.put(revision.getId(), revision);
 			}
@@ -87,7 +88,7 @@ public class RevisionAuthorshipCalculator {
 				pageId = null;
 			}
 
-			this.revisionInfosOlder = new ArrayList<Revision>(revisionInfosNewer);
+			this.revisionInfosOlder = new ArrayList<ParsedRevision>(revisionInfosNewer);
 			this.revisionInfosOlderIds = new ArrayList<Long>(revisionInfosNewerIds);
 			Collections.reverse(revisionInfosOlder);
 			Collections.reverse(revisionInfosOlderIds);
@@ -133,7 +134,7 @@ public class RevisionAuthorshipCalculator {
 			return revision;
 		}
 
-		public Iterable<Revision> queryRevisionsInfo(Long rvStartId, Direction direction) {
+		public Iterable<ParsedRevision> queryRevisionsInfo(Long rvStartId, Direction direction) {
 			switch (direction) {
 			case NEWER: {
 				if (rvStartId == null) {
@@ -167,7 +168,7 @@ public class RevisionAuthorshipCalculator {
 			Revision revision = revisionCache.get(revisionId);
 			if (revision == null) {
 
-				final List<Revision> sublist;
+				final List<ParsedRevision> sublist;
 				if (direction == Direction.NEWER) {
 					sublist = sublistSafe(revisionInfosNewer, revisionInfos.get(revisionId), preload);
 				} else {

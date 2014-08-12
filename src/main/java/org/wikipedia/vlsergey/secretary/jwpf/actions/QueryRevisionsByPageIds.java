@@ -8,7 +8,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByPageIds extends AbstractQueryRevisionsAction {
 
-	public QueryRevisionsByPageIds(boolean bot, Iterable<Long> pageIds, RevisionPropery[] properties) {
+	public QueryRevisionsByPageIds(boolean bot, Iterable<? extends Long> pageIds, RevisionPropery[] properties) {
 		super(bot, properties);
 
 		log.info("[action=query; prop=revisions]: " + pageIds + "; " + Arrays.toString(properties));

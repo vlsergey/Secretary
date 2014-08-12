@@ -14,10 +14,8 @@ public class ApiEntity extends ApiValue implements Entity {
 
 	public static final String KEY_SITELINKS = "sitelinks";
 
-	public static void putProperty(final JSONObject json, EntityId property,
-			ApiStatement apiStatement) {
-		putToNamedMapArray(json, KEY_CLAIMS, property.toString(),
-				apiStatement.jsonObject);
+	public static void putProperty(final JSONObject json, EntityId property, ApiStatement apiStatement) {
+		putToNamedMapArray(json, KEY_CLAIMS, property.toString(), apiStatement.jsonObject);
 	}
 
 	public ApiEntity(JSONObject jsonObject) {
@@ -27,8 +25,7 @@ public class ApiEntity extends ApiValue implements Entity {
 	@Override
 	public Statement[] getClaims(EntityId property) {
 		return getNamedMapArray(KEY_CLAIMS, property.toString(), //
-				size -> (size.intValue() == 0 ? CLAIMS_EMTPY
-						: new Statement[size]), //
+				size -> (size.intValue() == 0 ? CLAIMS_EMTPY : new Statement[size]), //
 				obj -> new ApiStatement(obj));
 	}
 

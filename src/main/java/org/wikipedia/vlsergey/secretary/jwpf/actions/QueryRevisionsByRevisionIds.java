@@ -10,7 +10,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 
 public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction implements MultiAction<ParsedPage> {
-
 	public static final int MAX_FOR_BOTS = 500;
 
 	public static final int MAX_FOR_NON_BOTS = 50;
@@ -19,16 +18,16 @@ public class QueryRevisionsByRevisionIds extends AbstractQueryRevisionsAction im
 
 	private final RevisionPropery[] properties;
 
-	private final Iterable<Long> revids;
+	private final Iterable<? extends Long> revids;
 
 	private Long rvcontinue;
 
-	public QueryRevisionsByRevisionIds(boolean bot, Iterable<Long> revids, boolean generateXml,
+	public QueryRevisionsByRevisionIds(boolean bot, Iterable<? extends Long> revids, boolean generateXml,
 			RevisionPropery[] properties) {
 		this(bot, revids, generateXml, properties, null);
 	}
 
-	protected QueryRevisionsByRevisionIds(boolean bot, Iterable<Long> revids, boolean generateXml,
+	protected QueryRevisionsByRevisionIds(boolean bot, Iterable<? extends Long> revids, boolean generateXml,
 			RevisionPropery[] properties, Long rvcontinue) {
 		super(bot, properties);
 

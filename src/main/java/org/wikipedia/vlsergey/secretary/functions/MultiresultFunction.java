@@ -7,20 +7,20 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-public abstract class MultiresultFunction<A, B> implements Function<Iterable<A>, Iterable<B>> {
+public abstract class MultiresultFunction<A, B> implements Function<Iterable<? extends A>, Iterable<B>> {
 
 	public MultiresultFunction<A, B> makeBatched(final int batchSize) {
 		final MultiresultFunction<A, B> sourceFunction = this;
 		return new MultiresultFunction<A, B>() {
 			@Override
-			public Iterable<B> apply(final Iterable<A> a) {
+			public Iterable<B> apply(final Iterable<? extends A> a) {
 				return new Iterable<B>() {
 					@Override
 					public Iterator<B> iterator() {
 						return new Iterator<B>() {
 							private Iterator<B> curentResult = Collections.<B> emptyList().iterator();
 
-							private final Iterator<A> sourceIterator = a.iterator();
+							private final Iterator<? extends A> sourceIterator = a.iterator();
 
 							@Override
 							public boolean hasNext() {
