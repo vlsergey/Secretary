@@ -9,7 +9,11 @@ public interface Entity extends Comparable<Entity> {
 
 	Statement[] getClaims(EntityId property);
 
+	Label getDescription(String code);
+
 	EntityId getId();
+
+	Label getLabel(String code);
 
 	Sitelink getSiteLink(String code);
 

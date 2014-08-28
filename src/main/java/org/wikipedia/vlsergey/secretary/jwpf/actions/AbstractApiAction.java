@@ -109,6 +109,12 @@ public abstract class AbstractApiAction implements ContentProcessable {
 		}
 	}
 
+	protected static void setParameter(MultipartEntity multipartEntity, String name, Namespace value) {
+		if (value != null) {
+			setParameter(multipartEntity, name, value.id);
+		}
+	}
+
 	protected static void setParameter(MultipartEntity multipartEntity, String name, Namespace[] values) {
 		if (values != null && values.length > 0) {
 			setParameter(multipartEntity, name, toStringParameters(values));

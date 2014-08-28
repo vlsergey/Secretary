@@ -108,6 +108,10 @@ public enum Namespace {
 	 */
 	USER_TALK(3),
 
+	WIKIDATA_PROPERTY(120),
+
+	WIKIDATA_PROPERTY_TALK(121),
+
 	;
 
 	public static final Namespace[] NSS_MAIN = new Namespace[] { Namespace.MAIN };

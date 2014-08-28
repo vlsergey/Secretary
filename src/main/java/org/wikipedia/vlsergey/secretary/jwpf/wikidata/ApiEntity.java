@@ -7,11 +7,9 @@ public class ApiEntity extends ApiValue implements Entity {
 	private static final Statement[] CLAIMS_EMTPY = new Statement[0];
 
 	public static final String KEY_CLAIMS = "claims";
-
+	public static final String KEY_DESCRIPTIONS = "descriptions";
 	public static final String KEY_ID = "id";
-
 	public static final String KEY_LABELS = "labels";
-
 	public static final String KEY_SITELINKS = "sitelinks";
 
 	public static void putProperty(final JSONObject json, EntityId property, ApiStatement apiStatement) {
@@ -30,8 +28,32 @@ public class ApiEntity extends ApiValue implements Entity {
 	}
 
 	@Override
+	public Label getDescription(String code) {
+		if (!jsonObject.has(KEY_DESCRIPTIONS)) {
+			return null;
+		}
+		JSONObject descriptions = jsonObject.getJSONObject(KEY_DESCRIPTIONS);
+		if (!descriptions.has(code)) {
+			return null;
+		}
+		return new Label(descriptions.getJSONObject(code));
+	}
+
+	@Override
 	public EntityId getId() {
 		return EntityId.parse(jsonObject.getString(KEY_ID));
+	}
+
+	@Override
+	public Label getLabel(String code) {
+		if (!jsonObject.has(KEY_LABELS)) {
+			return null;
+		}
+		JSONObject labels = jsonObject.getJSONObject(KEY_LABELS);
+		if (!labels.has(code)) {
+			return null;
+		}
+		return new Label(labels.getJSONObject(code));
 	}
 
 	@Override
@@ -57,11 +79,13 @@ public class ApiEntity extends ApiValue implements Entity {
 
 	@Override
 	public boolean hasDescription(String langCode) {
-		if (!jsonObject.has(KEY_LABELS)) {
+		if (!jsonObject.has(KEY_DESCRIPTIONS)) {
 			return false;
 		}
-		JSONObject labels = jsonObject.getJSONObject(KEY_LABELS);
-		return labels.has(langCode);
+		if (!(jsonObject.get(KEY_DESCRIPTIONS) instanceof JSONObject)) {
+			return false;
+		}
+		return jsonObject.getJSONObject(KEY_DESCRIPTIONS).has(langCode);
 	}
 
 	@Override
@@ -69,8 +93,10 @@ public class ApiEntity extends ApiValue implements Entity {
 		if (!jsonObject.has(KEY_LABELS)) {
 			return false;
 		}
-		JSONObject labels = jsonObject.getJSONObject(KEY_LABELS);
-		return labels.has(langCode);
+		if (!(jsonObject.get(KEY_LABELS) instanceof JSONObject)) {
+			return false;
+		}
+		return jsonObject.getJSONObject(KEY_LABELS).has(langCode);
 	}
 
 	@Override
