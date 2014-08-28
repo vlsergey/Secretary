@@ -1,10 +1,15 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class NativeStatement extends NativeValue implements Statement {
 
 	static String KEY_MAINSNAK = "m";
+	static String KEY_QUALIFIERS = "q";
 
 	private final JSONObject jsonObject;
 
@@ -23,8 +28,22 @@ public class NativeStatement extends NativeValue implements Statement {
 	}
 
 	@Override
-	public Snak[] getQualifiers(String propertyCode) {
-		throw new UnsupportedOperationException("NYI");
+	public Snak[] getQualifiers(EntityId property) {
+		if (!jsonObject.has(KEY_QUALIFIERS)) {
+			return new Snak[0];
+		}
+
+		List<NativeSnak> qualifiers = new ArrayList<>();
+		JSONArray snaks = jsonObject.getJSONArray(KEY_QUALIFIERS);
+		for (int i = 0; i < snaks.length(); i++) {
+			JSONArray qualifierObject = snaks.getJSONArray(i);
+			NativeSnak snak = new NativeSnak(qualifierObject);
+			if (property.equals(snak.getProperty())) {
+				qualifiers.add(snak);
+			}
+		}
+
+		return qualifiers.toArray(new Snak[qualifiers.size()]);
 	}
 
 	@Override

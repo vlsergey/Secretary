@@ -238,7 +238,7 @@ public class TextChunkList implements Comparable<TextChunkList> {
 		}
 
 		if (counter != authorship.length) {
-			throw new AssertionError();
+			throw new RuntimeException("Bad binary");
 		}
 
 		return new TextChunkList(chunks);

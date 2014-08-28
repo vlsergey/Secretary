@@ -7,6 +7,11 @@ public class ProjectEditor extends PropertyEditorSupport {
 	@Override
 	public void setAsText(String text) throws IllegalArgumentException {
 
+		if (text.equals("commons")) {
+			setValue(Project.COMMONS);
+			return;
+		}
+
 		if (text.equals("ruwiki") || text.equals("ruwukipedia")) {
 			setValue(Project.RUWIKIPEDIA);
 			return;

@@ -3,6 +3,7 @@ package org.wikipedia.vlsergey.secretary.trust;
 import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 
+import java.io.Writer;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -16,7 +17,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -28,8 +28,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.apache.commons.lang.NullArgumentException;
-import org.apache.commons.lang.mutable.MutableDouble;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -223,24 +223,18 @@ public class RevisionAuthorshipCalculator {
 		return result.toString();
 	}
 
-	static String toString(TextChunkList authorship, boolean wiki) {
-
+	static String toString(TextChunkList authorship) {
 		LinkedHashMap<String, Double> result = authorship.getAuthorshipProcents();
 
-		int count = 0;
 		StringBuilder stringBuilder = new StringBuilder();
 		for (String userName : result.keySet()) {
 			double procent = result.get(userName).doubleValue();
-			if (count >= 5 && procent < .05) {
+			if (procent < .01) {
 				break;
 			}
-			count++;
-			final String strProcent = new DecimalFormat("###.##").format(procent * 100) + "%";
-			if (wiki) {
-				stringBuilder.append("[[User:" + userName + "|" + userName + "]] " + strProcent + "; ");
-			} else {
-				stringBuilder.append(userName + " " + strProcent + "; ");
-			}
+			final String strProcent = new DecimalFormat("###.##", DecimalFormatSymbols.getInstance(Locale.US))
+					.format(procent * 100);
+			stringBuilder.append("{\"" + userName + "\", " + strProcent + "}, ");
 		}
 
 		return stringBuilder.toString().trim();
@@ -646,7 +640,7 @@ public class RevisionAuthorshipCalculator {
 		return "rev#" + revision.getId() + " (" + revision.getTimestamp() + "; " + revision.getSize() + ")";
 	}
 
-	void updateByTemplateIncluded(final String statPageTitle, String groupTitle, final String... templates) {
+	void updateByTemplateIncluded(String groupTitle, final String... templates) {
 
 		final SortedMap<String, TextChunkList> results = Collections
 				.synchronizedSortedMap(new TreeMap<String, TextChunkList>());
@@ -686,51 +680,26 @@ public class RevisionAuthorshipCalculator {
 			}
 		}
 
-		write(statPageTitle, results, groupTitle);
+		write(results, groupTitle);
 	}
 
-	private void write(String title, SortedMap<String, TextChunkList> results, String groupTitle) {
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			for (String key : results.keySet()) {
-				stringBuilder.append("* [[" + key + "]]: " + toString(results.get(key), true) + "\n");
-			}
+	private void write(SortedMap<String, TextChunkList> results, String groupTitle) {
+		StringBuilder result = new StringBuilder("return {\n");
+		for (String key : results.keySet()) {
+			result.append("\t{title=\"" + key + "\",contrib=" + toString(results.get(key)) + "},\n");
+		}
+		result.append("};\n");
 
-			stringBuilder.append("\n");
-			stringBuilder.append("[[Категория:Википедия:Рейтинги авторов]]\n");
-
-			mediaWikiBot.writeContent("User:" + mediaWikiBot.getLogin() + "/" + title, null, stringBuilder.toString(),
-					null, "Обновление статистики", true, false);
+		try {
+			Writer writer = new FileWriterWithEncoding(groupTitle + ".txt", "utf-8");
+			writer.write(result.toString());
+			writer.close();
+		} catch (Exception exc) {
+			log.error(exc.getMessage(), exc);
 		}
 
-		{
-			SortedMap<String, MutableDouble> byUser = new TreeMap<String, MutableDouble>();
-			for (String key : results.keySet()) {
-				TextChunkList chunkList = results.get(key);
-				for (Entry<String, Double> entry : chunkList.getAuthorshipProcents().entrySet()) {
-					final String userName = entry.getKey();
-					if (byUser.containsKey(userName)) {
-						byUser.get(userName).add(entry.getValue().doubleValue());
-					} else {
-						byUser.put(userName, new MutableDouble(entry.getValue().doubleValue()));
-					}
-				}
-			}
-
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.append("local result = {\n");
-			for (Entry<String, MutableDouble> entry : byUser.entrySet()) {
-				final double value = entry.getValue().doubleValue();
-				if (value > 0.1) {
-					stringBuilder.append("\t{\"" + entry.getKey() + "\", " + decimalFormat.format(value) + "},\n");
-				}
-			}
-			stringBuilder.append("}\n");
-			stringBuilder.append("return result;\n");
-
-			mediaWikiBot.writeContent("Модуль:Вклад:" + groupTitle, null, stringBuilder.toString(), null,
-					"Обновление статистики", true, false);
-		}
+		mediaWikiBot.writeContent("Модуль:Вклад:" + groupTitle, null, result.toString(), null, "Обновление статистики",
+				true, false);
 	}
 
 }

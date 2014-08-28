@@ -6,6 +6,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
+
 public abstract class AbstractContainer extends Content {
 
 	private static final long serialVersionUID = 5245387328136551791L;
@@ -86,6 +88,28 @@ public abstract class AbstractContainer extends Content {
 	}
 
 	public abstract List<? extends Content> getChildren();
+
+	public List<Template> getTemplates(String canonicalName) {
+		final List<Template> result = new ArrayList<Template>();
+
+		for (Content content : getChildren()) {
+			if (content instanceof Template) {
+				final Template template = (Template) content;
+				final String templateName = template.getCanonicalName();
+
+				if (StringUtils.equalsIgnoreCase(canonicalName, templateName)) {
+					result.add(template);
+				}
+			}
+
+			if (content instanceof AbstractContainer) {
+				AbstractContainer abstractContainer = (AbstractContainer) content;
+				result.addAll(abstractContainer.getTemplates(canonicalName));
+			}
+		}
+
+		return result;
+	}
 
 	public boolean hasTemplate(String templateName) {
 		templateName = templateName.toLowerCase();

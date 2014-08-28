@@ -556,10 +556,23 @@ public class MediaWikiBot extends HttpBot {
 		if (!isLoggedIn())
 			throw new ActionException("Please login first");
 
-		String editToken = queryTokenEdit(currentRevision);
-
-		Edit edit = new Edit(isBot(), currentRevision.getPage(), currentRevision, editToken, text, summary, minor);
-		performAction(edit);
+		RuntimeException last = null;
+		for (int i = 0; i < 3; i++) {
+			try {
+				String editToken = queryTokenEdit(currentRevision);
+				Edit edit = new Edit(isBot(), currentRevision.getPage(), currentRevision, editToken, text, summary,
+						minor);
+				performAction(edit);
+				return;
+			} catch (RuntimeException exc) {
+				if (exc.getMessage().contains("Invalid token")) {
+					last = exc;
+					continue;
+				}
+				throw exc;
+			}
+		}
+		throw last;
 	}
 
 	public synchronized void writeContent(final String pageTitle, final String prependText, final String text,
@@ -569,10 +582,22 @@ public class MediaWikiBot extends HttpBot {
 		if (!isLoggedIn())
 			throw new ActionException("Please login first");
 
-		String editToken = queryTokenEdit(pageTitle);
-
-		Edit edit = new Edit(isBot(), pageTitle, editToken, prependText, text, appendText, summary, minor, nocreate);
-		performAction(edit);
+		RuntimeException last = null;
+		for (int i = 0; i < 3; i++) {
+			try {
+				String editToken = queryTokenEdit(pageTitle);
+				Edit edit = new Edit(isBot(), pageTitle, editToken, prependText, text, appendText, summary, minor,
+						nocreate);
+				performAction(edit);
+				return;
+			} catch (RuntimeException exc) {
+				if (exc.getMessage().contains("Invalid token")) {
+					last = exc;
+					continue;
+				}
+				throw exc;
+			}
+		}
+		throw last;
 	}
-
 }

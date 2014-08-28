@@ -4,17 +4,19 @@ import java.util.Locale;
 
 public class Project {
 
+	public static final Project COMMONS = new Project(ProjectType.commons, null, true);
+
 	private static final Locale LOCALE_RUSSIA = new Locale("ru-RU");
 
 	private static final Locale LOCALE_UKRAINE = new Locale("uk-UK");
 
-	public static final Project RUWIKIPEDIA = new Project(ProjectType.wiki, LOCALE_RUSSIA);
+	public static final Project RUWIKIPEDIA = new Project(ProjectType.wiki, LOCALE_RUSSIA, true);
 
-	public static final Project RUWIKISOURCE = new Project(ProjectType.wikisource, LOCALE_RUSSIA);
+	public static final Project RUWIKISOURCE = new Project(ProjectType.wikisource, LOCALE_RUSSIA, true);
 
-	public static final Project UKWIKIPEDIA = new Project(ProjectType.wiki, LOCALE_UKRAINE);
+	public static final Project UKWIKIPEDIA = new Project(ProjectType.wiki, LOCALE_UKRAINE, true);
 
-	public static final Project UKWIKISOURCE = new Project(ProjectType.wikisource, LOCALE_UKRAINE);
+	public static final Project UKWIKISOURCE = new Project(ProjectType.wikisource, LOCALE_UKRAINE, true);
 
 	public static final Project WIKIDATA = new Project(ProjectType.wikidata, null, false);
 
@@ -37,21 +39,6 @@ public class Project {
 	private final boolean mainNamespaceHasXmlRepresentation;
 
 	private final ProjectType type;
-
-	private Project(ProjectType type, Locale locale) {
-		super();
-		this.type = type;
-		this.locale = locale;
-		this.mainNamespaceHasXmlRepresentation = true;
-
-		if (locale == null) {
-			this.languageCode = null;
-			this.code = type.name();
-		} else {
-			this.languageCode = getLanguageCode(locale);
-			this.code = this.languageCode + type.name();
-		}
-	}
 
 	private Project(ProjectType type, Locale locale, boolean mainNamespaceHasXmlRepresentation) {
 		super();

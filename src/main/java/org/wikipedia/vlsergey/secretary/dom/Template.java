@@ -70,6 +70,9 @@ public class Template extends AbstractContainer {
 	}
 
 	public String getCanonicalName() {
+		if (title == null) {
+			return null;
+		}
 		return title.toWiki(true).trim().toLowerCase();
 	}
 

@@ -15,7 +15,7 @@ public class NativeSnak extends NativeValue implements Snak {
 	}
 
 	@Override
-	public String getDatatype() {
+	public DataType getDataType() {
 		throw new UnsupportedOperationException("NYI");
 	}
 
@@ -40,6 +40,11 @@ public class NativeSnak extends NativeValue implements Snak {
 	}
 
 	@Override
+	public TimeValue getTimeValue() {
+		return new TimeValue(jsonArray.getJSONObject(INDEX_DATAVALUE));
+	}
+
+	@Override
 	public ValueType getType() {
 		throw new UnsupportedOperationException("NYI");
 	}
@@ -55,7 +60,7 @@ public class NativeSnak extends NativeValue implements Snak {
 	}
 
 	@Override
-	public void setDatatype(String value) {
+	public void setDataType(DataType dataType) {
 		throw new UnsupportedOperationException("NYI");
 	}
 

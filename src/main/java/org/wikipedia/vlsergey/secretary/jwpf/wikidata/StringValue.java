@@ -1,10 +1,11 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
+import org.wikipedia.vlsergey.secretary.dom.Content;
+import org.wikipedia.vlsergey.secretary.dom.Text;
 
 public class StringValue extends DataValue {
-
-	public static final String DATATYPE = "string";
 
 	protected StringValue(JSONObject jsonObject) {
 		super(jsonObject);
@@ -13,12 +14,27 @@ public class StringValue extends DataValue {
 	public StringValue(String value) {
 		super(new JSONObject());
 
-		jsonObject.put(KEY_TYPE, DATATYPE);
+		jsonObject.put(KEY_TYPE, ValueType.string.toString());
 		jsonObject.put(KEY_VALUE, value);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof StringValue && StringUtils.equals(this.getValue(), ((StringValue) obj).getValue());
 	}
 
 	public String getValue() {
 		return jsonObject.getString(KEY_VALUE);
+	}
+
+	@Override
+	public int hashCode() {
+		return getValue().hashCode();
+	}
+
+	@Override
+	public Content toWiki() {
+		return new Text(getValue());
 	}
 
 }

@@ -11,7 +11,10 @@ import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
 import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
-import org.wikipedia.vlsergey.secretary.wikidata.Dictinary428;
+import org.wikipedia.vlsergey.secretary.wikidata.CalculateCountries;
+import org.wikipedia.vlsergey.secretary.wikidata.DictinaryFlagsUpdate;
+import org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate;
+import org.wikipedia.vlsergey.secretary.wikidata.MoveDataToWikidata;
 
 public class Secretary {
 
@@ -31,12 +34,18 @@ public class Secretary {
 
 		scheduleWithFixedDelayOfType(appContext, BuildUnreviewedLists.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, CountBooks.class, DateUtils.MILLIS_PER_DAY);
-		scheduleWithFixedDelayOfType(appContext, Dictinary428.class, DateUtils.MILLIS_PER_DAY);
-		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_DAY);
-		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_DAY);
-		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_DAY);
+		scheduleWithFixedDelayOfType(appContext, DictinaryFlagsUpdate.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, DictinaryUpdate.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 
-		// runOfType(appContext, MoveTaxonDataToWikidata.class);
+		// runOfType(appContext, CalculateCountries.class);
+		runOfType(appContext, MoveDataToWikidata.class);
+		runOfType(appContext, CalculateCountries.class);
+		// runOfType(appContext, ZeroEdits.class);
+		// runOfType(appContext, MoveCommonsCategoryToWikidata.class);
+		// runOfType(appContext, MoveDataToWikidata.class);
 
 		// appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
 		// appContext.getBean(ImportLinksFromRuWikisourceTask.class).run();

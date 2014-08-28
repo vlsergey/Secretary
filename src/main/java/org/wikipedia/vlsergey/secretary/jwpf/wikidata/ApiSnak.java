@@ -14,6 +14,15 @@ public class ApiSnak extends ApiValue implements Snak {
 
 	public static final String KEY_SNAKTYPE = "snaktype";
 
+	public static ApiSnak newSnak(EntityId property, DataType dataType, DataValue value) {
+		ApiSnak apiSnak = new ApiSnak();
+		apiSnak.setProperty(property);
+		apiSnak.setSnakType(SnakType.value);
+		apiSnak.setDataType(dataType);
+		apiSnak.setDatavalue(value);
+		return apiSnak;
+	}
+
 	public static ApiSnak newSnak(EntityId property, SnakType snakType) {
 		if (snakType == SnakType.value) {
 			throw new IllegalArgumentException();
@@ -29,17 +38,16 @@ public class ApiSnak extends ApiValue implements Snak {
 		ApiSnak apiSnak = new ApiSnak();
 		apiSnak.setProperty(property);
 		apiSnak.setSnakType(SnakType.value);
-		apiSnak.setDatatype(StringValue.DATATYPE);
+		apiSnak.setDataType(DataType.STRING);
 		apiSnak.setDatavalue(new StringValue(value));
 		return apiSnak;
 	}
 
-	public static ApiSnak newWikibaseEntityIdValueSnak(EntityId property,
-			EntityId entityId) {
+	public static ApiSnak newWikibaseEntityIdValueSnak(EntityId property, EntityId entityId) {
 		ApiSnak apiSnak = new ApiSnak();
 		apiSnak.setProperty(property);
 		apiSnak.setSnakType(SnakType.value);
-		apiSnak.setDatatype(WikibaseEntityIdValue.DATATYPE);
+		apiSnak.setDataType(DataType.WIKIBASE_ITEM);
 		apiSnak.setDatavalue(new WikibaseEntityIdValue(entityId));
 		return apiSnak;
 	}
@@ -53,8 +61,8 @@ public class ApiSnak extends ApiValue implements Snak {
 	}
 
 	@Override
-	public String getDatatype() {
-		return jsonObject.getString(KEY_DATATYPE);
+	public DataType getDataType() {
+		return DataType.get(jsonObject.getString(KEY_DATATYPE));
 	}
 
 	@Override
@@ -78,9 +86,13 @@ public class ApiSnak extends ApiValue implements Snak {
 	}
 
 	@Override
+	public TimeValue getTimeValue() {
+		return new TimeValue(jsonObject.getJSONObject(KEY_DATAVALUE));
+	}
+
+	@Override
 	public WikibaseEntityIdValue getWikibaseEntityIdValue() {
-		return new WikibaseEntityIdValue(
-				jsonObject.getJSONObject(KEY_DATAVALUE));
+		return new WikibaseEntityIdValue(jsonObject.getJSONObject(KEY_DATAVALUE));
 	}
 
 	@Override
@@ -89,8 +101,8 @@ public class ApiSnak extends ApiValue implements Snak {
 	}
 
 	@Override
-	public void setDatatype(String value) {
-		jsonObject.put(KEY_DATATYPE, value);
+	public void setDataType(DataType dataType) {
+		jsonObject.put(KEY_DATATYPE, dataType.getDataType());
 	}
 
 	@Override

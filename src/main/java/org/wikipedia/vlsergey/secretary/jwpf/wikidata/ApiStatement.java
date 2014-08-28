@@ -14,6 +14,14 @@ public class ApiStatement extends ApiValue implements Statement {
 
 	private static final Snak[] SNAKS_EMTPY = new Snak[0];
 
+	public static ApiStatement newStatement(EntityId property, DataType dataType, DataValue value) {
+		ApiStatement statement = new ApiStatement();
+		statement.setType(ValueType.statement);
+		statement.setRank(Rank.normal);
+		statement.setMainSnak(ApiSnak.newSnak(property, dataType, value));
+		return statement;
+	}
+
 	public static ApiStatement newStatement(EntityId property, SnakType snakType) {
 		ApiStatement statement = new ApiStatement();
 		statement.setType(ValueType.statement);
@@ -22,8 +30,7 @@ public class ApiStatement extends ApiValue implements Statement {
 		return statement;
 	}
 
-	public static ApiStatement newStringValueStatement(EntityId property,
-			String value) {
+	public static ApiStatement newStringValueStatement(EntityId property, String value) {
 		ApiStatement statement = new ApiStatement();
 		statement.setType(ValueType.statement);
 		statement.setRank(Rank.normal);
@@ -31,13 +38,11 @@ public class ApiStatement extends ApiValue implements Statement {
 		return statement;
 	}
 
-	public static ApiStatement newWikibaseEntityIdValueStatement(
-			EntityId property, EntityId entityId) {
+	public static ApiStatement newWikibaseEntityIdValueStatement(EntityId property, EntityId entityId) {
 		ApiStatement statement = new ApiStatement();
 		statement.setType(ValueType.statement);
 		statement.setRank(Rank.normal);
-		statement.setMainSnak(ApiSnak.newWikibaseEntityIdValueSnak(property,
-				entityId));
+		statement.setMainSnak(ApiSnak.newWikibaseEntityIdValueSnak(property, entityId));
 		return statement;
 	}
 
@@ -51,8 +56,7 @@ public class ApiStatement extends ApiValue implements Statement {
 
 	@Override
 	public void addQualifier(String propertyCode, ApiSnak qualifier) {
-		putToNamedMapArray(jsonObject, KEY_QUALIFIERS, propertyCode,
-				qualifier.jsonObject);
+		putToNamedMapArray(jsonObject, KEY_QUALIFIERS, propertyCode, qualifier.jsonObject);
 	}
 
 	@Override
@@ -61,8 +65,8 @@ public class ApiStatement extends ApiValue implements Statement {
 	}
 
 	@Override
-	public Snak[] getQualifiers(String propertyCode) {
-		return getNamedMapArray(KEY_QUALIFIERS, propertyCode, //
+	public Snak[] getQualifiers(EntityId property) {
+		return getNamedMapArray(KEY_QUALIFIERS, property.toString().toUpperCase(), //
 				size -> (size.intValue() == 0 ? SNAKS_EMTPY : new Snak[size]), //
 				obj -> new ApiSnak(obj));
 	}

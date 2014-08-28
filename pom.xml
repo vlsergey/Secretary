@@ -146,5 +146,11 @@
 			<artifactId>spring-context</artifactId>
 			<version>4.0.5.RELEASE</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.wikidata.wdtk</groupId>
+			<artifactId>wdtk-dumpfiles</artifactId>
+			<version>0.2.0</version>
+		</dependency>
 	</dependencies>
 </project>

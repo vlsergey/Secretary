@@ -37,13 +37,13 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ProjectType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Sitelink;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.StringValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
@@ -425,7 +425,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 		if (link.dictionary.project == Project.RUWIKISOURCE && StringUtils.isNotEmpty(link.dictionary.titleTemplate)) {
 			ArticleFragment article = ruWikisourceBot.getXmlParser().parse(revision);
 
-			final List<Template> titleTemplates = article.getAllTemplates().get(link.dictionary.titleTemplate);
+			final List<Template> titleTemplates = article.getTemplates(link.dictionary.titleTemplate);
 			if (titleTemplates == null || titleTemplates.isEmpty()) {
 				log.warn(revision.getPage() + " doesn't have «" + link.dictionary.titleTemplate + "» template");
 				return false;
@@ -677,7 +677,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 						ApiSnak qualifier = new ApiSnak();
 						qualifier.setProperty(PROPERTY_STATED_IN);
 						qualifier.setSnakType(SnakType.value);
-						qualifier.setDatatype(WikibaseEntityIdValue.DATATYPE);
+						qualifier.setDataType(WikibaseEntityIdValue.DATATYPE);
 						qualifier.setDatavalue(new WikibaseEntityIdValue(sublink.entityId));
 						apiStatement.addQualifier(PROPERTY_STATED_IN, qualifier);
 					}
@@ -685,7 +685,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 						ApiSnak qualifier = new ApiSnak();
 						qualifier.setProperty(PROPERTY_TITLE);
 						qualifier.setSnakType(SnakType.value);
-						qualifier.setDatatype(StringValue.DATATYPE);
+						qualifier.setDataType(StringValue.DATATYPE);
 						qualifier.setDatavalue(new StringValue(sublink.articleName));
 						apiStatement.addQualifier(PROPERTY_TITLE, qualifier);
 					}
@@ -700,21 +700,23 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 				Link wikipediaLink = circle.links.get(Dictionary.ВИКИПЕДИЯ) != null ? circle.links.get(
 						Dictionary.ВИКИПЕДИЯ).first() : null;
 				if (wikipediaLink != null && StringUtils.isNotBlank(wikipediaLink.entityId)) {
-					ApiEntity.putProperty(newData, PROPERTY_MAIN_TOPIC,
-							ApiStatement.newWikibaseEntityIdValueStatement(PROPERTY_MAIN_TOPIC, wikipediaLink.entityId));
+					ApiEntity
+							.putProperty(newData, PROPERTY_MAIN_TOPIC, ApiStatement.newWikibaseEntityIdValueStatement(
+									PROPERTY_MAIN_TOPIC, wikipediaLink.entityId));
 				}
 			}
 
 			if (!apiEntity.hasClaims(PROPERTY_PART_OF)) {
 				if (StringUtils.isNotBlank(link.dictionary.wikidataId)) {
-					ApiEntity.putProperty(newData, PROPERTY_PART_OF,
-							ApiStatement.newWikibaseEntityIdValueStatement(PROPERTY_PART_OF, link.dictionary.wikidataId));
+					ApiEntity.putProperty(newData, PROPERTY_PART_OF, ApiStatement.newWikibaseEntityIdValueStatement(
+							PROPERTY_PART_OF, link.dictionary.wikidataId));
 				}
 			}
 
 			if (!apiEntity.hasClaims(PROPERTY_INSTANCE_OF)) {
-				ApiEntity.putProperty(newData, PROPERTY_INSTANCE_OF,
-						ApiStatement.newWikibaseEntityIdValueStatement(PROPERTY_INSTANCE_OF, ITEM_encyclopedic_article));
+				ApiEntity
+						.putProperty(newData, PROPERTY_INSTANCE_OF, ApiStatement.newWikibaseEntityIdValueStatement(
+								PROPERTY_INSTANCE_OF, ITEM_encyclopedic_article));
 			}
 
 			if (!apiEntity.hasClaims(PROPERTY_TITLE)) {

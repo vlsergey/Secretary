@@ -44,6 +44,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.AbstractHttpClient;
+import org.apache.http.params.HttpConnectionParams;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.ContentProcessable;
@@ -155,6 +156,8 @@ public abstract class HttpBot {
 	@PostConstruct
 	public synchronized void init() {
 		httpClient = httpManager.newLocalhostHttpClient();
+		HttpConnectionParams.setConnectionTimeout(httpClient.getParams(), 60000);
+		HttpConnectionParams.setSoTimeout(httpClient.getParams(), 60000);
 	}
 
 	private void onPostResponse(final ContentProcessable action, final HttpPost postMethod, HttpResponse response)
@@ -225,9 +228,9 @@ public abstract class HttpBot {
 
 			log.trace(postMethod.getURI() + " || " + "POST: " + response.getStatusLine().toString());
 		} catch (CookieException exc) {
-			throw new ClientProtocolException(exc);
+			throw new ClientProtocolException(exc.getMessage(), exc);
 		} catch (ProcessException exc) {
-			throw new ClientProtocolException(exc);
+			throw new ClientProtocolException(exc.getMessage(), exc);
 		}
 	}
 

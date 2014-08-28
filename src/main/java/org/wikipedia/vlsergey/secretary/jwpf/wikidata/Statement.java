@@ -6,7 +6,7 @@ public interface Statement {
 
 	Snak getMainSnak();
 
-	Snak[] getQualifiers(String propertyCode);
+	Snak[] getQualifiers(EntityId property);
 
 	Rank getRank();
 

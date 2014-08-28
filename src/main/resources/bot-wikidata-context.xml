@@ -27,4 +27,16 @@
 		<property name="xmlParser" ref="wikidataRefAwareParser" />
 	</bean>
 
+	<bean id="dictionatyUpdateP424" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+		<property name="property" value="P424" />
+	</bean>
+	<bean id="dictionatyUpdateP428" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+		<property name="property" value="P428" />
+	</bean>
+	<bean id="dictionatyUpdateP835" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+		<property name="property" value="P835" />
+	</bean>
+
+	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.wikidata" />
+
 </beans>
