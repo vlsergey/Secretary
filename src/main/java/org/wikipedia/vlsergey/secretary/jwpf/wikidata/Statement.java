@@ -4,6 +4,8 @@ public interface Statement {
 
 	void addQualifier(String propertyCode, ApiSnak qualifier);
 
+	String getId();
+
 	Snak getMainSnak();
 
 	Snak[] getQualifiers(EntityId property);
@@ -22,11 +24,8 @@ public interface Statement {
 
 	default boolean isWikibaseEntityIdValue(String entityId) {
 		if (hasMainSnak()) {
-			if (getMainSnak().hasSnakType()
-					&& getMainSnak().getSnakType() == SnakType.value) {
-				return entityId.equals("Q"
-						+ getMainSnak().getWikibaseEntityIdValue()
-								.getNumericId());
+			if (getMainSnak().hasSnakType() && getMainSnak().getSnakType() == SnakType.value) {
+				return entityId.equals("Q" + getMainSnak().getWikibaseEntityIdValue().getNumericId());
 			}
 		}
 		return false;

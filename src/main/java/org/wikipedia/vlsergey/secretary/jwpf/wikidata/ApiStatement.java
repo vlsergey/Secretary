@@ -60,6 +60,11 @@ public class ApiStatement extends ApiValue implements Statement {
 	}
 
 	@Override
+	public String getId() {
+		return jsonObject.getString(KEY_ID);
+	}
+
+	@Override
 	public Snak getMainSnak() {
 		return new ApiSnak(jsonObject.getJSONObject(KEY_MAINSNAK));
 	}
