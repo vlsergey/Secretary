@@ -6,6 +6,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ActionException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.actions.WbEditEntityAction;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.actions.WbGetEntitiesAction;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.actions.WbRemoveClaimsAction;
 
 public class WikidataBot extends MediaWikiBot {
 
@@ -75,6 +76,20 @@ public class WikidataBot extends MediaWikiBot {
 			throw new RuntimeException("Too many entities returned by action [" + action + "]: " + action.result);
 		}
 		return action.result.values().iterator().next();
+	}
+
+	/**
+	 * Edit entity in Wikidata
+	 */
+	public void wgRemoveClaims(Entity entity, String[] claims, String summary) {
+		String token = queryTokenEdit(entity.getId());
+		WbRemoveClaimsAction action = new WbRemoveClaimsAction(isBot());
+		action.claim = claims;
+		action.summary = summary;
+		action.token = token;
+		action.build();
+		performAction(action);
+		return;
 	}
 
 }
