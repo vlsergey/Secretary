@@ -61,12 +61,11 @@ public class TimeValue extends DataValue {
 	}
 
 	public int getPrecision() {
-		return jsonObject.getInt(KEY_PRECISION);
+		return jsonObject.getJSONObject(KEY_VALUE).getInt(KEY_PRECISION);
 	}
 
 	public long getTime() throws Exception {
-		String stringTime = jsonObject.getString("time");
-		int precision = jsonObject.getInt(KEY_PRECISION);
+		String stringTime = getTimeString();
 		String[] substrings = stringTime.split("(?<!\\A)[\\-\\:TZ]");
 
 		// get the components of the date
@@ -88,11 +87,16 @@ public class TimeValue extends DataValue {
 		return calendar.getTimeInMillis();
 	}
 
+	public String getTimeString() {
+		return jsonObject.getJSONObject(KEY_VALUE).getString(KEY_TIME);
+	}
+
 	public void setPrecision(int value) {
-		jsonObject.put(KEY_PRECISION, value);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_PRECISION, value);
+
 	}
 
 	public void setTimeString(String value) {
-		jsonObject.put(KEY_TIME, value);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_TIME, value);
 	}
 }
