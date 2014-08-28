@@ -42,7 +42,8 @@ public class CalculateCountries implements Runnable {
 	@Override
 	public void run() {
 
-		final Map<List<String>, MutableInt> counts = new HashMap<>();
+		final Map<String, MutableInt> unparsed = new HashMap<>();
+		final Map<List<String>, MutableInt> parsed = new HashMap<>();
 
 		for (String template : TEMPLATES) {
 			for (Revision revision : ruWikipediaCache.queryByEmbeddedIn("Шаблон:" + template, Namespace.NSS_MAIN)) {
@@ -53,12 +54,22 @@ public class CalculateCountries implements Runnable {
 							final Content value = articleTemplate.getParameterValue(field);
 							if (value != null) {
 								final String strValue = value.toWiki(true).trim();
-								final List<String> values = countriesHelper.normalize(strValue);
-								if (StringUtils.isNotEmpty(strValue)) {
-									MutableInt i = counts.get(values);
+
+								{
+									MutableInt i = unparsed.get(strValue);
 									if (i == null) {
 										i = new MutableInt(0);
-										counts.put(values, i);
+										unparsed.put(strValue, i);
+									}
+									i.increment();
+								}
+
+								final List<String> values = countriesHelper.normalize(strValue);
+								if (StringUtils.isNotEmpty(strValue)) {
+									MutableInt i = parsed.get(values);
+									if (i == null) {
+										i = new MutableInt(0);
+										parsed.put(values, i);
 									}
 									i.increment();
 								}
@@ -71,24 +82,43 @@ public class CalculateCountries implements Runnable {
 			}
 		}
 
-		List<List<String>> values = new ArrayList<>(counts.keySet());
-		Collections.sort(values, (x, y) -> -Integer.compare(counts.get(x).intValue(), counts.get(y).intValue()));
+		{
+			List<String> values = new ArrayList<>(unparsed.keySet());
+			Collections.sort(values, (x, y) -> -Integer.compare(parsed.get(x).intValue(), unparsed.get(y).intValue()));
 
-		StringBuilder stringBuilder = new StringBuilder();
-		int count = 0;
-		for (List<String> value : values) {
-			stringBuilder.append("* " + counts.get(value) + " — ");
-			for (String country : value) {
-				stringBuilder.append(country);
-				stringBuilder.append("; ");
+			StringBuilder stringBuilder = new StringBuilder();
+			int count = 0;
+			for (String value : values) {
+				stringBuilder.append("* " + parsed.get(value) + " — <nowiki>" + value + "</nowiki>\n");
+				count++;
+				if (count > 100) {
+					break;
+				}
 			}
-			stringBuilder.append("\n");
-			count++;
-			if (count > 100) {
-				break;
-			}
+			ruWikipediaCache.getMediaWikiBot().writeContent("User:Secretary/countries/unparsed", null,
+					stringBuilder.toString(), null, "update", true, false);
 		}
-		ruWikipediaCache.getMediaWikiBot().writeContent("User:Secretary/countries", null, stringBuilder.toString(),
-				null, "update", true, false);
+
+		{
+			List<List<String>> values = new ArrayList<>(parsed.keySet());
+			Collections.sort(values, (x, y) -> -Integer.compare(parsed.get(x).intValue(), parsed.get(y).intValue()));
+
+			StringBuilder stringBuilder = new StringBuilder();
+			int count = 0;
+			for (List<String> value : values) {
+				stringBuilder.append("* " + parsed.get(value) + " — ");
+				for (String country : value) {
+					stringBuilder.append(country);
+					stringBuilder.append("; ");
+				}
+				stringBuilder.append("\n");
+				count++;
+				if (count > 100) {
+					break;
+				}
+			}
+			ruWikipediaCache.getMediaWikiBot().writeContent("User:Secretary/countries", null, stringBuilder.toString(),
+					null, "update", true, false);
+		}
 	}
 }
