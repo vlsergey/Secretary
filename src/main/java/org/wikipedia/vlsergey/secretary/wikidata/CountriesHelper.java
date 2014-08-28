@@ -20,9 +20,11 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 public class CountriesHelper {
 
 	private Map<String, String> DICTIONARY = new HashMap<>();
+
 	@Autowired
 	@Qualifier("ruWikipediaCache")
 	private WikiCache ruWikipediaCache;
+
 	@Autowired
 	@Qualifier("wikidataCache")
 	private WikiCache wikidataCache;
@@ -85,8 +87,8 @@ public class CountriesHelper {
 		strValue = StringUtils.replace(strValue, "<br/>", ";");
 		strValue = StringUtils.replace(strValue, "<br />", ";");
 
-		strValue.replace("\\[\\[Файл\\:[^\\]]\\]\\]", "");
-		strValue.replace("\\[\\[File\\:[^\\]]\\]\\]", "");
+		strValue = strValue.replaceAll("\\[\\[Файл\\:[^\\]]+\\]\\]", "");
+		strValue = strValue.replaceAll("\\[\\[File\\:[^\\]]+\\]\\]", "");
 
 		strValue = strValue.trim();
 
@@ -100,22 +102,24 @@ public class CountriesHelper {
 			if (StringUtils.isBlank(token)) {
 				continue;
 			}
-			if (token.startsWith("{{Флагификация|") && token.endsWith("}}")) {
+			if (token.startsWith("{{Флагификация|") && token.endsWith("}}")
+					&& token.indexOf("}}") == token.length() - "}}".length()) {
 				String country = token.substring("{{Флагификация|".length(), token.length() - "}}".length());
 				if (country.contains("|")) {
 					country = StringUtils.substringBefore(country, "|");
 				}
 				token = country.trim();
 			}
-			if (token.startsWith("{{флагификация|") && token.endsWith("}}")) {
+			if (token.startsWith("{{флагификация|") && token.endsWith("}}")
+					&& token.indexOf("}}") == token.length() - "}}".length()) {
 				String country = token.substring("{{флагификация|".length(), token.length() - "}}".length());
 				if (country.contains("|")) {
 					country = StringUtils.substringBefore(country, "|");
 				}
 				token = country.trim();
 			}
-			if (token.startsWith("[[") && token.endsWith("]]")) {
-				String country = StringUtils.substringBetween(token, "[[", "]]");
+			if (token.startsWith("[[") && token.endsWith("]]") && token.indexOf("]]") == token.length() - 2) {
+				String country = token.substring("[[".length(), token.length() - "]]".length());
 				if (country.contains("|")) {
 					country = StringUtils.substringBefore(country, "|");
 				}
