@@ -1,6 +1,5 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
-import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Text;
@@ -16,11 +15,6 @@ public class StringValue extends DataValue {
 
 		jsonObject.put(KEY_TYPE, ValueType.string.toString());
 		jsonObject.put(KEY_VALUE, value);
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		return obj instanceof StringValue && StringUtils.equals(this.getValue(), ((StringValue) obj).getValue());
 	}
 
 	public String getValue() {

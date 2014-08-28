@@ -13,6 +13,11 @@ public abstract class DataValue extends ApiValue {
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof DataValue && ((DataValue) obj).jsonObject.toString().equals(jsonObject.toString());
+	}
+
+	@Override
 	public String toString() {
 		return toWiki().toWiki(true);
 	}

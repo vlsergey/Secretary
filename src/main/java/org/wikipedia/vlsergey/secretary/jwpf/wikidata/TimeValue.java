@@ -1,6 +1,9 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.TimeZone;
 
 import org.json.JSONObject;
@@ -19,12 +22,44 @@ public class TimeValue extends DataValue {
 	// "type": "time"
 	// }
 
+	private static final String CALENDAR_GRIGORIAN = "http://www.wikidata.org/entity/Q1985727";
+
 	private static final String KEY_AFTER = "after";
 	private static final String KEY_BEFORE = "before";
 	private static final String KEY_CALENDAT_MODEL = "calendarmodel";
 	private static final String KEY_PRECISION = "precision";
 	private static final String KEY_TIME = "time";
 	private static final String KEY_TIMEZONE = "timezone";
+
+	public static final int PRECISION_DAY = 11;
+	public static final int PRECISION_HOUR = 12;
+	public static final int PRECISION_MINUTE = 13;
+	public static final int PRECISION_MONTH = 10;
+	public static final int PRECISION_SECOND = 14;
+	public static final int PRECISION_YEAR = 9;
+
+	private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+	public static String toISO(Date date) {
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
+		df.setTimeZone(UTC);
+		String result = "+0000000" + df.format(new Date());
+		return result;
+	}
+
+	protected TimeValue(int precision, Date date) {
+		super(new JSONObject());
+
+		jsonObject.put(KEY_TYPE, ValueType.time.toString());
+		jsonObject.put(KEY_VALUE, new JSONObject());
+
+		setTimeString(toISO(date));
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_TIMEZONE, 0);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_BEFORE, 0);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_AFTER, 0);
+		setPrecision(precision);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_CALENDAT_MODEL, CALENDAR_GRIGORIAN);
+	}
 
 	protected TimeValue(JSONObject jsonObject) {
 		super(jsonObject);
@@ -35,20 +70,20 @@ public class TimeValue extends DataValue {
 		calendar.setTimeInMillis(getTime());
 
 		int precision = getPrecision();
-		if (precision < 14)
+		if (precision < PRECISION_SECOND)
 			calendar.set(Calendar.SECOND, 0);
-		if (precision < 13)
+		if (precision < PRECISION_MINUTE)
 			calendar.set(Calendar.MINUTE, 0);
-		if (precision < 12)
+		if (precision < PRECISION_HOUR)
 			calendar.set(Calendar.HOUR_OF_DAY, 0);
-		if (precision < 11)
+		if (precision < PRECISION_DAY)
 			calendar.set(Calendar.DAY_OF_MONTH, 1);
-		if (precision < 10)
+		if (precision < PRECISION_MONTH)
 			calendar.set(Calendar.MONTH, 0);
 
-		if (precision < 9) {
+		if (precision < PRECISION_YEAR) {
 			int year = calendar.get(Calendar.YEAR);
-			int power = 9 - precision;
+			int power = PRECISION_YEAR - precision;
 			int multiplier = (int) Math.pow(10, power);
 			if (year < 0) {
 				year = (int) Math.ceil(year / multiplier) * multiplier;
@@ -89,6 +124,11 @@ public class TimeValue extends DataValue {
 
 	public String getTimeString() {
 		return jsonObject.getJSONObject(KEY_VALUE).getString(KEY_TIME);
+	}
+
+	@Override
+	public int hashCode() {
+		return getTimeString().hashCode();
 	}
 
 	public void setPrecision(int value) {
