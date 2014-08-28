@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,9 +16,19 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataValue;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
 
 @Component
 public class CountriesHelper {
+
+	private static final EntityId COUNTRY_RUSSIA = EntityId.item(159l);
+	private static final EntityId COUNTRY_RUSSIAN_EMPIRE = EntityId.item(34266l);
+
+	public static List<DataValue> VALUES_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_RUSSIA));
+	public static List<DataValue> VALUES_RUSSIAN_EMPIRE = Arrays.asList(new WikibaseEntityIdValue(
+			COUNTRY_RUSSIAN_EMPIRE));
 
 	private Map<String, String> DICTIONARY = new HashMap<>();
 
@@ -39,15 +50,21 @@ public class CountriesHelper {
 		DICTIONARY.put("{{ind}}", "Индия");
 		DICTIONARY.put("{{irl}}", "Ирландия");
 		DICTIONARY.put("{{lat}}", "Латвия");
+		DICTIONARY.put("{{mdb}}", "Молдавия");
+		DICTIONARY.put("{{ru}}", "Россия");
+		DICTIONARY.put("{{sui}}", "Швейцария");
 		DICTIONARY.put("{{sun}}", "СССР");
 		DICTIONARY.put("{{uk}}", "Великобритания");
 		DICTIONARY.put("{{urs}}", "СССР");
 
 		DICTIONARY.put("{{aзербайджан}}", "Aзербайджан");
 		DICTIONARY.put("{{великобритания}}", "Великобритания");
-		DICTIONARY.put("{{россия}}", "Россия");
+		DICTIONARY.put("{{aзербайджан}}", "Aзербайджан");
+		DICTIONARY.put("{{польша}}", "Польша");
+		DICTIONARY.put("{{российская империя}}", "Российская империя");
 		DICTIONARY.put("{{россия}}", "Россия");
 		DICTIONARY.put("{{сша}}", "США");
+		DICTIONARY.put("{{ссср}}", "СССР");
 		DICTIONARY.put("{{франция}}", "Франция");
 
 		DICTIONARY.put("Российская федерация", "Россия");
@@ -82,6 +99,7 @@ public class CountriesHelper {
 
 	public List<String> normalize(String strValue) {
 		strValue = StringUtils.replace(strValue, "&nbsp;", " ");
+		strValue = StringUtils.replace(strValue, "</br>", ";");
 		strValue = StringUtils.replace(strValue, "<b r/>", ";");
 		strValue = StringUtils.replace(strValue, "<br>", ";");
 		strValue = StringUtils.replace(strValue, "<br/>", ";");

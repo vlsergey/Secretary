@@ -181,8 +181,15 @@ public class MoveDataToWikidata implements Runnable {
 			@Override
 			public Action getAction(Collection<DataValue> wikipedia, Collection<DataValue> wikidata) {
 				Action action = super.getAction(wikipedia, wikidata);
-				if (action == Action.append && !wikidata.isEmpty()) {
-					return Action.report_difference;
+				if (action == Action.append) {
+					if (wikipedia.equals(CountriesHelper.VALUES_RUSSIAN_EMPIRE)
+							&& wikidata.equals(CountriesHelper.VALUES_RUSSIA)) {
+						return Action.replace;
+					} else if (wikidata.isEmpty()) {
+						return Action.append;
+					} else {
+						return Action.report_difference;
+					}
 				}
 				return action;
 			}
@@ -321,6 +328,7 @@ public class MoveDataToWikidata implements Runnable {
 			fillFromWikidata(entity, property, fromDataSet);
 		}
 
+		final List<String> claimIdsToDelete = new ArrayList<>();
 		final JSONObject newData = new JSONObject();
 
 		for (PropertyDescriptor descriptor : parametersToMove) {
@@ -334,7 +342,11 @@ public class MoveDataToWikidata implements Runnable {
 				fillToWikidata(descriptor, fromWikipedia, newData);
 				break;
 			case replace: {
-				throw new UnsupportedOperationException("NYI");
+				for (Statement statement : entity.getClaims(descriptor.property)) {
+					claimIdsToDelete.add(statement.getId());
+				}
+				fillToWikidata(descriptor, fromWikipedia, newData);
+				break;
 			}
 			case remove_from_wikipedia:
 				fromPedia.remove(descriptor);
@@ -353,8 +365,12 @@ public class MoveDataToWikidata implements Runnable {
 			}
 		}
 
+		final String summary = generateSummary(templateId, fromPedia);
 		if (newData.length() != 0) {
-			wikidataBot.wgEditEntity(entity, newData, generateSummary(templateId, fromPedia));
+			wikidataBot.wgEditEntity(entity, newData, summary);
+		}
+		if (!claimIdsToDelete.isEmpty()) {
+			wikidataBot.wgRemoveClaims(entity, claimIdsToDelete.toArray(new String[claimIdsToDelete.size()]), summary);
 		}
 
 		ruWikipediaBot.writeContent(revision, fragment.toWiki(false), "Move [[Шаблон:" + TEMPLATE
