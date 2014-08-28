@@ -48,7 +48,7 @@ public class WikiCache {
 
 	public void clear() {
 		int cleared = storedRevisionDao.clear(getProject());
-		log.info("Cleared " + project + " cache: " + cleared);
+		log.info("Cleared " + getProject() + " cache: " + cleared);
 	}
 
 	public MediaWikiBot getMediaWikiBot() {
@@ -65,7 +65,8 @@ public class WikiCache {
 		}
 
 		boolean doNotCheckXml = stored.getPage() != null && stored.getPage().getNamespace() != null
-				&& stored.getPage().getNamespace().intValue() == 0 && !project.isMainNamespaceHasXmlRepresentation();
+				&& stored.getPage().getNamespace().intValue() == 0
+				&& !getProject().isMainNamespaceHasXmlRepresentation();
 		if (!doNotCheckXml && !stored.hasXml()) {
 			return false;
 		}

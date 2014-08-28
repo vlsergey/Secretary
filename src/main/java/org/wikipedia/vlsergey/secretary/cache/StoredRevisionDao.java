@@ -40,16 +40,23 @@ public class StoredRevisionDao {
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public int clear(final Project project) {
-		return template.execute(new HibernateCallback<Integer>() {
+		int a = template.execute(new HibernateCallback<Integer>() {
 			@Override
 			public Integer doInHibernate(Session session) throws HibernateException, SQLException {
-				final SQLQuery query = session.createSQLQuery("DELETE FROM revision "
-						+ "WHERE project=? AND page_project=?");
+				final SQLQuery query = session.createSQLQuery("DELETE FROM revision " + "WHERE page_project=?");
 				query.setParameter(0, project.getCode());
-				query.setParameter(1, project.getCode());
 				return query.executeUpdate();
 			}
 		});
+		int b = template.execute(new HibernateCallback<Integer>() {
+			@Override
+			public Integer doInHibernate(Session session) throws HibernateException, SQLException {
+				final SQLQuery query = session.createSQLQuery("DELETE FROM revision " + "WHERE project=?");
+				query.setParameter(0, project.getCode());
+				return query.executeUpdate();
+			}
+		});
+		return a + b;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)

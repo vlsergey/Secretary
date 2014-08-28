@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,6 +23,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
 
 public class DictinaryUpdate implements Runnable {
+
+	private static final Log log = LogFactory.getLog(DictinaryUpdate.class);
 
 	private EntityId property;
 
@@ -48,20 +52,24 @@ public class DictinaryUpdate implements Runnable {
 		SortedMap<EntityId, List<String>> map = new TreeMap<>();
 
 		for (Revision revision : wikidataCache.queryByBacklinks(propertyPage.getId(), Namespace.MAIN)) {
+			try {
+				String content = revision.getContent();
+				JSONObject jsonObject = new JSONObject(content);
+				// Entity entity = new NativeEntity(jsonObject);
+				Entity entity = new ApiEntity(jsonObject);
 
-			String content = revision.getContent();
-			JSONObject jsonObject = new JSONObject(content);
-			// Entity entity = new NativeEntity(jsonObject);
-			Entity entity = new ApiEntity(jsonObject);
-
-			List<String> values = new ArrayList<>();
-			for (Statement statement : entity.getClaims(property)) {
-				if (statement.hasValue()) {
-					values.add(statement.getStringValue().getValue());
+				List<String> values = new ArrayList<>();
+				for (Statement statement : entity.getClaims(property)) {
+					if (statement.hasValue()) {
+						values.add(statement.getStringValue().getValue());
+					}
 				}
-			}
-			if (!values.isEmpty()) {
-				map.put(entity.getId(), values);
+				if (!values.isEmpty()) {
+					map.put(entity.getId(), values);
+				}
+			} catch (RuntimeException exc) {
+				log.error("Unable to update dictionary because of error with " + revision + ": " + exc, exc);
+				throw exc;
 			}
 		}
 
