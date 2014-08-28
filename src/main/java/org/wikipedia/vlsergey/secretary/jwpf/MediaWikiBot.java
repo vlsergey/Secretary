@@ -26,6 +26,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.PostLogin;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryAllusers;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryExturlusage;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRedirectsByPageTitles;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByAllPages;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByBacklinks;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
@@ -383,6 +384,13 @@ public class MediaWikiBot extends HttpBot {
 				return result;
 			}
 		}.makeBatched(isBot() ? 500 : 50);
+	}
+
+	public Iterable<ParsedPage> queryPagesWithRevisionByAllPages(Namespace namespace, RevisionPropery[] properties)
+			throws ActionException, ProcessException {
+
+		QueryRevisionsByAllPages query = new QueryRevisionsByAllPages(isBot(), namespace, properties);
+		return performMultiAction(query);
 	}
 
 	public Iterable<ParsedPage> queryPagesWithRevisionByBacklinks(Long pageId, Namespace[] namespaces,

@@ -96,6 +96,11 @@ public class WikiCache {
 		return queryRevisionsImplF().apply(revisionIdHolders);
 	}
 
+	public Iterable<Revision> queryByAllPages(Namespace namespace) {
+		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByAllPages(namespace,
+				new RevisionPropery[] { RevisionPropery.IDS }));
+	}
+
 	public Iterable<Revision> queryByBacklinks(Long pageId, Namespace... namespaces) {
 		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByBacklinks(pageId, namespaces,
 				new RevisionPropery[] { RevisionPropery.IDS }));

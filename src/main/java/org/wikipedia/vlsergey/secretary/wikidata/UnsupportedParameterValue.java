@@ -15,6 +15,11 @@ public class UnsupportedParameterValue extends RuntimeException {
 		this.unparsedValue = unparsedValue;
 	}
 
+	public UnsupportedParameterValue(String unparsedValue, Exception exc) {
+		super("Unsupported parameter value: '" + unparsedValue + "': " + exc, exc);
+		this.unparsedValue = unparsedValue;
+	}
+
 	public Content getTemplatePartValue() {
 		return templatePartValue;
 	}

@@ -1,11 +1,16 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +42,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.StringValue;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.TimeValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
 
@@ -102,6 +108,44 @@ public class MoveDataToWikidata implements Runnable {
 	// "notpl", "noipni"
 			));
 
+	static final Function<String, List<DataValue>> parseDateFunction = new Function<String, List<DataValue>>() {
+
+		@Override
+		public List<DataValue> apply(String t) {
+			t = t.trim();
+			boolean appendJulian = false;
+			if (t.matches("^[\\.0-9]+\\s*\\([\\.0-9]+\\)$")) {
+				appendJulian = true;
+				t = StringUtils.substringBefore(t, "(");
+				t = t.trim();
+			}
+
+			try {
+				final DateTimeFormatter parser = DateTimeFormatter.ofPattern("d.M.u").withZone(ZoneOffset.UTC);
+				TemporalAccessor date = parser.parse(t);
+				final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_DAY, date);
+				if (appendJulian) {
+					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
+				}
+				return Collections.singletonList(timeValue);
+			} catch (DateTimeParseException exc) {
+			}
+
+			try {
+				final DateTimeFormatter parser = DateTimeFormatter.ofPattern("u");
+				TemporalAccessor date = parser.parse(t);
+				final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, date);
+				if (appendJulian) {
+					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
+				}
+				return Collections.singletonList(timeValue);
+			} catch (DateTimeParseException exc) {
+			}
+
+			throw new UnsupportedParameterValue(t);
+		}
+	};
+
 	private static final String TEMPLATE = "Учёный";
 
 	@Autowired
@@ -136,6 +180,36 @@ public class MoveDataToWikidata implements Runnable {
 		// x.contains("-") ? x : x + "-1"));
 		// parametersToMove.add(new PropertyDescriptor("tpl", 1070));
 		// parametersToMove.add(new PropertyDescriptor("tpl", 1070));
+
+		parametersToMove.add(new PropertyDescriptor("Дата рождения", DataType.TIME, 569, parseDateFunction) {
+
+			@Override
+			public Action getAction(Collection<DataValue> wikipedia, Collection<DataValue> wikidata) {
+				Action action = super.getAction(wikipedia, wikidata);
+				if (action == Action.append) {
+					if (wikidata.isEmpty()) {
+						return Action.append;
+					} else {
+						return Action.report_difference;
+					}
+				}
+				return action;
+			}
+		});
+		parametersToMove.add(new PropertyDescriptor("Дата смерти", DataType.TIME, 570, parseDateFunction) {
+			@Override
+			public Action getAction(Collection<DataValue> wikipedia, Collection<DataValue> wikidata) {
+				Action action = super.getAction(wikipedia, wikidata);
+				if (action == Action.append) {
+					if (wikidata.isEmpty()) {
+						return Action.append;
+					} else {
+						return Action.report_difference;
+					}
+				}
+				return action;
+			}
+		});
 
 		parametersToMove.add(new PropertyDescriptor("Гражданство", DataType.WIKIBASE_ITEM, 27,
 				new Function<String, List<DataValue>>() {
@@ -193,7 +267,9 @@ public class MoveDataToWikidata implements Runnable {
 				}
 				return action;
 			}
+
 		});
+
 	}
 
 	private void fillFromWikidata(Entity entity, EntityId property, Set<DataValue> result) {
@@ -268,7 +344,7 @@ public class MoveDataToWikidata implements Runnable {
 
 	private void process(EntityId templateId, Revision revision, MoveDataReport report) throws Exception {
 
-		Map<PropertyDescriptor, Set<DataValue>> fromPedia = new HashMap<>();
+		Map<PropertyDescriptor, Set<DataValue>> fromPedia = new LinkedHashMap<>();
 
 		ArticleFragment fragment = ruWikipediaBot.getXmlParser().parse(revision);
 		if (fragment.getTemplates(TEMPLATE.toLowerCase()).isEmpty()) {

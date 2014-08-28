@@ -3,6 +3,8 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
@@ -13,11 +15,11 @@ import org.wikipedia.vlsergey.secretary.wikidata.MoveDataToWikidata.PropertyDesc
 
 public class MoveDataReport {
 
-	private final Map<EntityId, StringBuilder> builders = new HashMap<>();
+	private final Map<EntityId, SortedMap<String, String>> results = new HashMap<>();
 
-	public synchronized void addLine(Revision revision, PropertyDescriptor descriptor, Set<DataValue> fromWikipedia,
+	public void addLine(Revision revision, PropertyDescriptor descriptor, Set<DataValue> fromWikipedia,
 			Set<DataValue> fromWikidata, ApiEntity entity) {
-		final StringBuilder stringBuilder = getStringBuilder(descriptor.property);
+		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
 		stringBuilder.append("| ");
@@ -39,10 +41,21 @@ public class MoveDataReport {
 		}
 		stringBuilder.append("\n| [[:d:" + entity.getId() + "|" + entity.getId() + "]]\n");
 		stringBuilder.append("|-\n");
+
+		addLine(revision, descriptor, stringBuilder.toString());
+	}
+
+	private void addLine(Revision revision, PropertyDescriptor descriptor, final String line) {
+		synchronized (this) {
+			if (!results.containsKey(descriptor.property)) {
+				results.put(descriptor.property, new TreeMap<>());
+			}
+			results.get(descriptor.property).put(revision.getPage().getTitle(), line);
+		}
 	}
 
 	public synchronized void addLine(Revision revision, PropertyDescriptor descriptor, UnsupportedParameterValue exc) {
-		final StringBuilder stringBuilder = getStringBuilder(descriptor.property);
+		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
 		stringBuilder.append("| <nowiki>" + exc.getTemplatePartValue().toWiki(true) + "</nowiki>\n");
@@ -50,29 +63,26 @@ public class MoveDataReport {
 		stringBuilder.append("|\n");
 		stringBuilder.append("|\n");
 		stringBuilder.append("|-\n");
+		addLine(revision, descriptor, stringBuilder.toString());
 	}
 
-	private synchronized StringBuilder getStringBuilder(EntityId property) {
-		StringBuilder result = builders.get(property);
-		if (result == null) {
-			result = new StringBuilder("{| class=\"wikitable sortable\"\n");
+	public void save(String template, MediaWikiBot ruWikipediaBot) {
+		for (Map.Entry<EntityId, SortedMap<String, String>> entry : results.entrySet()) {
+			StringBuilder result = new StringBuilder("{| class=\"wikitable sortable\"\n");
 			result.append("! Статья\n");
 			result.append("! Локальное значение\n");
 			result.append("! Статус\n");
 			result.append("! Значение на Викиданных\n");
 			result.append("! Элемент Викиданных\n");
 			result.append("|-\n");
-			builders.put(property, result);
-		}
-		return result;
-	}
+			for (Map.Entry<String, String> line : entry.getValue().entrySet()) {
+				result.append(line.getValue());
+			}
+			result.append("|}");
 
-	public void save(String template, MediaWikiBot ruWikipediaBot) {
-		for (Map.Entry<EntityId, StringBuilder> entry : builders.entrySet()) {
-			entry.getValue().append("|}");
 			ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/" + template + "/P"
-					+ entry.getKey().getId(), null, entry.getValue().toString(), null, "Update reconsiliaction report",
-					true, false);
+					+ entry.getKey().getId(), null, result.toString(), null, "Update reconsiliaction report", true,
+					false);
 		}
 	}
 

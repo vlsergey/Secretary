@@ -2,11 +2,18 @@ package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoField;
+import java.time.temporal.TemporalAccessor;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
 import org.json.JSONObject;
+import org.wikipedia.vlsergey.secretary.dom.Content;
+import org.wikipedia.vlsergey.secretary.dom.Text;
 
 public class TimeValue extends DataValue {
 
@@ -22,7 +29,11 @@ public class TimeValue extends DataValue {
 	// "type": "time"
 	// }
 
-	private static final String CALENDAR_GRIGORIAN = "http://www.wikidata.org/entity/Q1985727";
+	public static final String CALENDAR_GRIGORIAN = "http://www.wikidata.org/entity/Q1985727";
+	public static final String CALENDAR_JULIAN = "http://www.wikidata.org/entity/Q1985786";
+
+	private static final DateTimeFormatter formatter = DateTimeFormatter
+			.ofPattern("uuuuuuuuuu'-'MM'-'dd'T'HH':'mm':'ssX");
 
 	private static final String KEY_AFTER = "after";
 	private static final String KEY_BEFORE = "before";
@@ -30,6 +41,9 @@ public class TimeValue extends DataValue {
 	private static final String KEY_PRECISION = "precision";
 	private static final String KEY_TIME = "time";
 	private static final String KEY_TIMEZONE = "timezone";
+
+	private static final DateTimeFormatter parser = DateTimeFormatter
+			.ofPattern("['+']uuuuuuuuuuu'-'MM'-'dd'T'HH':'mm':'ssX");
 
 	public static final int PRECISION_DAY = 11;
 	public static final int PRECISION_HOUR = 12;
@@ -40,6 +54,11 @@ public class TimeValue extends DataValue {
 
 	private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
+	public static TemporalAccessor fromISO(String date) {
+		return parser.parse(date);
+	}
+
+	@Deprecated
 	public static String toISO(Date date) {
 		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
 		df.setTimeZone(UTC);
@@ -47,7 +66,42 @@ public class TimeValue extends DataValue {
 		return result;
 	}
 
-	protected TimeValue(int precision, Date date) {
+	public static String toISO(TemporalAccessor date) {
+
+		OffsetDateTime dateTime = OffsetDateTime.parse("2000-01-01T00:00:00.00Z");
+		dateTime = dateTime.with(ChronoField.YEAR, date.getLong(ChronoField.YEAR));
+		for (ChronoField field : Arrays.asList(ChronoField.MONTH_OF_YEAR, ChronoField.DAY_OF_MONTH,
+				ChronoField.HOUR_OF_DAY, ChronoField.MINUTE_OF_HOUR, ChronoField.SECOND_OF_MINUTE)) {
+			if (date.isSupported(field)) {
+				dateTime = dateTime.with(field, date.getLong(field));
+			}
+		}
+
+		String result = formatter.format(dateTime);
+		if (result.startsWith("-")) {
+			result = "-0" + result.substring(1);
+		} else {
+			result = "+0" + result;
+		}
+		return result;
+	}
+
+	@Deprecated
+	public TimeValue(int precision, Date date) {
+		super(new JSONObject());
+
+		jsonObject.put(KEY_TYPE, ValueType.time.toString());
+		jsonObject.put(KEY_VALUE, new JSONObject());
+
+		setTimeString(toISO(date));
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_TIMEZONE, 0);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_BEFORE, 0);
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_AFTER, 0);
+		setPrecision(precision);
+		setCalendarModel(CALENDAR_GRIGORIAN);
+	}
+
+	public TimeValue(int precision, TemporalAccessor date) {
 		super(new JSONObject());
 
 		jsonObject.put(KEY_TYPE, ValueType.time.toString());
@@ -131,6 +185,10 @@ public class TimeValue extends DataValue {
 		return getTimeString().hashCode();
 	}
 
+	public void setCalendarModel(String value) {
+		jsonObject.getJSONObject(KEY_VALUE).put(KEY_CALENDAT_MODEL, value);
+	}
+
 	public void setPrecision(int value) {
 		jsonObject.getJSONObject(KEY_VALUE).put(KEY_PRECISION, value);
 
@@ -138,5 +196,10 @@ public class TimeValue extends DataValue {
 
 	public void setTimeString(String value) {
 		jsonObject.getJSONObject(KEY_VALUE).put(KEY_TIME, value);
+	}
+
+	@Override
+	public Content toWiki() {
+		return new Text(getTimeString());
 	}
 }
