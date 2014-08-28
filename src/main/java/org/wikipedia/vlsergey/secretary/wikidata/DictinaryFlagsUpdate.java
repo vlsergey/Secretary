@@ -13,9 +13,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.NativeEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
@@ -62,7 +62,8 @@ public class DictinaryFlagsUpdate implements Runnable {
 				// {
 				String content = revision.getContent();
 				JSONObject jsonObject = new JSONObject(content);
-				Entity entity = new NativeEntity(jsonObject);
+				// Entity entity = new NativeEntity(jsonObject);
+				Entity entity = new ApiEntity(jsonObject);
 
 				SortedMap<Long, String> values = new TreeMap<>();
 				for (Statement statement : entity.getClaims(PROPERTY_FLAG)) {

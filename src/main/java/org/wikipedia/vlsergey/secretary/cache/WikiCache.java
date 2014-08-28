@@ -46,6 +46,11 @@ public class WikiCache {
 	@Autowired
 	private StoredRevisionDao storedRevisionDao;
 
+	public void clear() {
+		int cleared = storedRevisionDao.clear(getProject());
+		log.info("Cleared " + project + " cache: " + cleared);
+	}
+
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
 	}

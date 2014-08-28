@@ -38,9 +38,18 @@ public class StoredRevisionDao {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public List<Long> getAllRevisionIds() {
-		return (List) template.find("SELECT revisions.id FROM Revision revisions ORDER BY id");
+	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
+	public int clear(final Project project) {
+		return template.execute(new HibernateCallback<Integer>() {
+			@Override
+			public Integer doInHibernate(Session session) throws HibernateException, SQLException {
+				final SQLQuery query = session.createSQLQuery("DELETE FROM revision "
+						+ "WHERE project=? AND page_project=?");
+				query.setParameter(0, project.getCode());
+				query.setParameter(1, project.getCode());
+				return query.executeUpdate();
+			}
+		});
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)

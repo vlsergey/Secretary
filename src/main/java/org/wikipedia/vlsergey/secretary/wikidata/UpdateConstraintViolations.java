@@ -13,9 +13,9 @@ import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.NativeEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
@@ -43,7 +43,7 @@ public class UpdateConstraintViolations implements Runnable {
 			String content = revision.getContent();
 
 			JSONObject jsonObject = new JSONObject(content);
-			Entity entity = new NativeEntity(jsonObject);
+			Entity entity = new ApiEntity(jsonObject);
 
 			for (Statement statement : entity.getClaims(PROPERTY_VIAF)) {
 				final Snak mainSnak = statement.getMainSnak();
