@@ -408,6 +408,7 @@ public class MoveDataToWikidata implements Runnable {
 
 		final List<String> claimIdsToDelete = new ArrayList<>();
 		final JSONObject newData = new JSONObject();
+		boolean needWikipediaSave = false;
 
 		for (PropertyDescriptor descriptor : parametersToMove) {
 			Set<DataValue> fromWikipedia = fromPedia.get(descriptor);
@@ -441,6 +442,7 @@ public class MoveDataToWikidata implements Runnable {
 				for (Template template : fragment.getAllTemplates().get(TEMPLATE.toLowerCase())) {
 					template.removeParameter(descriptor.templateParameter);
 				}
+				needWikipediaSave = true;
 			}
 		}
 
@@ -452,8 +454,10 @@ public class MoveDataToWikidata implements Runnable {
 			wikidataBot.wgRemoveClaims(entity, claimIdsToDelete.toArray(new String[claimIdsToDelete.size()]), summary);
 		}
 
-		ruWikipediaBot.writeContent(revision, fragment.toWiki(false), "Move [[Шаблон:" + TEMPLATE
-				+ "]] parameters to Wikidata", true);
+		if (needWikipediaSave) {
+			ruWikipediaBot.writeContent(revision, fragment.toWiki(false), "Move [[Шаблон:" + TEMPLATE
+					+ "]] parameters to Wikidata", true);
+		}
 	}
 
 	@Override
