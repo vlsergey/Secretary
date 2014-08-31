@@ -64,14 +64,18 @@ public class CalculateCountries implements Runnable {
 									i.increment();
 								}
 
-								final List<String> values = countriesHelper.normalize(strValue);
-								if (StringUtils.isNotEmpty(strValue)) {
-									MutableInt i = parsed.get(values);
-									if (i == null) {
-										i = new MutableInt(0);
-										parsed.put(values, i);
+								try {
+									final List<String> values = countriesHelper.normalize(strValue);
+									if (StringUtils.isNotEmpty(strValue)) {
+										MutableInt i = parsed.get(values);
+										if (i == null) {
+											i = new MutableInt(0);
+											parsed.put(values, i);
+										}
+										i.increment();
 									}
-									i.increment();
+								} catch (Exception exc) {
+									exc.printStackTrace();
 								}
 							}
 						}
@@ -84,12 +88,13 @@ public class CalculateCountries implements Runnable {
 
 		{
 			List<String> values = new ArrayList<>(unparsed.keySet());
-			Collections.sort(values, (x, y) -> -Integer.compare(parsed.get(x).intValue(), unparsed.get(y).intValue()));
+			Collections
+					.sort(values, (x, y) -> -Integer.compare(unparsed.get(x).intValue(), unparsed.get(y).intValue()));
 
 			StringBuilder stringBuilder = new StringBuilder();
 			int count = 0;
 			for (String value : values) {
-				stringBuilder.append("* " + parsed.get(value) + " — <nowiki>" + value + "</nowiki>\n");
+				stringBuilder.append("* " + unparsed.get(value) + " — <nowiki>" + value + "</nowiki>\n");
 				count++;
 				if (count > 100) {
 					break;
