@@ -1,8 +1,6 @@
 package org.wikipedia.vlsergey.secretary;
 
 import org.apache.commons.lang.time.DateUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
@@ -14,11 +12,12 @@ import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
 import org.wikipedia.vlsergey.secretary.wikidata.CalculateCountries;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryFlagsUpdate;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate;
+import org.wikipedia.vlsergey.secretary.wikidata.EnumerateProperties;
 import org.wikipedia.vlsergey.secretary.wikidata.MoveDataToWikidata;
 
 public class Secretary {
 
-	private static final Log log = LogFactory.getLog(Secretary.class);
+	// private static final Log log = LogFactory.getLog(Secretary.class);
 
 	public static void main(String[] args) throws Exception {
 		ApplicationContext appContext = new ClassPathXmlApplicationContext("application-context.xml");
@@ -36,10 +35,15 @@ public class Secretary {
 		scheduleWithFixedDelayOfType(appContext, CountBooks.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, DictinaryFlagsUpdate.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, DictinaryUpdate.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, EnumerateProperties.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 
+		// ((WikiCache) appContext.getBean("wikidataCache")).clear();
+
+		// runOfType(appContext, DictinaryUpdate.class);
+		// runOfType(appContext, EnumerateProperties.class);
 		// runOfType(appContext, CalculateCountries.class);
 		runOfType(appContext, MoveDataToWikidata.class);
 		runOfType(appContext, CalculateCountries.class);
