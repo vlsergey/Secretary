@@ -11,8 +11,11 @@ public class CountriesHelperTest {
 	public void testNormalize() {
 		final CountriesHelper countriesHelper = new CountriesHelper();
 
+		Assert.assertEquals(Arrays.asList("Белоруссия"), countriesHelper.normalize("{{Белоруссия}}"));
+		Assert.assertEquals(Arrays.asList("Белоруссия"), countriesHelper.normalize("{{Белоруссия}} [[Белоруссия]]"));
 		Assert.assertEquals(Arrays.asList("Королевство Франция"),
 				countriesHelper.normalize("[[Файл:Pavillon royal de France.svg|border|22px]] [[Королевство Франция]] "));
+		Assert.assertEquals(Arrays.asList("Германия", "США"), countriesHelper.normalize("Германия, США"));
 	}
 
 }
