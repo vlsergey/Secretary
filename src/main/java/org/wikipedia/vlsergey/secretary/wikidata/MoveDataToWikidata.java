@@ -1,9 +1,5 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,6 +18,8 @@ import java.util.function.Function;
 
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -102,49 +100,13 @@ public class MoveDataToWikidata implements Runnable {
 		}
 	}
 
+	private static final Logger log = LoggerFactory.getLogger(MoveDataToWikidata.class);
+
 	private static final DataValue NOVALUE = new StringValue("(novalue)");
 
 	private static final Set<String> NOVALUES = new HashSet<>(Arrays.asList(
 	// "notpl", "noipni"
 			));
-
-	static final Function<String, List<DataValue>> parseDateFunction = new Function<String, List<DataValue>>() {
-
-		@Override
-		public List<DataValue> apply(String t) {
-			t = t.trim();
-			boolean appendJulian = false;
-			if (t.matches("^[\\.0-9]+\\s*\\([\\.0-9]+\\)$")) {
-				appendJulian = true;
-				t = StringUtils.substringBefore(t, "(");
-				t = t.trim();
-			}
-
-			try {
-				final DateTimeFormatter parser = DateTimeFormatter.ofPattern("d.M.u").withZone(ZoneOffset.UTC);
-				TemporalAccessor date = parser.parse(t);
-				final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_DAY, date);
-				if (appendJulian) {
-					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
-				}
-				return Collections.singletonList(timeValue);
-			} catch (DateTimeParseException exc) {
-			}
-
-			try {
-				final DateTimeFormatter parser = DateTimeFormatter.ofPattern("u");
-				TemporalAccessor date = parser.parse(t);
-				final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, date);
-				if (appendJulian) {
-					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
-				}
-				return Collections.singletonList(timeValue);
-			} catch (DateTimeParseException exc) {
-			}
-
-			throw new UnsupportedParameterValue(t);
-		}
-	};
 
 	private static final String TEMPLATE = "Учёный";
 
@@ -160,6 +122,9 @@ public class MoveDataToWikidata implements Runnable {
 	@Autowired
 	@Qualifier("ruWikipediaCache")
 	private WikiCache ruWikipediaCache;
+
+	@Autowired
+	private TimeHelper timeHelper;
 
 	@Autowired
 	private WikidataBot wikidataBot;
@@ -181,10 +146,24 @@ public class MoveDataToWikidata implements Runnable {
 		// parametersToMove.add(new PropertyDescriptor("tpl", 1070));
 		// parametersToMove.add(new PropertyDescriptor("tpl", 1070));
 
-		parametersToMove.add(new PropertyDescriptor("Дата рождения", DataType.TIME, 569, parseDateFunction) {
+		parametersToMove.add(new PropertyDescriptor("Дата рождения", DataType.TIME, 569, x -> timeHelper.parse(x)) {
 
 			@Override
 			public Action getAction(Collection<DataValue> wikipedia, Collection<DataValue> wikidata) {
+				if (wikipedia.size() > 1) {
+					return Action.report_difference;
+				}
+				if (wikipedia.size() == 1 && wikidata.size() == 1) {
+					TimeValue a = (TimeValue) wikipedia.iterator().next();
+					TimeValue b = (TimeValue) wikidata.iterator().next();
+					if (a.getAfter() == b.getAfter() && a.getBefore() == b.getBefore()
+							&& StringUtils.equals(a.getTimeString(), b.getTimeString())
+							&& a.getPrecision() == b.getPrecision() && a.getTimezone() == b.getTimezone()
+							&& TimeValue.CALENDAR_JULIAN.equals(a.getCalendarModel())
+							&& TimeValue.CALENDAR_GRIGORIAN.equals(b.getCalendarModel())) {
+						return Action.replace;
+					}
+				}
 				Action action = super.getAction(wikipedia, wikidata);
 				if (action == Action.append) {
 					if (wikidata.isEmpty()) {
@@ -196,9 +175,23 @@ public class MoveDataToWikidata implements Runnable {
 				return action;
 			}
 		});
-		parametersToMove.add(new PropertyDescriptor("Дата смерти", DataType.TIME, 570, parseDateFunction) {
+		parametersToMove.add(new PropertyDescriptor("Дата смерти", DataType.TIME, 570, x -> timeHelper.parse(x)) {
 			@Override
 			public Action getAction(Collection<DataValue> wikipedia, Collection<DataValue> wikidata) {
+				if (wikipedia.size() > 1) {
+					return Action.report_difference;
+				}
+				if (wikipedia.size() == 1 && wikidata.size() == 1) {
+					TimeValue a = (TimeValue) wikipedia.iterator().next();
+					TimeValue b = (TimeValue) wikidata.iterator().next();
+					if (a.getAfter() == b.getAfter() && a.getBefore() == b.getBefore()
+							&& StringUtils.equals(a.getTimeString(), b.getTimeString())
+							&& a.getPrecision() == b.getPrecision() && a.getTimezone() == b.getTimezone()
+							&& TimeValue.CALENDAR_JULIAN.equals(a.getCalendarModel())
+							&& TimeValue.CALENDAR_GRIGORIAN.equals(b.getCalendarModel())) {
+						return Action.replace;
+					}
+				}
 				Action action = super.getAction(wikipedia, wikidata);
 				if (action == Action.append) {
 					if (wikidata.isEmpty()) {
@@ -257,6 +250,15 @@ public class MoveDataToWikidata implements Runnable {
 				Action action = super.getAction(wikipedia, wikidata);
 				if (action == Action.append) {
 					if (wikipedia.equals(CountriesHelper.VALUES_RUSSIAN_EMPIRE)
+							&& wikidata.equals(CountriesHelper.VALUES_RUSSIA)) {
+						return Action.replace;
+					} else if (wikipedia.equals(CountriesHelper.VALUES_RUSSIAN_EMPIRE_USSR)
+							&& wikidata.equals(CountriesHelper.VALUES_RUSSIA)) {
+						return Action.replace;
+					} else if (wikipedia.equals(CountriesHelper.VALUES_USSR_RUSSIA)
+							&& wikidata.equals(CountriesHelper.VALUES_RUSSIA)) {
+						return Action.replace;
+					} else if (wikipedia.equals(CountriesHelper.VALUES_USSR)
 							&& wikidata.equals(CountriesHelper.VALUES_RUSSIA)) {
 						return Action.replace;
 					} else if (wikidata.isEmpty()) {
@@ -429,7 +431,8 @@ public class MoveDataToWikidata implements Runnable {
 				break;
 			case report_difference:
 				report.addLine(revision, descriptor, fromWikipedia, fromWikidata, entity);
-				return;
+				fromPedia.remove(descriptor);
+				continue;
 			default:
 				throw new UnsupportedOperationException("NYI");
 			}
@@ -465,14 +468,14 @@ public class MoveDataToWikidata implements Runnable {
 		for (Revision revision : ruWikipediaCache.queryByEmbeddedIn("Шаблон:" + TEMPLATE, Namespace.NSS_MAIN)) {
 			// for (Revision revision :
 			// Collections.singletonList(ruWikipediaCache
-			// .queryLatestRevision("Махмудова, Наима Махмудовна"))) {
+			// .queryLatestRevision("Али-заде, Айдын Ариф оглы"))) {
 			tasks.add(executorService.submit(new Runnable() {
 				@Override
 				public void run() {
 					try {
 						process(templateId, revision, report);
-					} catch (Exception e) {
-						e.printStackTrace();
+					} catch (Exception exc) {
+						log.error(exc.toString(), exc);
 						// throw new RuntimeException(e);
 					}
 				}
@@ -482,8 +485,8 @@ public class MoveDataToWikidata implements Runnable {
 		for (Future<?> task : tasks) {
 			try {
 				task.get();
-			} catch (Exception e) {
-				e.printStackTrace();
+			} catch (Exception exc) {
+				log.error(exc.toString(), exc);
 			}
 		}
 

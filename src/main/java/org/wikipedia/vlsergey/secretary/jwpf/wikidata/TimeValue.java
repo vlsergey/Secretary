@@ -7,10 +7,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Text;
@@ -32,8 +32,11 @@ public class TimeValue extends DataValue {
 	public static final String CALENDAR_GRIGORIAN = "http://www.wikidata.org/entity/Q1985727";
 	public static final String CALENDAR_JULIAN = "http://www.wikidata.org/entity/Q1985786";
 
+	private static final DateTimeFormatter formatDay = DateTimeFormatter.ofPattern("d LLLL uuuu GG");
+	private static final DateTimeFormatter formatMonth = DateTimeFormatter.ofPattern("LLLL uuuu GG");
 	private static final DateTimeFormatter formatter = DateTimeFormatter
 			.ofPattern("uuuuuuuuuu'-'MM'-'dd'T'HH':'mm':'ssX");
+	private static final DateTimeFormatter formatYear = DateTimeFormatter.ofPattern("uuuu GG");
 
 	private static final String KEY_AFTER = "after";
 	private static final String KEY_BEFORE = "before";
@@ -119,24 +122,46 @@ public class TimeValue extends DataValue {
 		super(jsonObject);
 	}
 
-	public long floor() throws Exception {
-		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-		calendar.setTimeInMillis(getTime());
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof TimeValue))
+			return false;
+
+		TimeValue a = this;
+		TimeValue b = (TimeValue) obj;
+		try {
+			if (a.getPrecision() == b.getPrecision()) {
+				if (a.floor().equals(b.floor())) {
+					if (a.getPrecision() < PRECISION_DAY) {
+						return true;
+					} else {
+						return StringUtils.equals(a.getCalendarModel(), b.getCalendarModel());
+					}
+				}
+			}
+		} catch (Exception exc) {
+		}
+
+		return super.equals(obj);
+	}
+
+	public OffsetDateTime floor() {
+		OffsetDateTime dateTime = OffsetDateTime.from(getTime());
 
 		int precision = getPrecision();
 		if (precision < PRECISION_SECOND)
-			calendar.set(Calendar.SECOND, 0);
+			dateTime = dateTime.with(ChronoField.SECOND_OF_MINUTE, 0);
 		if (precision < PRECISION_MINUTE)
-			calendar.set(Calendar.MINUTE, 0);
+			dateTime = dateTime.with(ChronoField.MINUTE_OF_HOUR, 0);
 		if (precision < PRECISION_HOUR)
-			calendar.set(Calendar.HOUR_OF_DAY, 0);
+			dateTime = dateTime.with(ChronoField.HOUR_OF_DAY, 0);
 		if (precision < PRECISION_DAY)
-			calendar.set(Calendar.DAY_OF_MONTH, 1);
+			dateTime = dateTime.with(ChronoField.DAY_OF_MONTH, 1);
 		if (precision < PRECISION_MONTH)
-			calendar.set(Calendar.MONTH, 0);
+			dateTime = dateTime.with(ChronoField.MONTH_OF_YEAR, 1);
 
 		if (precision < PRECISION_YEAR) {
-			int year = calendar.get(Calendar.YEAR);
+			int year = dateTime.get(ChronoField.YEAR);
 			int power = PRECISION_YEAR - precision;
 			int multiplier = (int) Math.pow(10, power);
 			if (year < 0) {
@@ -144,40 +169,37 @@ public class TimeValue extends DataValue {
 			} else {
 				year = (int) Math.floor((Math.abs(year) - 1) / multiplier) * multiplier + 1;
 			}
-			calendar.set(Calendar.YEAR, year);
+			dateTime = dateTime.with(ChronoField.YEAR, year);
 		}
-		return calendar.getTimeInMillis();
+		return dateTime;
+	}
+
+	public int getAfter() {
+		return jsonObject.getJSONObject(KEY_VALUE).getInt(KEY_AFTER);
+	}
+
+	public int getBefore() {
+		return jsonObject.getJSONObject(KEY_VALUE).getInt(KEY_BEFORE);
+	}
+
+	public String getCalendarModel() {
+		return jsonObject.getJSONObject(KEY_VALUE).getString(KEY_CALENDAT_MODEL);
 	}
 
 	public int getPrecision() {
 		return jsonObject.getJSONObject(KEY_VALUE).getInt(KEY_PRECISION);
 	}
 
-	public long getTime() throws Exception {
-		String stringTime = getTimeString();
-		String[] substrings = stringTime.split("(?<!\\A)[\\-\\:TZ]");
-
-		// get the components of the date
-		long year = Long.parseLong(substrings[0]);
-		byte month = Byte.parseByte(substrings[1]);
-		byte day = Byte.parseByte(substrings[2]);
-		byte hour = Byte.parseByte(substrings[3]);
-		byte minute = Byte.parseByte(substrings[4]);
-		byte second = Byte.parseByte(substrings[5]);
-
-		Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-		calendar.clear();
-		calendar.set(Calendar.YEAR, (int) year);
-		calendar.set(Calendar.MONTH, month - 1);
-		calendar.set(Calendar.DAY_OF_MONTH, day);
-		calendar.set(Calendar.HOUR_OF_DAY, hour);
-		calendar.set(Calendar.MINUTE, minute);
-		calendar.set(Calendar.SECOND, second);
-		return calendar.getTimeInMillis();
+	public TemporalAccessor getTime() {
+		return fromISO(getTimeString());
 	}
 
 	public String getTimeString() {
 		return jsonObject.getJSONObject(KEY_VALUE).getString(KEY_TIME);
+	}
+
+	public int getTimezone() {
+		return jsonObject.getJSONObject(KEY_VALUE).getInt(KEY_TIMEZONE);
 	}
 
 	@Override
@@ -194,12 +216,30 @@ public class TimeValue extends DataValue {
 
 	}
 
+	public void setTime(TemporalAccessor time) {
+		setTimeString(toISO(time));
+	}
+
 	public void setTimeString(String value) {
 		jsonObject.getJSONObject(KEY_VALUE).put(KEY_TIME, value);
 	}
 
 	@Override
 	public Content toWiki() {
-		return new Text(getTimeString());
+
+		try {
+			final TemporalAccessor time = getTime();
+			switch (getPrecision()) {
+			case 9:
+				return new Text(formatYear.format(time) + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+			case 10:
+				return new Text(formatMonth.format(time) + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+			case 11:
+				return new Text(formatDay.format(time) + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+			}
+		} catch (Exception exc) {
+		}
+
+		return new Text(getTimeString() + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
 	}
 }

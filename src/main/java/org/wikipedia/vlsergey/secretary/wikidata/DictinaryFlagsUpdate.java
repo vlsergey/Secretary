@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -73,7 +74,7 @@ public class DictinaryFlagsUpdate implements Runnable {
 						for (Snak begin : statement.getQualifiers(PROPERTY_BEGIN)) {
 							if (begin.hasValue()) {
 								try {
-									start = begin.getTimeValue().floor();
+									start = Instant.from(begin.getTimeValue().floor()).getEpochSecond() * 1000;
 									break;
 								} catch (Exception exc) {
 									continue;
