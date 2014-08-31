@@ -25,10 +25,16 @@ public class CountriesHelper {
 
 	private static final EntityId COUNTRY_RUSSIA = EntityId.item(159l);
 	private static final EntityId COUNTRY_RUSSIAN_EMPIRE = EntityId.item(34266l);
+	private static final EntityId COUNTRY_USSR = EntityId.item(15180l);
 
 	public static List<DataValue> VALUES_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_RUSSIA));
 	public static List<DataValue> VALUES_RUSSIAN_EMPIRE = Arrays.asList(new WikibaseEntityIdValue(
 			COUNTRY_RUSSIAN_EMPIRE));
+	public static List<DataValue> VALUES_RUSSIAN_EMPIRE_USSR = Arrays.asList(new WikibaseEntityIdValue(
+			COUNTRY_RUSSIAN_EMPIRE), new WikibaseEntityIdValue(COUNTRY_USSR));
+	public static List<DataValue> VALUES_USSR = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_USSR));
+	public static List<DataValue> VALUES_USSR_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_USSR),
+			new WikibaseEntityIdValue(COUNTRY_RUSSIA));
 
 	private Map<String, String> DICTIONARY = new HashMap<>();
 
@@ -41,33 +47,40 @@ public class CountriesHelper {
 	private WikiCache wikidataCache;
 
 	{
-		DICTIONARY.put("{{gb}}", "Великобритания");
-		DICTIONARY.put("{{ger}}", "Германия");
 		DICTIONARY.put("{{ger|1804}}", "Германия");
 		DICTIONARY.put("{{ger|1836}}", "Германия");
 		DICTIONARY.put("{{ger|1902}}", "Германия");
 		DICTIONARY.put("{{ger|1905}}", "Германия");
-		DICTIONARY.put("{{ind}}", "Индия");
-		DICTIONARY.put("{{irl}}", "Ирландия");
-		DICTIONARY.put("{{lat}}", "Латвия");
-		DICTIONARY.put("{{mdb}}", "Молдавия");
-		DICTIONARY.put("{{ru}}", "Россия");
-		DICTIONARY.put("{{sui}}", "Швейцария");
-		DICTIONARY.put("{{sun}}", "СССР");
-		DICTIONARY.put("{{uk}}", "Великобритания");
-		DICTIONARY.put("{{urs}}", "СССР");
 
-		DICTIONARY.put("{{aзербайджан}}", "Aзербайджан");
-		DICTIONARY.put("{{великобритания}}", "Великобритания");
-		DICTIONARY.put("{{aзербайджан}}", "Aзербайджан");
-		DICTIONARY.put("{{польша}}", "Польша");
-		DICTIONARY.put("{{российская империя}}", "Российская империя");
-		DICTIONARY.put("{{россия}}", "Россия");
-		DICTIONARY.put("{{сша}}", "США");
-		DICTIONARY.put("{{ссср}}", "СССР");
-		DICTIONARY.put("{{франция}}", "Франция");
+		DICTIONARY.put("gb", "Великобритания");
+		DICTIONARY.put("ger", "Германия");
+		DICTIONARY.put("ind", "Индия");
+		DICTIONARY.put("irl", "Ирландия");
+		DICTIONARY.put("lat", "Латвия");
+		DICTIONARY.put("mdb", "Молдавия");
+		DICTIONARY.put("ru", "Россия");
+		DICTIONARY.put("sui", "Швейцария");
+		DICTIONARY.put("sun", "СССР");
+		DICTIONARY.put("uk", "Великобритания");
+		DICTIONARY.put("urs", "СССР");
+		DICTIONARY.put("URSS".toLowerCase(), "СССР");
 
-		DICTIONARY.put("Российская федерация", "Россия");
+		DICTIONARY.put("Российская федерация".toLowerCase(), "Россия");
+
+		DICTIONARY.put("{{Флаг Азербайджана}} [[Азербайджан]]".toLowerCase(), "Азербайджан");
+		DICTIONARY.put("{{Флаг Бельгии}} [[Бельгия]]".toLowerCase(), "Бельгия");
+		DICTIONARY.put("{{Флаг Веймарской республики}} [[Веймарская республика]]".toLowerCase(),
+				"Веймарская республика");
+		DICTIONARY.put("{{Флаг Казахстана}} [[Казахстан]]".toLowerCase(), "Казахстан");
+		DICTIONARY.put("{{Флаг|Литва}} [[Литовская Республика]]".toLowerCase(), "Литовская Республика");
+		DICTIONARY.put("{{Флаг Нидерландов|22px}} [[Нидерланды]]".toLowerCase(), "Нидерланды");
+		DICTIONARY.put("{{Флаг РФ}} [[РФ]]".toLowerCase(), "Россия");
+		DICTIONARY.put("{{Флаг СССР}} [[СССР]]".toLowerCase(), "СССР");
+		DICTIONARY.put("{{Флаг Третьего рейха}} [[Третий рейх]]".toLowerCase(), "Третий рейх");
+		DICTIONARY.put("{{Флаг Финляндии|35px}} [[Финляндия]]".toLowerCase(), "Финляндия");
+		DICTIONARY.put("{{Флаг ФРГ}} [[ФРГ]]".toLowerCase(), "ФРГ");
+		DICTIONARY.put("{{Флаг Японии}} [[Япония]]".toLowerCase(), "Япония");
+
 	}
 
 	@PostConstruct
@@ -142,6 +155,12 @@ public class CountriesHelper {
 					country = StringUtils.substringBefore(country, "|");
 				}
 				token = country.trim();
+			}
+			if (token.matches("^\\{\\{([А-Яа-я]+)\\}\\}\\s+\\[\\[\\1\\]\\]$")) {
+				token = StringUtils.substringBetween(token, "{{", "}}");
+			}
+			if (token.matches("^\\{\\{([А-Яа-я]+)\\}\\}$")) {
+				token = StringUtils.substringBetween(token, "{{", "}}");
 			}
 			if (DICTIONARY.containsKey(token.toLowerCase())) {
 				token = DICTIONARY.get(token.toLowerCase());
