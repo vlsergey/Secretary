@@ -9,7 +9,7 @@ import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
 import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
-import org.wikipedia.vlsergey.secretary.wikidata.CalculateCountries;
+import org.wikipedia.vlsergey.secretary.wikidata.ConstrainCheckerQualifiers;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryFlagsUpdate;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate;
 import org.wikipedia.vlsergey.secretary.wikidata.EnumerateProperties;
@@ -32,10 +32,12 @@ public class Secretary {
 		// runOfType(appContext, CountBooks.class);
 
 		scheduleWithFixedDelayOfType(appContext, BuildUnreviewedLists.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, ConstrainCheckerQualifiers.class, DateUtils.MILLIS_PER_HOUR * 12);
 		scheduleWithFixedDelayOfType(appContext, CountBooks.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, DictinaryFlagsUpdate.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, DictinaryUpdate.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, EnumerateProperties.class, DateUtils.MILLIS_PER_HOUR);
+		scheduleWithFixedDelayOfType(appContext, MoveDataToWikidata.class, DateUtils.MILLIS_PER_HOUR * 12);
 		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
@@ -45,8 +47,8 @@ public class Secretary {
 		// runOfType(appContext, DictinaryUpdate.class);
 		// runOfType(appContext, EnumerateProperties.class);
 		// runOfType(appContext, CalculateCountries.class);
-		runOfType(appContext, MoveDataToWikidata.class);
-		runOfType(appContext, CalculateCountries.class);
+		// runOfType(appContext, MoveDataToWikidata.class);
+		// runOfType(appContext, CalculateCountries.class);
 		// runOfType(appContext, ZeroEdits.class);
 		// runOfType(appContext, MoveCommonsCategoryToWikidata.class);
 		// runOfType(appContext, MoveDataToWikidata.class);
@@ -54,9 +56,9 @@ public class Secretary {
 		// appContext.getBean(ReplaceCiteBookWithSpecificTemplate.class).run();
 		// appContext.getBean(ImportLinksFromRuWikisourceTask.class).run();
 
-		while (true) {
-			Thread.sleep(10000);
-		}
+		// while (true) {
+		// Thread.sleep(10000);
+		// }
 	}
 
 	private static <T extends Runnable> void runOfType(ApplicationContext appContext, Class<T> cls) {

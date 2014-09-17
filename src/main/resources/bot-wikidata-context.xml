@@ -21,8 +21,8 @@
 
 	<bean id="wikidataBot" class="org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot">
 		<property name="bot" value="0" />
-		<property name="login" value="Vlsergey" />
-		<property name="password" value="#{systemProperties.VlsergeyPassword}" />
+		<property name="login" value="Secretary" />
+		<property name="password" value="#{systemProperties.SecretaryPassword}" />
 		<property name="site" value="https://www.wikidata.org/w" />
 		<property name="xmlParser" ref="wikidataRefAwareParser" />
 	</bean>

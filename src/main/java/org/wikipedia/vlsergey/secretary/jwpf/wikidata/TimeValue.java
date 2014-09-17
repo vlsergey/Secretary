@@ -48,7 +48,9 @@ public class TimeValue extends DataValue {
 	private static final DateTimeFormatter parser = DateTimeFormatter
 			.ofPattern("['+']uuuuuuuuuuu'-'MM'-'dd'T'HH':'mm':'ssX");
 
+	public static final int PRECISION_CENTURY = 7;
 	public static final int PRECISION_DAY = 11;
+	public static final int PRECISION_DECADE = 8;
 	public static final int PRECISION_HOUR = 12;
 	public static final int PRECISION_MINUTE = 13;
 	public static final int PRECISION_MONTH = 10;
@@ -59,6 +61,15 @@ public class TimeValue extends DataValue {
 
 	public static TemporalAccessor fromISO(String date) {
 		return parser.parse(date);
+	}
+
+	public static int getCentury(TemporalAccessor dateTime) {
+		final int year = dateTime.get(ChronoField.YEAR);
+		if (year > 0) {
+			return (int) Math.floor((year - 1) / 100);
+		} else {
+			return (int) Math.floor(year / 100);
+		}
 	}
 
 	@Deprecated
@@ -146,9 +157,12 @@ public class TimeValue extends DataValue {
 	}
 
 	public OffsetDateTime floor() {
-		OffsetDateTime dateTime = OffsetDateTime.from(getTime());
-
 		int precision = getPrecision();
+		return floorByPrecision(precision);
+	}
+
+	private OffsetDateTime floorByPrecision(int precision) {
+		OffsetDateTime dateTime = OffsetDateTime.from(getTime());
 		if (precision < PRECISION_SECOND)
 			dateTime = dateTime.with(ChronoField.SECOND_OF_MINUTE, 0);
 		if (precision < PRECISION_MINUTE)
@@ -186,6 +200,17 @@ public class TimeValue extends DataValue {
 		return jsonObject.getJSONObject(KEY_VALUE).getString(KEY_CALENDAT_MODEL);
 	}
 
+	private String getCalendarModelSuffix() {
+		switch (getCalendarModel()) {
+		case CALENDAR_GRIGORIAN:
+			return "/G";
+		case CALENDAR_JULIAN:
+			return "/J";
+		default:
+			return "?";
+		}
+	}
+
 	public int getPrecision() {
 		return jsonObject.getJSONObject(KEY_VALUE).getInt(KEY_PRECISION);
 	}
@@ -207,6 +232,16 @@ public class TimeValue extends DataValue {
 		return getTimeString().hashCode();
 	}
 
+	public boolean morePreciseThan(TimeValue b) {
+		if (this.getPrecision() <= b.getPrecision()) {
+			return false;
+		}
+		if (b.getPrecision() >= PRECISION_DAY && !StringUtils.equals(this.getCalendarModel(), b.getCalendarModel())) {
+			return false;
+		}
+		return this.floorByPrecision(b.getPrecision()).equals(b.floor());
+	}
+
 	public void setCalendarModel(String value) {
 		jsonObject.getJSONObject(KEY_VALUE).put(KEY_CALENDAT_MODEL, value);
 	}
@@ -226,20 +261,26 @@ public class TimeValue extends DataValue {
 
 	@Override
 	public Content toWiki() {
-
 		try {
 			final TemporalAccessor time = getTime();
 			switch (getPrecision()) {
+			case 7:
+				int century = getCentury(time);
+				if (century < 0) {
+					return new Text(Math.abs(century) + ". century");
+				} else {
+					return new Text(Math.abs(century) + ". century BCE");
+				}
 			case 9:
-				return new Text(formatYear.format(time) + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+				return new Text(formatYear.format(time));
 			case 10:
-				return new Text(formatMonth.format(time) + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+				return new Text(formatMonth.format(time));
 			case 11:
-				return new Text(formatDay.format(time) + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+				return new Text(formatDay.format(time) + getCalendarModelSuffix());
 			}
 		} catch (Exception exc) {
 		}
 
-		return new Text(getTimeString() + (getCalendarModel() == CALENDAR_GRIGORIAN ? "/G" : "/J"));
+		return new Text(getTimeString() + getCalendarModelSuffix());
 	}
 }

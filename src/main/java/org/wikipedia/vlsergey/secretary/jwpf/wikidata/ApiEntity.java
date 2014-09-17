@@ -4,7 +4,7 @@ import org.json.JSONObject;
 
 public class ApiEntity extends ApiValue implements Entity {
 
-	private static final Statement[] CLAIMS_EMTPY = new Statement[0];
+	private static final ApiStatement[] CLAIMS_EMTPY = new ApiStatement[0];
 
 	public static final String KEY_CLAIMS = "claims";
 	public static final String KEY_DESCRIPTIONS = "descriptions";
@@ -12,8 +12,9 @@ public class ApiEntity extends ApiValue implements Entity {
 	public static final String KEY_LABELS = "labels";
 	public static final String KEY_SITELINKS = "sitelinks";
 
-	public static void putProperty(final JSONObject json, EntityId property, ApiStatement apiStatement) {
-		putToNamedMapArray(json, KEY_CLAIMS, property.toString(), apiStatement.jsonObject);
+	public static void putProperty(final JSONObject json, ApiStatement apiStatement) {
+		putToNamedMapArray(json, KEY_CLAIMS, apiStatement.getMainSnak().getProperty().toString().toUpperCase(),
+				apiStatement.jsonObject);
 	}
 
 	public ApiEntity(JSONObject jsonObject) {
@@ -21,9 +22,9 @@ public class ApiEntity extends ApiValue implements Entity {
 	}
 
 	@Override
-	public Statement[] getClaims(EntityId property) {
+	public ApiStatement[] getClaims(EntityId property) {
 		return getNamedMapArray(KEY_CLAIMS, property.toString(), //
-				size -> (size.intValue() == 0 ? CLAIMS_EMTPY : new Statement[size]), //
+				size -> (size.intValue() == 0 ? CLAIMS_EMTPY : new ApiStatement[size]), //
 				obj -> new ApiStatement(obj));
 	}
 

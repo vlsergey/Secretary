@@ -23,6 +23,15 @@ public class ApiSnak extends ApiValue implements Snak {
 		return apiSnak;
 	}
 
+	public static ApiSnak newSnak(EntityId property, EntityId entityId) {
+		ApiSnak apiSnak = new ApiSnak();
+		apiSnak.setProperty(property);
+		apiSnak.setSnakType(SnakType.value);
+		apiSnak.setDataType(DataType.WIKIBASE_ITEM);
+		apiSnak.setDatavalue(new WikibaseEntityIdValue(entityId));
+		return apiSnak;
+	}
+
 	public static ApiSnak newSnak(EntityId property, SnakType snakType) {
 		if (snakType == SnakType.value) {
 			throw new IllegalArgumentException();
@@ -34,7 +43,7 @@ public class ApiSnak extends ApiValue implements Snak {
 		return apiSnak;
 	}
 
-	public static ApiSnak newStringValueSnak(EntityId property, String value) {
+	public static ApiSnak newSnak(EntityId property, String value) {
 		ApiSnak apiSnak = new ApiSnak();
 		apiSnak.setProperty(property);
 		apiSnak.setSnakType(SnakType.value);
@@ -43,12 +52,12 @@ public class ApiSnak extends ApiValue implements Snak {
 		return apiSnak;
 	}
 
-	public static ApiSnak newWikibaseEntityIdValueSnak(EntityId property, EntityId entityId) {
+	public static ApiSnak newSnak(EntityId property, TimeValue value) {
 		ApiSnak apiSnak = new ApiSnak();
 		apiSnak.setProperty(property);
 		apiSnak.setSnakType(SnakType.value);
-		apiSnak.setDataType(DataType.WIKIBASE_ITEM);
-		apiSnak.setDatavalue(new WikibaseEntityIdValue(entityId));
+		apiSnak.setDataType(DataType.TIME);
+		apiSnak.setDatavalue(value);
 		return apiSnak;
 	}
 
@@ -58,6 +67,19 @@ public class ApiSnak extends ApiValue implements Snak {
 
 	public ApiSnak(JSONObject jsonObject) {
 		super(jsonObject);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof ApiSnak))
+			return false;
+
+		ApiSnak other = (ApiSnak) obj;
+
+		return this.getProperty().equals(other.getProperty()) //
+				&& this.getSnakType().equals(other.getSnakType()) //
+				&& (this.getSnakType() == SnakType.value ? this.getDataType().equals(other.getDataType()) : true) //
+				&& (this.getSnakType() == SnakType.value ? this.getDataValue().equals(other.getDataValue()) : true);
 	}
 
 	@Override
@@ -112,7 +134,7 @@ public class ApiSnak extends ApiValue implements Snak {
 
 	@Override
 	public void setProperty(EntityId value) {
-		jsonObject.put(KEY_PROPERTY, value);
+		jsonObject.put(KEY_PROPERTY, value.toString().toUpperCase());
 	}
 
 	@Override

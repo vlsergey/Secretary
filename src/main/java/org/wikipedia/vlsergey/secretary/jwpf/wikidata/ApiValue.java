@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
 import java.util.function.Function;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -29,6 +30,16 @@ public abstract class ApiValue implements Value {
 		this.jsonObject = jsonObject;
 	}
 
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof ApiValue
+				&& StringUtils.equals(this.jsonObject.toString(), ((ApiValue) obj).jsonObject.toString());
+	}
+
+	public JSONObject getJsonObject() {
+		return jsonObject;
+	}
+
 	protected <T> T[] getNamedMapArray(String mapName, String key, Function<Integer, T[]> arrayBuilder,
 			Function<JSONObject, T> itemBuilder) {
 		if (!jsonObject.has(mapName)) {
@@ -54,6 +65,11 @@ public abstract class ApiValue implements Value {
 	@Override
 	public void setType(ValueType type) {
 		jsonObject.put(KEY_TYPE, type.name());
+	}
+
+	@Override
+	public String toString() {
+		return jsonObject.toString();
 	}
 
 }

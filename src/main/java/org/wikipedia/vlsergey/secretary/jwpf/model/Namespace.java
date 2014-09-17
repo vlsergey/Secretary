@@ -62,6 +62,10 @@ public enum Namespace {
 	 */
 	PROJECT_TALK(5),
 
+	PROPERTY(120),
+
+	PROPERTY_TALK(121),
+
 	RU_WIKI_PORTAL(100),
 
 	RU_WIKI_PORTAL_TALK(100),
@@ -115,6 +119,10 @@ public enum Namespace {
 	;
 
 	public static final Namespace[] NSS_MAIN = new Namespace[] { Namespace.MAIN };
+
+	public static final Namespace[] NSS_PROPERTY_TALK = new Namespace[] { Namespace.PROPERTY_TALK };
+
+	public static final Namespace[] NSS_TEMPLATE_TALK = new Namespace[] { Namespace.TEMPLATE_TALK };
 
 	public final int id;
 
