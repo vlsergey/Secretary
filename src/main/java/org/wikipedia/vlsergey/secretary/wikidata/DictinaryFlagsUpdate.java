@@ -27,15 +27,17 @@ public class DictinaryFlagsUpdate implements Runnable {
 	private static final EntityId ENTITY_city_state = EntityId.item(133442);
 	private static final EntityId ENTITY_confederation = EntityId.item(170156);
 	private static final EntityId ENTITY_empyre = EntityId.item(48349);
+	private static final EntityId ENTITY_former_country = EntityId.item(16905642);
 	private static final EntityId ENTITY_sovereign_state = EntityId.item(3624078);
 	private static final EntityId ENTITY_state = EntityId.item(7275);
+	private static final EntityId ENTITY_uk_member = EntityId.item(3336843);
 	private static final EntityId ENTITY_un_member = EntityId.item(160016);
 
 	private static final EntityId PROPERTY_BEGIN = EntityId.property(580);
 	private static final EntityId PROPERTY_FLAG = EntityId.property(41);
 
-	private static final EntityId[] TOCHECK = { ENTITY_city_state, ENTITY_confederation, ENTITY_empyre,
-			ENTITY_sovereign_state, ENTITY_state, ENTITY_un_member };
+	private static final EntityId[] TOCHECK = { ENTITY_city_state, ENTITY_confederation, ENTITY_former_country,
+			ENTITY_empyre, ENTITY_sovereign_state, ENTITY_state, ENTITY_uk_member, ENTITY_un_member };
 
 	@Autowired
 	@Qualifier("ruWikipediaBot")
