@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
+import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
@@ -35,7 +36,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Rank;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.StringValue;
@@ -79,23 +79,33 @@ public class MoveDataToWikidataWorker {
 	@Autowired
 	private WikidataBot wikidataBot;
 
-	private void fillFromWikidata(ApiEntity entity, EntityId property, Collection<ApiSnak> result) {
+	private void fillFromWikidata(ApiEntity entity, EntityId property, Collection<ValueWithQualifiers> result) {
 		for (ApiStatement statement : entity.getClaims(property)) {
-			result.add(statement.getMainSnak());
+			result.add(new ValueWithQualifiers(statement));
 		}
 	}
 
-	private void fillFromWikipedia(Template template, ReconsiliationColumn descriptor, Collection<ApiSnak> result) {
+	private void fillFromWikipedia(Template template, ReconsiliationColumn descriptor,
+			Collection<ValueWithQualifiers> result) {
 		for (String templateParameter : descriptor.templateParameters) {
 			for (TemplatePart part : template.getParameters(templateParameter)) {
-				if (part.getValue() != null) {
+				final Content parameterValue = part.getValue();
+				if (parameterValue != null) {
 					try {
-						String value = part.getValue().toWiki(true).trim();
+						String value;
+						if (parameterValue instanceof Template
+								&& StringUtils
+										.equalsIgnoreCase("s", ((Template) parameterValue).getName().toWiki(true))) {
+							value = ((Template) parameterValue).getParameter(0).getValue().toWiki(true);
+						} else {
+							value = parameterValue.toWiki(true).trim();
+						}
+
 						if (StringUtils.isNotBlank(value)) {
 							result.addAll(descriptor.toWikidata.apply(value));
 						}
-					} catch (UnsupportedParameterValue exc) {
-						exc.setTemplatePartValue(part.getValue());
+					} catch (UnsupportedParameterValueException exc) {
+						exc.setTemplatePartValue(parameterValue);
 						throw exc;
 					}
 				}
@@ -103,33 +113,42 @@ public class MoveDataToWikidataWorker {
 		}
 	}
 
-	private void fillToWikidata(ReconsiliationColumn descriptor, Collection<ApiSnak> source, JSONObject result) {
-		for (ApiSnak newValue : source) {
-			ApiStatement statement = ApiStatement.newStatement(descriptor.property, newValue);
+	private void fillToWikidata(ReconsiliationColumn descriptor, Collection<ValueWithQualifiers> source,
+			JSONObject result) {
+		for (ValueWithQualifiers newValue : source) {
+			ApiStatement statement = ApiStatement.newStatement(descriptor.property, newValue.getValue());
+			// add qualifiers
+			for (ApiSnak qualifier : newValue.getQualifiers()) {
+				statement.addQualifier(qualifier);
+			}
 			statement.addReference(REFERENCE_FROM_RUWIKI);
 			ApiEntity.putProperty(result, statement);
 		}
 	}
 
 	private String generateSummary(EntityId templateId,
-			Map<ReconsiliationColumn, ? extends Collection<? extends Snak>> fromPedia) {
+			Map<ReconsiliationColumn, ? extends Collection<ValueWithQualifiers>> fromPedia) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("Transferring fields of [[");
 		stringBuilder.append(templateId.toString());
 		stringBuilder.append("]] from ruwiki: ");
-		for (Map.Entry<ReconsiliationColumn, ? extends Collection<? extends Snak>> entry : fromPedia.entrySet()) {
+		for (Map.Entry<ReconsiliationColumn, ? extends Collection<ValueWithQualifiers>> entry : fromPedia.entrySet()) {
 			stringBuilder.append("[[Property:" + entry.getKey().property + "]]: ");
-			for (Snak snak : entry.getValue()) {
-				if (snak.getSnakType() != SnakType.value) {
-					stringBuilder.append("(" + snak.getSnakType() + "); ");
+			for (ValueWithQualifiers valueWithQualifiers : entry.getValue()) {
+				if (valueWithQualifiers.getValue().getSnakType() != SnakType.value) {
+					stringBuilder.append("(" + valueWithQualifiers.getValue().getSnakType() + "); ");
 				} else {
-					DataValue value = snak.getDataValue();
+					DataValue value = valueWithQualifiers.getValue().getDataValue();
 					if (value instanceof StringValue) {
-						stringBuilder.append("«" + ((StringValue) value).getValue() + "»; ");
+						stringBuilder.append("«");
+						stringBuilder.append(((StringValue) value).getValue());
+						stringBuilder.append("»; ");
 					} else if (value instanceof WikibaseEntityIdValue) {
-						stringBuilder.append("[[Q" + ((WikibaseEntityIdValue) value).getNumericId() + "]]; ");
+						stringBuilder.append(((WikibaseEntityIdValue) value).getEntityId().toWikilink(false));
+						stringBuilder.append("; ");
 					} else {
-						stringBuilder.append(value.toWiki().toWiki(true) + "; ");
+						stringBuilder.append(value.toWiki(x -> x.toString()).toWiki(true));
+						stringBuilder.append("; ");
 					}
 				}
 			}
@@ -137,10 +156,11 @@ public class MoveDataToWikidataWorker {
 		return stringBuilder.toString();
 	}
 
-	private void process(String TEMPLATE, EntityId templateId, ReconsiliationColumn[] parametersToMove,
-			Revision revision, MoveDataReport report) throws Exception {
+	private void process(EntityByLinkResolver entityByLinkResolver, TitleResolver titleResolver, String TEMPLATE,
+			EntityId templateId, ReconsiliationColumn[] parametersToMove, Revision revision, MoveDataReport report)
+			throws Exception {
 
-		Map<ReconsiliationColumn, List<ApiSnak>> fromPedia = new LinkedHashMap<>();
+		Map<ReconsiliationColumn, List<ValueWithQualifiers>> fromPedia = new LinkedHashMap<>();
 
 		ArticleFragment fragment = ruWikipediaBot.getXmlParser().parse(revision);
 		if (fragment.getTemplates(TEMPLATE.toLowerCase()).isEmpty()) {
@@ -149,12 +169,12 @@ public class MoveDataToWikidataWorker {
 
 		for (ReconsiliationColumn descriptor : parametersToMove) {
 			try {
-				List<ApiSnak> fromPediaSet = new ArrayList<>();
+				List<ValueWithQualifiers> fromPediaSet = new ArrayList<>();
 				for (Template template : fragment.getAllTemplates().get(TEMPLATE.toLowerCase())) {
 					fillFromWikipedia(template, descriptor, fromPediaSet);
 				}
 				fromPedia.put(descriptor, fromPediaSet);
-			} catch (UnsupportedParameterValue exc) {
+			} catch (UnsupportedParameterValueException exc) {
 				report.addLine(revision, descriptor, exc);
 				continue;
 			}
@@ -166,8 +186,10 @@ public class MoveDataToWikidataWorker {
 			return;
 		}
 
-		ApiEntity entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(),
-				EntityProperty.claims);
+		ApiEntity entity = entityByLinkResolver.apply(revision.getPage().getTitle());
+		if (entity != null) {
+			titleResolver.update(entity);
+		}
 
 		if (entity == null) {
 			JSONObject data = new JSONObject();
@@ -184,14 +206,15 @@ public class MoveDataToWikidataWorker {
 				sitelink.put("title", revision.getPage().getTitle());
 				data.put("sitelinks", Collections.singletonMap("ruwiki", sitelink));
 			}
-			{
-				ApiEntity.putProperty(data, ApiStatement.newStatement(Properties.INSTANCE_OF, ITEM_HUMAN));
-			}
-			entity = wikidataBot.wgCreateEntity(data);
+			ApiEntity.putProperty(data, ApiStatement.newStatement(Properties.INSTANCE_OF, ITEM_HUMAN));
+
+			entity = wikidataBot.wgCreateEntity(data, "Precreate item for transferring fields");
 			entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(), EntityProperty.claims);
 			if (entity == null) {
 				throw new RuntimeException();
 			}
+			titleResolver.update(entity);
+
 			// return;
 		} else {
 			// check compatibility
@@ -215,14 +238,14 @@ public class MoveDataToWikidataWorker {
 		boolean needWikipediaSave = false;
 
 		for (ReconsiliationColumn descriptor : parametersToMove) {
-			List<ApiSnak> fromWikipedia = fromPedia.get(descriptor);
+			List<ValueWithQualifiers> fromWikipedia = fromPedia.get(descriptor);
 
 			if (fromWikipedia == null) {
 				// skip, not parsed
 				continue;
 			}
 
-			List<ApiSnak> fromWikidata = new ArrayList<>();
+			List<ValueWithQualifiers> fromWikidata = new ArrayList<>();
 			fillFromWikidata(entity, descriptor.property, fromWikidata);
 			ReconsiliationAction action = descriptor.getAction(fromWikipedia, fromWikidata);
 
@@ -232,7 +255,7 @@ public class MoveDataToWikidataWorker {
 					claimIdsToDelete.addAll(claims.stream().filter(x -> x.isImportedFrom(ITEM_RUWIKI))
 							.map(x -> x.getId()).collect(Collectors.toList()));
 					fromWikidata = claims.stream().filter(x -> !x.isImportedFrom(ITEM_RUWIKI))
-							.map(x -> x.getMainSnak()).collect(Collectors.toList());
+							.map(x -> new ValueWithQualifiers(x)).collect(Collectors.toList());
 					action = descriptor.getAction(fromWikipedia, fromWikidata);
 				}
 			}
@@ -290,10 +313,10 @@ public class MoveDataToWikidataWorker {
 		}
 	}
 
-	public void process(String template, ReconsiliationColumn... columns) {
-		EntityId templateId = wikidataBot.wgGetEntityBySitelink("ruwiki", "Шаблон:" + template, EntityProperty.info)
-				.getId();
-		MoveDataReport report = new MoveDataReport();
+	public void process(EntityByLinkResolver entityByLinkResolver, TitleResolver titleResolver, String template,
+			ReconsiliationColumn... columns) {
+		EntityId templateId = entityByLinkResolver.apply("Шаблон:" + template).getId();
+		MoveDataReport report = new MoveDataReport(titleResolver);
 
 		ExecutorService executorService = Executors.newFixedThreadPool(4);
 		List<Future<?>> tasks = new ArrayList<>();
@@ -306,7 +329,7 @@ public class MoveDataToWikidataWorker {
 				@Override
 				public void run() {
 					try {
-						process(template, templateId, columns, revision, report);
+						process(entityByLinkResolver, titleResolver, template, templateId, columns, revision, report);
 					} catch (Exception exc) {
 						log.error(exc.toString(), exc);
 						// throw new RuntimeException(e);

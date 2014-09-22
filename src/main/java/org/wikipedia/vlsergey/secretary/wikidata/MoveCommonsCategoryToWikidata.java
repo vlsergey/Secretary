@@ -72,8 +72,8 @@ public class MoveCommonsCategoryToWikidata implements Runnable {
 	private void fillToWikidata(Set<String> source, EntityId property, JSONObject result) {
 		if (!source.isEmpty()) {
 			for (String newValue : source) {
-				ApiStatement statement = ApiStatement.newStringValueStatement(property, newValue);
-				ApiEntity.putProperty(result, property, statement);
+				ApiStatement statement = ApiStatement.newStatement(property, newValue);
+				ApiEntity.putProperty(result, statement);
 			}
 		}
 	}

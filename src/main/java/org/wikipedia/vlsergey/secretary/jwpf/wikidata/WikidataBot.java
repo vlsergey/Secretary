@@ -17,7 +17,7 @@ public class WikidataBot extends MediaWikiBot {
 	/**
 	 * Create entity in Wikidata
 	 */
-	public ApiEntity wgCreateEntity(JSONObject data) {
+	public ApiEntity wgCreateEntity(JSONObject data, String summary) {
 		String token = queryTokenEdit("Q1");
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
 		action.new_ = "item";
@@ -31,10 +31,10 @@ public class WikidataBot extends MediaWikiBot {
 	/**
 	 * Edit entity in Wikidata
 	 */
-	public ApiEntity wgEditEntity(Entity apiEntity, JSONObject data, String summary) {
-		String token = queryTokenEdit(apiEntity.getId());
+	public ApiEntity wgEditEntity(Entity entity, JSONObject data, String summary) {
+		String token = queryTokenEdit(entity.getId());
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
-		action.id = apiEntity.getId();
+		action.id = entity.getId();
 		action.data = data;
 		action.summary = summary;
 		action.token = token;
@@ -43,9 +43,9 @@ public class WikidataBot extends MediaWikiBot {
 		return action.result;
 	}
 
-	public ApiEntity wgGetEntity(String entityId, EntityProperty... props) {
+	public ApiEntity wgGetEntity(EntityId entityId, EntityProperty... props) {
 		WbGetEntitiesAction action = new WbGetEntitiesAction(isBot());
-		action.ids = new String[] { entityId };
+		action.ids = new String[] { entityId.toString() };
 		action.normalize = Boolean.TRUE;
 		action.props = props;
 		action.build();

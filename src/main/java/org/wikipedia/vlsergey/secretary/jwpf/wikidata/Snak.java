@@ -2,18 +2,24 @@ package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
 public interface Snak {
 
-	DataType getDataType();
+	DataValue getAbstractDataValue();
 
 	default DataValue getDataValue() {
-		switch (getDataType().getValueType()) {
-		case string:
+
+		if (!hasValue()) {
+			throw new IllegalStateException("no value");
+		}
+
+		ValueType valueType = getValueType();
+		switch (valueType) {
+		case STRING:
 			return getStringValue();
-		case time:
+		case TIME:
 			return getTimeValue();
-		case wikibase_entityid:
+		case WIKIBASE_ENTITYID:
 			return getWikibaseEntityIdValue();
 		default:
-			throw new UnsupportedOperationException("Unsupported value type: " + getDataType().getValueType());
+			throw new UnsupportedOperationException("Unsupported value type: " + valueType);
 		}
 	}
 
@@ -26,6 +32,16 @@ public interface Snak {
 	StringValue getStringValue();
 
 	TimeValue getTimeValue();
+
+	default ValueType getValueType() {
+		if (!hasValue()) {
+			throw new IllegalStateException("no value");
+		}
+
+		DataValue dataValue = getAbstractDataValue();
+		ValueType valueType = dataValue.getValueType();
+		return valueType;
+	}
 
 	WikibaseEntityIdValue getWikibaseEntityIdValue();
 

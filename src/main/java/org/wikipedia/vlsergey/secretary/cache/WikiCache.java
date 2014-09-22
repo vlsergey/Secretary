@@ -245,6 +245,61 @@ public class WikiCache {
 		};
 	}
 
+	public List<Revision> queryLatestContentByPageTitles(Iterable<String> pageTitles, boolean followRedirects)
+			throws ActionException, ProcessException {
+		log.info("queryLatestContentByPageTitles: " + pageTitles);
+
+		List<Long> pageIds = new ArrayList<>();
+		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
+		for (Revision revision : mediaWikiBot.queryLatestRevisionsByPageTitles(pageTitles, followRedirects, FAST)) {
+			// update info in DB
+			revision = storedRevisionDao.getOrCreate(getProject(), revision);
+
+			pageIds.add(revision.getPage().getId());
+			pageIdToLatestRevision.put(revision.getPage().getId(), revision.getId());
+		}
+
+		Map<Long, Revision> resultMap = new LinkedHashMap<Long, Revision>(pageIdToLatestRevision.size());
+		List<Long> toLoad = new ArrayList<Long>(pageIdToLatestRevision.size());
+
+		for (Long pageId : pageIds) {
+			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
+			if (latestRevisionId == null) {
+				log.warn("Page #" + pageId + " has no revisions");
+				continue;
+			}
+
+			Revision stored = storedRevisionDao.getRevisionById(getProject(), latestRevisionId);
+			if (isCacheRecordValid(stored)) {
+				resultMap.put(latestRevisionId, stored);
+			} else {
+				toLoad.add(latestRevisionId);
+			}
+		}
+
+		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED).apply(toLoad)) {
+			// update cache
+			revision = storedRevisionDao.getOrCreate(getProject(), revision);
+			resultMap.put(revision.getId(), revision);
+		}
+
+		List<Revision> result = new ArrayList<Revision>();
+		for (Long pageId : pageIds) {
+			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
+			if (latestRevisionId == null)
+				continue;
+
+			Revision revision = resultMap.get(latestRevisionId);
+			if (revision == null) {
+				log.warn("Page #" + pageId + " has no revisions");
+				continue;
+			}
+
+			result.add(revision);
+		}
+		return result;
+	}
+
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(Long pageId) {
 		log.debug("queryLatestRevision(" + pageId + ")");

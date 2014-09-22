@@ -2,7 +2,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 
 import org.wikipedia.vlsergey.secretary.dom.Content;
 
-public class UnsupportedParameterValue extends RuntimeException {
+public class UnsupportedParameterValueException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
 
@@ -10,13 +10,13 @@ public class UnsupportedParameterValue extends RuntimeException {
 
 	private final String unparsedValue;
 
-	public UnsupportedParameterValue(String unparsedValue) {
-		super("Unsupported parameter value: '" + unparsedValue + "'");
+	protected UnsupportedParameterValueException(String reason, String unparsedValue) {
+		super(reason + ": «" + unparsedValue + "»");
 		this.unparsedValue = unparsedValue;
 	}
 
-	public UnsupportedParameterValue(String unparsedValue, Exception exc) {
-		super("Unsupported parameter value: '" + unparsedValue + "': " + exc, exc);
+	protected UnsupportedParameterValueException(String reason, String unparsedValue, Exception exc) {
+		super(reason + ": «" + unparsedValue + "»: " + exc, exc);
 		this.unparsedValue = unparsedValue;
 	}
 

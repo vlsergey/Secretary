@@ -78,13 +78,12 @@ public class ApiSnak extends ApiValue implements Snak {
 
 		return this.getProperty().equals(other.getProperty()) //
 				&& this.getSnakType().equals(other.getSnakType()) //
-				&& (this.getSnakType() == SnakType.value ? this.getDataType().equals(other.getDataType()) : true) //
 				&& (this.getSnakType() == SnakType.value ? this.getDataValue().equals(other.getDataValue()) : true);
 	}
 
 	@Override
-	public DataType getDataType() {
-		return DataType.get(jsonObject.getString(KEY_DATATYPE));
+	public DataValue getAbstractDataValue() {
+		return new DataValue(jsonObject.getJSONObject(KEY_DATAVALUE));
 	}
 
 	@Override

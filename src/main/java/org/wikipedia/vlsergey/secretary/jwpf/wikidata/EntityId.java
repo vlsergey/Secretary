@@ -54,6 +54,10 @@ public class EntityId implements Comparable<EntityId> {
 		return id;
 	}
 
+	public String getPageTitle() {
+		return getType().getPageTitle(id);
+	}
+
 	public EntityType getType() {
 		return type;
 	}
@@ -70,6 +74,10 @@ public class EntityId implements Comparable<EntityId> {
 	@Override
 	public String toString() {
 		return type.code + id;
+	}
+
+	public String toWikilink(boolean interwiki) {
+		return getType().toWikilink(id, interwiki);
 	}
 
 }

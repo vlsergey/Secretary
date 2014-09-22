@@ -1,16 +1,11 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataValue;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 
 class AbstractHelper {
 
-	public ReconsiliationAction getAction(Collection<ApiSnak> wikipediaSnaks, Collection<ApiSnak> wikidataSnaks) {
+	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipediaSnaks,
+			Collection<ValueWithQualifiers> wikidataSnaks) {
 
 		if (wikipediaSnaks.isEmpty()) {
 			return ReconsiliationAction.remove_from_wikipedia;
@@ -19,14 +14,10 @@ class AbstractHelper {
 			return ReconsiliationAction.set;
 		}
 
-		List<DataValue> wikipedia = wikipediaSnaks.stream()
-				.map(x -> x.getSnakType() == SnakType.value ? x.getDataValue() : null).collect(Collectors.toList());
-		List<DataValue> wikidata = wikidataSnaks.stream()
-				.map(x -> x.getSnakType() == SnakType.value ? x.getDataValue() : null).collect(Collectors.toList());
-
-		if (wikidata.containsAll(wikipedia)) {
+		if (wikidataSnaks.containsAll(wikipediaSnaks)) {
 			return ReconsiliationAction.remove_from_wikipedia;
 		}
+
 		return ReconsiliationAction.report_difference;
 	}
 

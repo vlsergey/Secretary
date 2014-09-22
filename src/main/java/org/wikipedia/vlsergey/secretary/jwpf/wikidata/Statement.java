@@ -5,7 +5,7 @@ public interface Statement {
 	public static final EntityId PROPERTY_DATE_RETRIEVED = EntityId.property(813);
 	public static final EntityId PROPERTY_IMPORTED_FROM = EntityId.property(143);
 
-	void addQualifier(String propertyCode, ApiSnak qualifier);
+	void addQualifier(ApiSnak qualifier);
 
 	String getId();
 
@@ -21,6 +21,10 @@ public interface Statement {
 
 	default StringValue getStringValue() {
 		return getMainSnak().getStringValue();
+	}
+
+	default ValueType getValueType() {
+		return getMainSnak().getValueType();
 	}
 
 	boolean hasMainSnak();
@@ -72,11 +76,9 @@ public interface Statement {
 		return false;
 	}
 
-	default boolean isWikibaseEntityIdValue(String entityId) {
-		if (hasMainSnak()) {
-			if (getMainSnak().hasSnakType() && getMainSnak().getSnakType() == SnakType.value) {
-				return entityId.equals("Q" + getMainSnak().getWikibaseEntityIdValue().getNumericId());
-			}
+	default boolean isWikibaseEntityIdValue(EntityId entityId) {
+		if (hasValue() && getMainSnak().getAbstractDataValue().getType() == ValueType.WIKIBASE_ENTITYID) {
+			return entityId.equals(getMainSnak().getWikibaseEntityIdValue().getEntityId());
 		}
 		return false;
 	}

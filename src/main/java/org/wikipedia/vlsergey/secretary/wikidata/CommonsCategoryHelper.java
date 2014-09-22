@@ -1,6 +1,5 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -22,7 +21,7 @@ public class CommonsCategoryHelper extends AbstractHelper {
 	@Qualifier("commonsCache")
 	private WikiCache commonsCache;
 
-	public List<ApiSnak> parse(EntityId property, String strValue) {
+	public List<ValueWithQualifiers> parse(EntityId property, String strValue) {
 
 		try {
 			if (strValue.startsWith("Category:") || strValue.startsWith("category:")) {
@@ -41,18 +40,18 @@ public class CommonsCategoryHelper extends AbstractHelper {
 						}
 					}
 				} else if (commonsCategoryRevision == null) {
-					throw new UnsupportedParameterValue(categoryName + " (no such category)");
+					throw new CantParseValueException(categoryName + " (no such category)");
 				}
 
-				return Collections.singletonList(ApiSnak.newSnak(property, categoryName));
+				return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, categoryName));
 			}
-		} catch (UnsupportedParameterValue exc) {
+		} catch (UnsupportedParameterValueException exc) {
 			throw exc;
 		} catch (Exception exc) {
 			exc.printStackTrace();
 		}
 
-		throw new UnsupportedParameterValue(strValue);
+		throw new CantParseValueException(strValue);
 
 	}
 

@@ -4,13 +4,13 @@ import org.apache.commons.lang.StringUtils;
 
 public enum DataType {
 
-	STRING("string", ValueType.string),
+	STRING("string", ValueType.STRING),
 
-	TIME("time", ValueType.time),
+	TIME("time", ValueType.TIME),
 
-	URL("url", ValueType.string),
+	URL("url", ValueType.STRING),
 
-	WIKIBASE_ITEM("wikibase-item", ValueType.wikibase_entityid),
+	WIKIBASE_ITEM("wikibase-item", ValueType.WIKIBASE_ENTITYID),
 
 	;
 

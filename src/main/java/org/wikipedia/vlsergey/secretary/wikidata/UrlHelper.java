@@ -2,7 +2,6 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -18,7 +17,7 @@ public class UrlHelper extends AbstractHelper {
 	private static final Set<String> PROHIBITED_HOSTS = new HashSet<>(Arrays.asList("", "vk.com", "vkontakte.ru",
 			"ok.ru", "odnoklassniki.ru", "facebook.com", "www.facebook.com"));
 
-	public List<ApiSnak> parse(EntityId property, String strValue) {
+	public List<ValueWithQualifiers> parse(EntityId property, String strValue) {
 
 		strValue = StringUtils.trimToEmpty(strValue);
 
@@ -44,14 +43,14 @@ public class UrlHelper extends AbstractHelper {
 								uri.getQuery(), uri.getFragment());
 					}
 
-					return Collections.singletonList(ApiSnak.newSnak(property, uri.toString()));
+					return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, uri.toString()));
 				}
 			}
 
 		} catch (Exception exc) {
 		}
 
-		throw new UnsupportedParameterValue(strValue);
+		throw new CantParseValueException(strValue);
 
 	}
 }

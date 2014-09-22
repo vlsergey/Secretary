@@ -9,7 +9,6 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
@@ -51,13 +50,14 @@ public class TimeHelper {
 		return calendar.toZonedDateTime();
 	}
 
-	private List<ApiSnak> asCentury(EntityId property, int century) {
+	private List<ValueWithQualifiers> asCentury(EntityId property, int century) {
 		TemporalAccessor temporalAccessor = PARSER_YEAR.parse((century * 100) + "");
 		final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_CENTURY, temporalAccessor);
-		return Collections.singletonList(ApiSnak.newSnak(property, timeValue));
+		return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, timeValue));
 	}
 
-	public ReconsiliationAction getAction(Collection<ApiSnak> wikipedia, Collection<ApiSnak> wikidata) {
+	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipedia,
+			Collection<ValueWithQualifiers> wikidata) {
 		if (wikipedia.size() > 1) {
 			return ReconsiliationAction.report_difference;
 		}
@@ -74,53 +74,55 @@ public class TimeHelper {
 			return ReconsiliationAction.remove_from_wikipedia;
 		}
 
-		if (wikipedia.size() == 1 && wikidata.size() == 1) {
-			final ApiSnak snakP = wikipedia.iterator().next();
-			final ApiSnak snakD = wikidata.iterator().next();
-			if (snakP.hasValue() && !snakD.hasValue()) {
-				return ReconsiliationAction.replace;
-			}
-			if (!snakP.hasValue() && snakD.hasValue()) {
-				return ReconsiliationAction.remove_from_wikipedia;
-			}
-			if (snakP.hasValue() && snakP.hasValue()) {
-				TimeValue p = snakP.getTimeValue();
-				TimeValue d = snakD.getTimeValue();
-				if (p.morePreciseThan(d)) {
-					return ReconsiliationAction.replace;
-				}
-				if (d.morePreciseThan(p)) {
-					return ReconsiliationAction.remove_from_wikipedia;
-				}
-				if (p.getAfter() == d.getAfter() && p.getBefore() == d.getBefore()
-						&& StringUtils.equals(p.getTimeString(), d.getTimeString())
-						&& p.getPrecision() == d.getPrecision() && p.getTimezone() == d.getTimezone()
-						&& TimeValue.CALENDAR_JULIAN.equals(p.getCalendarModel())
-						&& TimeValue.CALENDAR_GRIGORIAN.equals(d.getCalendarModel())) {
-					return ReconsiliationAction.replace;
-				}
-				if (p.getAfter() == d.getAfter()
-						&& p.getBefore() == d.getBefore()
-						&& p.getPrecision() == d.getPrecision()
-						&& p.getTimezone() == d.getTimezone()
-						&& TimeValue.CALENDAR_JULIAN.equals(p.getCalendarModel())
-						&& TimeValue.CALENDAR_GRIGORIAN.equals(d.getCalendarModel())
-						&& OffsetDateTime.from(TimeHelper.fixJulianToGrigorian(d.getTime())).equals(
-								OffsetDateTime.from(p.getTime()))) {
-					// mistake on Wikidata -- Julian date entered as gregorian
-					return ReconsiliationAction.replace;
-				}
-			}
-		}
+		// if (wikipedia.size() == 1 && wikidata.size() == 1) {
+		// final ApiSnak snakP = wikipedia.iterator().next().getValue();
+		// final ApiSnak snakD = wikidata.iterator().next().getValue();
+		// if (snakP.hasValue() && !snakD.hasValue()) {
+		// return ReconsiliationAction.replace;
+		// }
+		// if (!snakP.hasValue() && snakD.hasValue()) {
+		// return ReconsiliationAction.remove_from_wikipedia;
+		// }
+		// if (snakP.hasValue() && snakP.hasValue()) {
+		// TimeValue p = snakP.getTimeValue();
+		// TimeValue d = snakD.getTimeValue();
+		// if (p.morePreciseThan(d)) {
+		// return ReconsiliationAction.replace;
+		// }
+		// if (d.morePreciseThan(p)) {
+		// return ReconsiliationAction.remove_from_wikipedia;
+		// }
+		// if (p.getAfter() == d.getAfter() && p.getBefore() == d.getBefore()
+		// && StringUtils.equals(p.getTimeString(), d.getTimeString())
+		// && p.getPrecision() == d.getPrecision() && p.getTimezone() ==
+		// d.getTimezone()
+		// && TimeValue.CALENDAR_JULIAN.equals(p.getCalendarModel())
+		// && TimeValue.CALENDAR_GRIGORIAN.equals(d.getCalendarModel())) {
+		// return ReconsiliationAction.replace;
+		// }
+		// if (p.getAfter() == d.getAfter()
+		// && p.getBefore() == d.getBefore()
+		// && p.getPrecision() == d.getPrecision()
+		// && p.getTimezone() == d.getTimezone()
+		// && TimeValue.CALENDAR_JULIAN.equals(p.getCalendarModel())
+		// && TimeValue.CALENDAR_GRIGORIAN.equals(d.getCalendarModel())
+		// &&
+		// OffsetDateTime.from(TimeHelper.fixJulianToGrigorian(d.getTime())).equals(
+		// OffsetDateTime.from(p.getTime()))) {
+		// // mistake on Wikidata -- Julian date entered as gregorian
+		// return ReconsiliationAction.replace;
+		// }
+		// }
+		// }
 
 		return ReconsiliationAction.report_difference;
 	}
 
-	public List<ApiSnak> parse(EntityId property, String t) {
+	public List<ValueWithQualifiers> parse(EntityId property, String t) {
 		t = t.trim();
 
 		if (UNKNOWN.contains(t.toLowerCase())) {
-			return Collections.singletonList(ApiSnak.newSnak(property, SnakType.somevalue));
+			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, SnakType.somevalue));
 		}
 
 		boolean appendJulian = false;
@@ -184,7 +186,7 @@ public class TimeHelper {
 					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
 				}
 			}
-			return Collections.singletonList(ApiSnak.newSnak(property, timeValue));
+			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, timeValue));
 		} catch (DateTimeParseException exc) {
 		}
 
@@ -200,11 +202,11 @@ public class TimeHelper {
 					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
 				}
 			}
-			return Collections.singletonList(ApiSnak.newSnak(property, timeValue));
+			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, timeValue));
 		} catch (DateTimeParseException exc) {
 		}
 
-		throw new UnsupportedParameterValue(t);
+		throw new CantParseValueException(t);
 	}
 
 	private int parseCentury(final String strCentury) throws ParseException {

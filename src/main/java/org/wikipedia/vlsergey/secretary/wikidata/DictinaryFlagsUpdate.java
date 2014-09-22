@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,18 +27,21 @@ public class DictinaryFlagsUpdate implements Runnable {
 
 	private static final EntityId ENTITY_city_state = EntityId.item(133442);
 	private static final EntityId ENTITY_confederation = EntityId.item(170156);
+	private static final EntityId ENTITY_country = EntityId.item(6256);
 	private static final EntityId ENTITY_empyre = EntityId.item(48349);
 	private static final EntityId ENTITY_former_country = EntityId.item(16905642);
 	private static final EntityId ENTITY_sovereign_state = EntityId.item(3624078);
 	private static final EntityId ENTITY_state = EntityId.item(7275);
 	private static final EntityId ENTITY_uk_member = EntityId.item(3336843);
 	private static final EntityId ENTITY_un_member = EntityId.item(160016);
+	private static final EntityId ENTITY_usa_unincorporated_territory = EntityId.item(2107324);
 
 	private static final EntityId PROPERTY_BEGIN = EntityId.property(580);
 	private static final EntityId PROPERTY_FLAG = EntityId.property(41);
 
-	private static final EntityId[] TOCHECK = { ENTITY_city_state, ENTITY_confederation, ENTITY_former_country,
-			ENTITY_empyre, ENTITY_sovereign_state, ENTITY_state, ENTITY_uk_member, ENTITY_un_member };
+	private static final EntityId[] TOCHECK = { ENTITY_city_state, ENTITY_confederation, ENTITY_country,
+			ENTITY_former_country, ENTITY_empyre, ENTITY_sovereign_state, ENTITY_state, ENTITY_uk_member,
+			ENTITY_un_member, ENTITY_usa_unincorporated_territory };
 
 	@Autowired
 	@Qualifier("ruWikipediaBot")
@@ -60,30 +64,26 @@ public class DictinaryFlagsUpdate implements Runnable {
 			final Page stateTypeItemPage = stateTypeItemRev.getPage();
 
 			for (Revision revision : wikidataCache.queryByBacklinks(stateTypeItemPage.getId(), Namespace.MAIN)) {
-				// for (Revision revision :
-				// Collections.singleton(wikidataCache.queryLatestRevision("Q142")))
-				// {
-				String content = revision.getContent();
-				JSONObject jsonObject = new JSONObject(content);
-				// Entity entity = new NativeEntity(jsonObject);
-				Entity entity = new ApiEntity(jsonObject);
+				Entity entity = new ApiEntity(new JSONObject(revision.getContent()));
 
 				SortedMap<Long, String> values = new TreeMap<>();
 				for (Statement statement : entity.getClaims(PROPERTY_FLAG)) {
-					if (statement.hasValue()) {
-						String value = statement.getStringValue().getValue();
-						Long start = Long.MIN_VALUE;
-						for (Snak begin : statement.getQualifiers(PROPERTY_BEGIN)) {
-							if (begin.hasValue()) {
-								try {
-									start = Instant.from(begin.getTimeValue().floor()).getEpochSecond() * 1000;
-									break;
-								} catch (Exception exc) {
-									continue;
-								}
+					Long start = Long.MIN_VALUE;
+					for (Snak begin : statement.getQualifiers(PROPERTY_BEGIN)) {
+						if (begin.hasValue()) {
+							try {
+								start = Instant.from(begin.getTimeValue().floor()).getEpochSecond() * 1000;
+								break;
+							} catch (Exception exc) {
+								continue;
 							}
 						}
-						values.put(start, value);
+					}
+
+					if (statement.hasValue()) {
+						values.put(start, statement.getStringValue().getValue());
+					} else {
+						values.put(start, StringUtils.EMPTY);
 					}
 				}
 				if (!values.isEmpty()) {
@@ -99,9 +99,15 @@ public class DictinaryFlagsUpdate implements Runnable {
 			for (Map.Entry<Long, String> flag : entry.getValue().entrySet()) {
 				builder.append("[");
 				builder.append(flag.getKey());
-				builder.append("]='");
-				builder.append(flag.getValue().replace("'", "\\'"));
-				builder.append("', ");
+				builder.append("]=");
+				if (StringUtils.isBlank(flag.getValue())) {
+					builder.append("false");
+				} else {
+					builder.append("'");
+					builder.append(flag.getValue().replace("'", "\\'"));
+					builder.append("'");
+				}
+				builder.append(", ");
 			}
 			builder.append("},\n");
 		}

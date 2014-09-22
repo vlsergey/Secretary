@@ -39,9 +39,11 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Sitelink;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
@@ -99,7 +101,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			return false;
 		}
 
-		public boolean matchesWikidataId(String wikidataId) {
+		public boolean matchesWikidataId(EntityId wikidataId) {
 			if (links.get(Dictionary.ВИКИПЕДИЯ) == null) {
 				return false;
 			}
@@ -147,17 +149,18 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		ВИКИПЕДИЯ(Project.RUWIKIPEDIA, StringUtils.EMPTY, StringUtils.EMPTY, null, null, x -> x, x -> StringUtils.EMPTY),
 
-		ЛЕНТАПЕДИЯ(Project.RUWIKISOURCE, "Лентапедия/", StringUtils.EMPTY, "лентапедия", "Q17290934",
+		ЛЕНТАПЕДИЯ(Project.RUWIKISOURCE, "Лентапедия/", StringUtils.EMPTY, "лентапедия", EntityId.item(17290934),
 				x -> "Лентапедия / " + x, x -> "Статья «" + x + "» в энциклопедии «Лентапедия»"),
 
-		ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ(Project.RUWIKISOURCE, "Лентапедия/", "/Полная версия", "лентапедия", "Q17311605",
-				x -> "Лентапедия (полная) / " + x, x -> "Полная версия статьи «" + x + "» в энциклопедии «Лентапедия»"),
+		ЛЕНТАПЕДИЯ_ПОЛНАЯ_ВЕРСИЯ(Project.RUWIKISOURCE, "Лентапедия/", "/Полная версия", "лентапедия", EntityId
+				.item(17311605), x -> "Лентапедия (полная) / " + x, x -> "Полная версия статьи «" + x
+				+ "» в энциклопедии «Лентапедия»"),
 
 		;
 
-		public static Dictionary getByWikidataId(String wikidataId) {
+		public static Dictionary getByWikidataId(EntityId wikidataId) {
 			for (Dictionary dictionary : values()) {
-				if (StringUtils.equals(dictionary.wikidataId, wikidataId)) {
+				if (dictionary.wikidataId.equals(wikidataId)) {
 					return dictionary;
 				}
 			}
@@ -174,11 +177,11 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		public final Function<String, String> wikidataDescriptionF;
 
-		public final String wikidataId;
+		public final EntityId wikidataId;
 
 		public final Function<String, String> wikidataTitleF;
 
-		private Dictionary(Project project, String prefix, String suffix, String titleTemplate, String wikidataId,
+		private Dictionary(Project project, String prefix, String suffix, String titleTemplate, EntityId wikidataId,
 				final Function<String, String> wikidataTitleF, final Function<String, String> wikidataDescriptionF) {
 
 			if (project == null)
@@ -227,7 +230,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		final Dictionary dictionary;
 
-		String entityId;
+		EntityId entityId;
 
 		boolean exists = true;
 
@@ -304,24 +307,14 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private static final Map<String, Dictionary> MAPPED_FIELDS = new HashMap<String, Dictionary>();
 
-	private static final EntityId PROPERTY_DESCRIBED_BY = EntityId.property(1343);
-
-	private static final EntityId PROPERTY_INSTANCE_OF = EntityId.property(31);
-
-	private static final EntityId PROPERTY_MAIN_TOPIC = EntityId.property(921);
-
-	private static final EntityId PROPERTY_PART_OF = EntityId.property(361);
-
-	private static final EntityId PROPERTY_STATED_IN = EntityId.property(248);
-
-	private static final EntityId PROPERTY_TITLE = EntityId.property(357);
+	private static final String SUMMARY = "Import links from Russian Wikisource dictionaries";
 
 	static {
 		MAPPED_FIELDS.put("википедия", Dictionary.ВИКИПЕДИЯ);
 		MAPPED_FIELDS.put("лентапедия", Dictionary.ЛЕНТАПЕДИЯ);
 	}
 
-	private final Map<String, ApiEntity> entitiesByIdCache = new HashMap<>();
+	private final Map<EntityId, ApiEntity> entitiesByIdCache = new HashMap<>();
 
 	private final Map<String, ApiEntity> entitiesByPageTitleCache = new HashMap<>();
 
@@ -388,13 +381,12 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			Entity apiEntity = link.apiEntity;
 			// get linked dictionaries
 
-			for (Statement describedBy : apiEntity.getClaims(PROPERTY_DESCRIBED_BY)) {
-				String dictionaryId = "Q" + describedBy.getMainSnak().getWikibaseEntityIdValue().getNumericId();
+			for (Statement describedBy : apiEntity.getClaims(Properties.DESCRIBED_BY)) {
+				EntityId dictionaryId = describedBy.getMainSnak().getWikibaseEntityIdValue().getEntityId();
 				Dictionary claimDictionary = Dictionary.getByWikidataId(dictionaryId);
 				if (claimDictionary != null) {
-					String linkWikidataId = "Q"
-							+ describedBy.getQualifiers(PROPERTY_STATED_IN)[0].getWikibaseEntityIdValue()
-									.getNumericId();
+					EntityId linkWikidataId = describedBy.getQualifiers(Properties.STATED_IN)[0]
+							.getWikibaseEntityIdValue().getEntityId();
 
 					Link newLink = getLinkByWikidataId(claimDictionary, linkWikidataId);
 					if (newLink != null) {
@@ -408,9 +400,9 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 			// get Wikipedia link from Wikidata
 			if (link.apiEntity != null) {
 				// get main topic
-				for (Statement mainTopicClaim : link.apiEntity.getClaims(PROPERTY_MAIN_TOPIC)) {
-					String wikidataMainTopicLink = "Q"
-							+ mainTopicClaim.getMainSnak().getWikibaseEntityIdValue().getNumericId();
+				for (Statement mainTopicClaim : link.apiEntity.getClaims(Properties.MAIN_TOPIC)) {
+					EntityId wikidataMainTopicLink = mainTopicClaim.getMainSnak().getWikibaseEntityIdValue()
+							.getEntityId();
 
 					List<Circle> matched = findByWikidataId(circles, wikidataMainTopicLink);
 					hasChanges = mergeOrCreate(circles, circle, matched) || hasChanges;
@@ -456,7 +448,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 				.collect(Collectors.toList());
 	}
 
-	private List<Circle> findByWikidataId(List<Circle> circles, String wikidataId) {
+	private List<Circle> findByWikidataId(List<Circle> circles, EntityId wikidataId) {
 		return circles.stream()//
 				.filter(circle -> circle.matchesWikidataId(wikidataId))//
 				.collect(Collectors.toList());
@@ -482,7 +474,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 		return link;
 	}
 
-	Link getLinkByWikidataId(Dictionary dictionary, String entityId) {
+	Link getLinkByWikidataId(Dictionary dictionary, EntityId entityId) {
 		Entity apiEntity = getWikidataEntity(entityId);
 		Link link;
 		Sitelink sitelink = apiEntity.getSiteLink(dictionary.project.getCode());
@@ -499,6 +491,16 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 		return link;
 	}
 
+	private Entity getWikidataEntity(EntityId entityId) {
+		ApiEntity result = entitiesByIdCache.get(entityId);
+		if (result == null) {
+			result = wikidataBot.wgGetEntity(entityId, EntityProperty.claims, EntityProperty.descriptions,
+					EntityProperty.labels, EntityProperty.sitelinks);
+			entitiesByIdCache.put(entityId, result);
+		}
+		return result;
+	}
+
 	private Entity getWikidataEntity(Project project, String pageTitle) {
 		final String key = project.getCode() + "/" + pageTitle;
 		ApiEntity result = entitiesByPageTitleCache.get(key);
@@ -509,16 +511,6 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 				entitiesByPageTitleCache.put(key, result);
 				entitiesByIdCache.put(result.getId(), result);
 			}
-		}
-		return result;
-	}
-
-	private Entity getWikidataEntity(String entityId) {
-		ApiEntity result = entitiesByIdCache.get(entityId);
-		if (result == null) {
-			result = wikidataBot.wgGetEntity(entityId, EntityProperty.claims, EntityProperty.descriptions,
-					EntityProperty.labels, EntityProperty.sitelinks);
-			entitiesByIdCache.put(entityId, result);
 		}
 		return result;
 	}
@@ -662,78 +654,75 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 		if (project.getType() == ProjectType.wiki) {
 
 			// set links to Wikisource project
-			ApiStatement[] claims = apiEntity.getClaims(PROPERTY_DESCRIBED_BY);
+			Statement[] claims = apiEntity.getClaims(Properties.DESCRIBED_BY);
 			for (Link sublink : circle.links.values().stream().flatMap(x -> x.stream())
 					.filter(x -> x.dictionary.project.getType() == ProjectType.wikisource) //
-					.filter(x -> StringUtils.isNotBlank(x.dictionary.wikidataId)) //
-					.filter(x -> StringUtils.isNotBlank(x.entityId)) //
+					.filter(x -> x.dictionary.wikidataId != null) //
+					.filter(x -> x.entityId != null) //
 					.collect(Collectors.toList())) {
 				if (!Arrays.stream(claims).anyMatch(x -> x.isWikibaseEntityIdValue(sublink.dictionary.wikidataId))) {
 					// need to create new
-					ApiStatement apiStatement = ApiStatement.newWikibaseEntityIdValueStatement(PROPERTY_DESCRIBED_BY,
+					ApiStatement apiStatement = ApiStatement.newStatement(Properties.DESCRIBED_BY,
 							sublink.dictionary.wikidataId);
 
 					{
 						ApiSnak qualifier = new ApiSnak();
-						qualifier.setProperty(PROPERTY_STATED_IN);
+						qualifier.setProperty(Properties.STATED_IN);
 						qualifier.setSnakType(SnakType.value);
-						qualifier.setDataType(WikibaseEntityIdValue.DATATYPE);
+						qualifier.setDataType(DataType.WIKIBASE_ITEM);
 						qualifier.setDatavalue(new WikibaseEntityIdValue(sublink.entityId));
-						apiStatement.addQualifier(PROPERTY_STATED_IN, qualifier);
+						apiStatement.addQualifier(qualifier);
 					}
 					{
 						ApiSnak qualifier = new ApiSnak();
-						qualifier.setProperty(PROPERTY_TITLE);
+						qualifier.setProperty(Properties.TITLE);
 						qualifier.setSnakType(SnakType.value);
-						qualifier.setDataType(StringValue.DATATYPE);
+						qualifier.setDataType(DataType.STRING);
 						qualifier.setDatavalue(new StringValue(sublink.articleName));
-						apiStatement.addQualifier(PROPERTY_TITLE, qualifier);
+						apiStatement.addQualifier(qualifier);
 					}
 
-					ApiEntity.putProperty(newData, PROPERTY_DESCRIBED_BY, apiStatement);
+					ApiEntity.putProperty(newData, apiStatement);
 				}
 			}
 		}
 
 		if (project.getType() == ProjectType.wikisource) {
-			if (!apiEntity.hasClaims(PROPERTY_MAIN_TOPIC)) {
+			if (!apiEntity.hasClaims(Properties.MAIN_TOPIC)) {
 				Link wikipediaLink = circle.links.get(Dictionary.ВИКИПЕДИЯ) != null ? circle.links.get(
 						Dictionary.ВИКИПЕДИЯ).first() : null;
-				if (wikipediaLink != null && StringUtils.isNotBlank(wikipediaLink.entityId)) {
-					ApiEntity
-							.putProperty(newData, PROPERTY_MAIN_TOPIC, ApiStatement.newWikibaseEntityIdValueStatement(
-									PROPERTY_MAIN_TOPIC, wikipediaLink.entityId));
+				if (wikipediaLink != null && wikipediaLink.entityId != null) {
+					ApiEntity.putProperty(newData,
+							ApiStatement.newStatement(Properties.MAIN_TOPIC, wikipediaLink.entityId));
 				}
 			}
 
-			if (!apiEntity.hasClaims(PROPERTY_PART_OF)) {
-				if (StringUtils.isNotBlank(link.dictionary.wikidataId)) {
-					ApiEntity.putProperty(newData, PROPERTY_PART_OF, ApiStatement.newWikibaseEntityIdValueStatement(
-							PROPERTY_PART_OF, link.dictionary.wikidataId));
+			if (!apiEntity.hasClaims(Properties.PART_OF)) {
+				if (link.dictionary.wikidataId != null) {
+					ApiEntity.putProperty(newData,
+							ApiStatement.newStatement(Properties.PART_OF, link.dictionary.wikidataId));
 				}
 			}
 
-			if (!apiEntity.hasClaims(PROPERTY_INSTANCE_OF)) {
-				ApiEntity
-						.putProperty(newData, PROPERTY_INSTANCE_OF, ApiStatement.newWikibaseEntityIdValueStatement(
-								PROPERTY_INSTANCE_OF, ITEM_encyclopedic_article));
+			if (!apiEntity.hasClaims(Properties.INSTANCE_OF)) {
+				ApiEntity.putProperty(newData,
+						ApiStatement.newStatement(Properties.INSTANCE_OF, ITEM_encyclopedic_article));
 			}
 
-			if (!apiEntity.hasClaims(PROPERTY_TITLE)) {
+			if (!apiEntity.hasClaims(Properties.TITLE)) {
 				if (StringUtils.isNotBlank(link.articleName)) {
-					ApiEntity.putProperty(newData, PROPERTY_TITLE,
-							ApiStatement.newStringValueStatement(PROPERTY_TITLE, link.articleName));
+					ApiEntity.putProperty(newData, ApiStatement.newStatement(Properties.TITLE, link.articleName));
 				}
 			}
 		}
 
 		if (newData.length() != 0) {
 			if (link.apiEntity == null) {
-				apiEntity = wikidataBot.wgCreateEntity(newData);
+				apiEntity = wikidataBot.wgCreateEntity(newData, SUMMARY);
 				link.apiEntity = apiEntity;
 				link.entityId = apiEntity.getId();
 			} else {
-				apiEntity = wikidataBot.wgEditEntity(apiEntity, newData);
+				apiEntity = wikidataBot.wgEditEntity(apiEntity, newData, SUMMARY);
 				link.apiEntity = apiEntity;
 				link.entityId = apiEntity.getId();
 			}

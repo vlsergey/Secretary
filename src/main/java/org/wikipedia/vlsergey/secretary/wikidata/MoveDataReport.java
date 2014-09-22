@@ -5,27 +5,33 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Function;
 
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 
 public class MoveDataReport {
 
+	private final Function<EntityId, String> labelResolver;
+
 	private final Map<EntityId, SortedMap<String, String>> results = new HashMap<>();
 
-	public void addLine(Revision revision, ReconsiliationColumn descriptor, Collection<? extends Snak> fromWikipedia,
-			Collection<? extends Snak> fromWikidata, ApiEntity entity) {
+	public MoveDataReport(final Function<EntityId, String> labelResolver) {
+		this.labelResolver = labelResolver;
+	}
+
+	public void addLine(Revision revision, ReconsiliationColumn descriptor,
+			Collection<ValueWithQualifiers> fromWikipedia, Collection<ValueWithQualifiers> fromWikidata,
+			ApiEntity entity) {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
 		toString(fromWikipedia, stringBuilder);
 		stringBuilder.append("\n| \n");
 		toString(fromWikidata, stringBuilder);
-		stringBuilder.append("\n| [[:d:" + entity.getId() + "|" + entity.getId() + "]]\n");
+		stringBuilder.append("\n| [[:d:" + entity.getId() + "|" + labelResolver.apply(entity.getId()) + "]]\n");
 		stringBuilder.append("|-\n");
 
 		addLine(revision, descriptor, stringBuilder.toString());
@@ -46,26 +52,29 @@ public class MoveDataReport {
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
 		stringBuilder.append("| colspan=3 | " + problem + "\n");
-		stringBuilder.append("| [[:d:" + entity.getId() + "|" + entity.getId() + "]]\n");
+		stringBuilder.append("| [[:d:" + entity.getId() + "|" + labelResolver.apply(entity.getId()) + "]]\n");
 		stringBuilder.append("|-\n");
 		addLine(revision, descriptor, stringBuilder.toString());
 	}
 
-	public synchronized void addLine(Revision revision, ReconsiliationColumn descriptor, UnsupportedParameterValue exc) {
+	public synchronized void addLine(Revision revision, ReconsiliationColumn descriptor,
+			UnsupportedParameterValueException exc) {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
 		stringBuilder.append("| <nowiki>" + exc.getTemplatePartValue().toWiki(true) + "</nowiki>\n");
-		stringBuilder.append("| colspan=3 | Can't parse value: <nowiki>" + exc.getUnparsedValue() + "</nowiki>\n");
+		stringBuilder.append("| colspan=3 | <nowiki>" + exc.getMessage() + "</nowiki>\n");
 		stringBuilder.append("|-\n");
 		addLine(revision, descriptor, stringBuilder.toString());
 	}
 
 	public void save(String template, MediaWikiBot ruWikipediaBot, ReconsiliationColumn... columns) {
+
 		for (ReconsiliationColumn column : columns) {
 			// for (Map.Entry<EntityId, SortedMap<String, String>> entry :
 			// results.entrySet()) {
 			SortedMap<String, String> discrepancies = results.get(column.property);
+
 			if (discrepancies != null && !discrepancies.isEmpty()) {
 				StringBuilder result = new StringBuilder("{| class=\"wikitable sortable\"\n");
 				result.append("! Статья\n");
@@ -74,10 +83,20 @@ public class MoveDataReport {
 				result.append("! Значение на Викиданных\n");
 				result.append("! Элемент Викиданных\n");
 				result.append("|-\n");
+
+				int count = 0;
 				for (Map.Entry<String, String> line : discrepancies.entrySet()) {
 					result.append(line.getValue());
+					count++;
+					if (count == 1000) {
+						break;
+					}
 				}
-				result.append("|}");
+				result.append("|}\n");
+
+				if (discrepancies.size() > count) {
+					result.append("Too many items, stop report");
+				}
 
 				ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/" + template + "/P"
 						+ column.property.getId(), null, result.toString(), null, "Update reconsiliation report", true,
@@ -95,21 +114,16 @@ public class MoveDataReport {
 		}
 	}
 
-	private void toString(Collection<? extends Snak> snaks, final StringBuilder result) {
+	private void toString(Collection<ValueWithQualifiers> values, final StringBuilder result) {
 		result.append("| ");
-		if (snaks.size() == 1) {
-			final Snak snak = snaks.iterator().next();
-			result.append(toString(snak));
+		if (values.size() == 1) {
+			final ValueWithQualifiers value = values.iterator().next();
+			result.append(value.toString(labelResolver, 0));
 		} else {
-			for (Snak snak : snaks) {
-				result.append("\n* " + toString(snak));
+			for (ValueWithQualifiers value : values) {
+				result.append("\n* " + value.toString(labelResolver, 1));
 			}
 		}
-	}
-
-	private String toString(Snak snak) {
-		return snak.getSnakType() == SnakType.value ? snak.getDataValue().toWiki().toWiki(true) : "("
-				+ snak.getSnakType() + ")";
 	}
 
 }

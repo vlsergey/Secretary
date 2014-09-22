@@ -1,20 +1,32 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
+import org.apache.commons.lang.StringUtils;
+
 public enum ValueType {
 
-	statement,
+	STATEMENT("statement"),
 
-	string,
+	STRING("string"),
 
-	time,
+	TIME("time"),
 
-	wikibase_entityid {
-		@Override
-		public String toString() {
-			return "wikibase-entityid";
-		}
-	}
+	WIKIBASE_ENTITYID("wikibase-entityid"),
 
 	;
+
+	public static ValueType byCode(String code) {
+		for (ValueType valueType : values()) {
+			if (StringUtils.equalsIgnoreCase(code, valueType.code)) {
+				return valueType;
+			}
+		}
+		return ValueType.valueOf(code);
+	}
+
+	public final String code;
+
+	private ValueType(final String code) {
+		this.code = code;
+	}
 
 }

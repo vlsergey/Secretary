@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
@@ -59,12 +60,31 @@ public abstract class ApiValue implements Value {
 
 	@Override
 	public ValueType getType() {
-		return ValueType.valueOf(jsonObject.getString(KEY_TYPE));
+		return ValueType.byCode(jsonObject.getString(KEY_TYPE));
+	}
+
+	protected JSONObject removeFromMapArray(String mapName, String key, Predicate<JSONObject> predicate) {
+		if (!jsonObject.has(mapName)) {
+			throw new IllegalArgumentException("no map '" + mapName + "'");
+		}
+		final JSONObject map = jsonObject.getJSONObject(mapName);
+		if (!map.has(key)) {
+			throw new IllegalArgumentException("no item '" + key + "' in map '" + mapName + "'");
+		}
+		JSONArray jsonArray = map.getJSONArray(key);
+		for (int i = jsonArray.length() - 1; i >= 0; i--) {
+			JSONObject jsonObject = jsonArray.getJSONObject(i);
+			if (predicate.test(jsonObject)) {
+				jsonArray.remove(i);
+				return jsonObject;
+			}
+		}
+		throw new IllegalArgumentException("Item not found");
 	}
 
 	@Override
 	public void setType(ValueType type) {
-		jsonObject.put(KEY_TYPE, type.name());
+		jsonObject.put(KEY_TYPE, type.code);
 	}
 
 	@Override

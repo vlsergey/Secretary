@@ -1,14 +1,11 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.function.Function;
 
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
@@ -57,8 +54,6 @@ public class TimeValue extends DataValue {
 	public static final int PRECISION_SECOND = 14;
 	public static final int PRECISION_YEAR = 9;
 
-	private static final TimeZone UTC = TimeZone.getTimeZone("UTC");
-
 	public static TemporalAccessor fromISO(String date) {
 		return parser.parse(date);
 	}
@@ -70,14 +65,6 @@ public class TimeValue extends DataValue {
 		} else {
 			return (int) Math.floor(year / 100);
 		}
-	}
-
-	@Deprecated
-	public static String toISO(Date date) {
-		DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm'Z'");
-		df.setTimeZone(UTC);
-		String result = "+0000000" + df.format(new Date());
-		return result;
 	}
 
 	public static String toISO(TemporalAccessor date) {
@@ -100,25 +87,10 @@ public class TimeValue extends DataValue {
 		return result;
 	}
 
-	@Deprecated
-	public TimeValue(int precision, Date date) {
-		super(new JSONObject());
-
-		jsonObject.put(KEY_TYPE, ValueType.time.toString());
-		jsonObject.put(KEY_VALUE, new JSONObject());
-
-		setTimeString(toISO(date));
-		jsonObject.getJSONObject(KEY_VALUE).put(KEY_TIMEZONE, 0);
-		jsonObject.getJSONObject(KEY_VALUE).put(KEY_BEFORE, 0);
-		jsonObject.getJSONObject(KEY_VALUE).put(KEY_AFTER, 0);
-		setPrecision(precision);
-		setCalendarModel(CALENDAR_GRIGORIAN);
-	}
-
 	public TimeValue(int precision, TemporalAccessor date) {
 		super(new JSONObject());
 
-		jsonObject.put(KEY_TYPE, ValueType.time.toString());
+		jsonObject.put(KEY_TYPE, ValueType.TIME.code);
 		jsonObject.put(KEY_VALUE, new JSONObject());
 
 		setTimeString(toISO(date));
@@ -260,7 +232,7 @@ public class TimeValue extends DataValue {
 	}
 
 	@Override
-	public Content toWiki() {
+	public Content toWiki(Function<EntityId, String> labelResolver) {
 		try {
 			final TemporalAccessor time = getTime();
 			switch (getPrecision()) {

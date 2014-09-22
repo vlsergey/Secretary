@@ -15,11 +15,13 @@
 		<property name="project" value="wikidata" />
 	</bean>
 
-	<bean id="wikidataRefAwareParser" class="org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser">
+	<bean id="wikidataRefAwareParser"
+		class="org.wikipedia.vlsergey.secretary.dom.parser.RefAwareParser">
 		<property name="xmlCache" ref="wikidataXmlCache" />
 	</bean>
 
-	<bean id="wikidataBot" class="org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot">
+	<bean id="wikidataBot"
+		class="org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot">
 		<property name="bot" value="0" />
 		<property name="login" value="Secretary" />
 		<property name="password" value="#{systemProperties.SecretaryPassword}" />
@@ -27,23 +29,38 @@
 		<property name="xmlParser" ref="wikidataRefAwareParser" />
 	</bean>
 
-	<bean id="dictionatyUpdateP218" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+	<bean id="dictionatyUpdateP218"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P218" />
 	</bean>
-	<bean id="dictionatyUpdateP219" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+	<bean id="dictionatyUpdateP219"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P219" />
 	</bean>
-	<bean id="dictionatyUpdateP220" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+	<bean id="dictionatyUpdateP220"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P220" />
 	</bean>
-	<bean id="dictionatyUpdateP424" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+	<bean id="dictionatyUpdateP424"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P424" />
 	</bean>
-	<bean id="dictionatyUpdateP428" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+	<bean id="dictionatyUpdateP428"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P428" />
 	</bean>
-	<bean id="dictionatyUpdateP835" class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+	<bean id="dictionatyUpdateP835"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P835" />
+	</bean>
+
+	<bean id="dictionatyUpdateP1464"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+		<property name="property" value="P1464" />
+	</bean>
+	<bean id="dictionatyUpdateP1465"
+		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
+		<property name="property" value="P1465" />
 	</bean>
 
 	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.wikidata" />

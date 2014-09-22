@@ -10,6 +10,7 @@ public class ApiEntity extends ApiValue implements Entity {
 	public static final String KEY_DESCRIPTIONS = "descriptions";
 	public static final String KEY_ID = "id";
 	public static final String KEY_LABELS = "labels";
+	public static final String KEY_LASTREVID = "lastrevid";
 	public static final String KEY_SITELINKS = "sitelinks";
 
 	public static void putProperty(final JSONObject json, ApiStatement apiStatement) {
@@ -55,6 +56,10 @@ public class ApiEntity extends ApiValue implements Entity {
 			return null;
 		}
 		return new Label(labels.getJSONObject(code));
+	}
+
+	public Long getLastRevisionId() {
+		return jsonObject.getLong(KEY_LASTREVID);
 	}
 
 	@Override
@@ -107,6 +112,22 @@ public class ApiEntity extends ApiValue implements Entity {
 		}
 		JSONObject sitelinks = jsonObject.getJSONObject(KEY_SITELINKS);
 		return sitelinks.has(projectCode);
+	}
+
+	public void putClaim(ApiStatement apiStatement) {
+		putToNamedMapArray(jsonObject, KEY_CLAIMS, apiStatement.getMainSnak().getProperty().toString(),
+				apiStatement.jsonObject);
+	}
+
+	public void putLabel(Label label) {
+		if (!jsonObject.has(KEY_LABELS)) {
+			jsonObject.put(KEY_LABELS, new JSONObject());
+		}
+		jsonObject.getJSONObject(KEY_LABELS).put(label.getLanguage(), label.jsonObject);
+	}
+
+	public void setId(EntityId entityId) {
+		jsonObject.put(KEY_ID, entityId.toString());
 	}
 
 }

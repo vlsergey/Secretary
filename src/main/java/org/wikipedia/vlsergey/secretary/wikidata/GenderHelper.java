@@ -14,17 +14,17 @@ public class GenderHelper extends AbstractHelper {
 	private static final EntityId GENDER_FEMALE = EntityId.item(6581072);
 	private static final EntityId GENDER_MALE = EntityId.item(6581097);
 
-	public List<ApiSnak> parse(EntityId property, String strValue) {
+	public List<ValueWithQualifiers> parse(EntityId property, String strValue) {
 		String value = strValue.trim();
 		if (StringUtils.isBlank(value)) {
 			return Collections.emptyList();
 		}
 		if (StringUtils.equalsIgnoreCase("м", value) || StringUtils.equalsIgnoreCase("мужской", value)) {
-			return Collections.singletonList(ApiSnak.newSnak(property, GENDER_MALE));
+			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, GENDER_MALE));
 		}
 		if (StringUtils.equalsIgnoreCase("ж", value) || StringUtils.equalsIgnoreCase("женский", value)) {
-			return Collections.singletonList(ApiSnak.newSnak(property, GENDER_FEMALE));
+			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, GENDER_FEMALE));
 		}
-		throw new UnsupportedParameterValue(value);
+		throw new CantParseValueException(value);
 	}
 }

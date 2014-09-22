@@ -3,6 +3,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,10 +23,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
 
 @Component
 public class CountriesHelper {
@@ -43,22 +42,11 @@ public class CountriesHelper {
 	public static List<DataValue> VALUES_USSR_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_USSR),
 			new WikibaseEntityIdValue(COUNTRY_RUSSIA));
 
-	Map<String, List<ApiSnak>> cache = new HashMap<>();
-
 	private Map<String, String> DICTIONARY = new HashMap<>();
-
-	Map<String, EntityId> queriesCache = new HashMap<>();
 
 	@Autowired
 	@Qualifier("ruWikipediaCache")
 	private WikiCache ruWikipediaCache;
-
-	@Autowired
-	private WikidataBot wikidataBot;
-
-	@Autowired
-	@Qualifier("wikidataCache")
-	private WikiCache wikidataCache;
 
 	{
 		addToDictionary("{{ger|1804}}", "Германия");
@@ -347,7 +335,8 @@ public class CountriesHelper {
 		}
 	}
 
-	public ReconsiliationAction getAction(Collection<ApiSnak> wikipediaSnaks, Collection<ApiSnak> wikidataSnaks) {
+	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipediaSnaks,
+			Collection<ValueWithQualifiers> wikidataSnaks) {
 
 		if (wikipediaSnaks.isEmpty()) {
 			return ReconsiliationAction.remove_from_wikipedia;
@@ -357,9 +346,11 @@ public class CountriesHelper {
 		}
 
 		List<DataValue> wikipedia = wikipediaSnaks.stream()
-				.map(x -> x.getSnakType() == SnakType.value ? x.getDataValue() : null).collect(Collectors.toList());
+				.map(x -> x.getValue().getSnakType() == SnakType.value ? x.getValue().getDataValue() : null)
+				.collect(Collectors.toList());
 		List<DataValue> wikidata = wikidataSnaks.stream()
-				.map(x -> x.getSnakType() == SnakType.value ? x.getDataValue() : null).collect(Collectors.toList());
+				.map(x -> x.getValue().getSnakType() == SnakType.value ? x.getValue().getDataValue() : null)
+				.collect(Collectors.toList());
 
 		if (wikipedia.equals(VALUES_RUSSIAN_EMPIRE) && wikidata.equals(VALUES_RUSSIA)) {
 			return ReconsiliationAction.replace;
@@ -475,37 +466,18 @@ public class CountriesHelper {
 		return result;
 	}
 
-	public synchronized List<ApiSnak> parse(EntityId property, String strValue) {
-		final String cacheKey = property + "/" + strValue;
-		if (cache.containsKey(cacheKey)) {
-			return cache.get(cacheKey);
-		}
-
+	public synchronized List<ValueWithQualifiers> parse(final EntityByLinkResolver entityByLinkResolver,
+			EntityId property, String strValue) {
+		List<ValueWithQualifiers> result = new ArrayList<>();
 		List<String> countryNames = normalize(strValue);
-		List<ApiSnak> result = new ArrayList<>();
 		for (String countryName : countryNames) {
-			if (queriesCache.containsKey(countryName)) {
-				final EntityId entityId = queriesCache.get(countryName);
-				if (entityId == null) {
-					throw new UnsupportedParameterValue(countryName);
-				}
-				result.add(ApiSnak.newSnak(property, entityId));
-				continue;
+			Entity entity = entityByLinkResolver.apply(countryName);
+			if (entity == null) {
+				throw new CantParseValueException(countryName);
 			}
 
-			Entity countryEntity;
-			try {
-				countryEntity = wikidataBot.wgGetEntityBySitelink("ruwiki", countryName, EntityProperty.info);
-				queriesCache.put(countryName, countryEntity.getId());
-			} catch (Exception exc) {
-				queriesCache.put(countryName, null);
-				throw new UnsupportedParameterValue(countryName);
-			}
-
-			result.add(ApiSnak.newSnak(property, countryEntity.getId()));
+			result.add(new ValueWithQualifiers(ApiSnak.newSnak(property, entity.getId()), Collections.emptyList()));
 		}
-		cache.put(cacheKey, result);
 		return result;
 	}
-
 }

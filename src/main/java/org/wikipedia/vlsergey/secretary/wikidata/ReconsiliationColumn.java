@@ -15,10 +15,10 @@ class ReconsiliationColumn {
 	final DataType dataType;
 	final EntityId property;
 	final Collection<String> templateParameters;
-	final Function<String, List<ApiSnak>> toWikidata;
+	final Function<String, List<ValueWithQualifiers>> toWikidata;
 
 	public ReconsiliationColumn(List<String> templateParameters, DataType dataType, EntityId property,
-			Function<String, List<ApiSnak>> toWikidata) {
+			Function<String, List<ValueWithQualifiers>> toWikidata) {
 		this.templateParameters = templateParameters;
 		this.dataType = dataType;
 		this.property = property;
@@ -29,18 +29,20 @@ class ReconsiliationColumn {
 		this.templateParameters = Collections.singletonList(templateParameter);
 		this.dataType = dataType;
 		this.property = property;
-		this.toWikidata = x -> Collections.singletonList(ApiSnak.newSnak(property, dataType, new StringValue(x)));
+		this.toWikidata = x -> Collections.singletonList(new ValueWithQualifiers(ApiSnak.newSnak(property, dataType,
+				new StringValue(x)), Collections.emptyList()));
 	}
 
 	public ReconsiliationColumn(String templateParameter, DataType dataType, EntityId property,
-			Function<String, List<ApiSnak>> toWikidata) {
+			Function<String, List<ValueWithQualifiers>> toWikidata) {
 		this.templateParameters = Collections.singletonList(templateParameter);
 		this.dataType = dataType;
 		this.property = property;
 		this.toWikidata = toWikidata;
 	}
 
-	public ReconsiliationAction getAction(Collection<ApiSnak> wikipedia, Collection<ApiSnak> wikidata) {
+	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipedia,
+			Collection<ValueWithQualifiers> wikidata) {
 		if (wikipedia.isEmpty()) {
 			return ReconsiliationAction.remove_from_wikipedia;
 		}
