@@ -153,7 +153,7 @@ public class MediaWikiBot extends HttpBot {
 			long sleepUntil = earliest + DateUtils.MILLIS_PER_MINUTE + 1;
 			while (System.currentTimeMillis() <= sleepUntil) {
 				try {
-					Thread.sleep(Math.min(System.currentTimeMillis() - sleepUntil, 1));
+					Thread.sleep(Math.max(System.currentTimeMillis() - sleepUntil, 1));
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
