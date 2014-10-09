@@ -5,11 +5,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -38,8 +38,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Rank;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Reference;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.StringValue;
@@ -65,12 +63,6 @@ public class MoveDataToWikidataWorker {
 			EntityId.item(273057)
 
 	);
-
-	private static Reference REFERENCE_FROM_RUWIKI = new Reference();
-
-	static {
-		REFERENCE_FROM_RUWIKI.addSnak(Snak.newSnak(Properties.IMPORTED_FROM, ITEM_RUWIKI));
-	}
 
 	static Content prepareParameterValue(Content content) {
 		if (content instanceof AbstractContainer) {
@@ -163,12 +155,6 @@ public class MoveDataToWikidataWorker {
 				stringBuilder.toString(), null, "Update reconsiliation stats", true, false);
 	}
 
-	private void fillFromWikidata(Entity entity, EntityId property, Collection<ValueWithQualifiers> result) {
-		for (Statement statement : entity.getClaims(property)) {
-			result.add(new ValueWithQualifiers(statement));
-		}
-	}
-
 	private void fillFromWikipedia(Template template, ReconsiliationColumn descriptor,
 			Collection<ValueWithQualifiers> result) {
 		for (String templateParameter : descriptor.templateParameters) {
@@ -190,30 +176,17 @@ public class MoveDataToWikidataWorker {
 		}
 	}
 
-	private void fillToWikidata(ReconsiliationColumn descriptor, Collection<ValueWithQualifiers> source,
-			JSONObject result, String claimIdToUse) {
-		for (ValueWithQualifiers newValue : source) {
-			Statement statement = Statement.newStatement(descriptor.property, newValue.getValue());
-			// add qualifiers
-			for (Snak qualifier : newValue.getQualifiers()) {
-				statement.addQualifier(qualifier);
-			}
-			statement.addReference(REFERENCE_FROM_RUWIKI);
-			if (!StringUtils.isBlank(claimIdToUse)) {
-				statement.setId(claimIdToUse);
-			}
-			Entity.putProperty(result, statement);
-		}
-	}
-
-	private String generateSummary(EntityId templateId,
+	private String generateWikidataSummary(EntityId templateId,
 			Map<ReconsiliationColumn, ? extends Collection<ValueWithQualifiers>> fromPedia) {
 		StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("Transferring fields of [[");
 		stringBuilder.append(templateId.toString());
 		stringBuilder.append("]] from ruwiki: ");
 		for (Map.Entry<ReconsiliationColumn, ? extends Collection<ValueWithQualifiers>> entry : fromPedia.entrySet()) {
-			stringBuilder.append("[[Property:" + entry.getKey().property + "]]: ");
+			Object[] properties = Arrays.stream(entry.getKey().properties).map(x -> "[[" + x.getPageTitle() + "]]")
+					.toArray();
+			stringBuilder.append(StringUtils.join(properties, ", "));
+			stringBuilder.append(": ");
 			for (ValueWithQualifiers valueWithQualifiers : entry.getValue()) {
 				if (valueWithQualifiers.getValue().getSnakType() != SnakType.value) {
 					stringBuilder.append("(" + valueWithQualifiers.getValue().getSnakType() + "); ");
@@ -318,46 +291,55 @@ public class MoveDataToWikidataWorker {
 
 		for (ReconsiliationColumn descriptor : parametersToMove) {
 			List<ValueWithQualifiers> fromWikipedia = fromPedia.get(descriptor);
-			Set<String> toBeDeleted = new HashSet<>();
+			Map<EntityId, List<String>> toBeDeleted = new HashMap<>();
 
 			if (fromWikipedia == null) {
 				// skip, not parsed
 				continue;
 			}
 
-			List<ValueWithQualifiers> fromWikidata = new ArrayList<>();
-			fillFromWikidata(entity, descriptor.property, fromWikidata);
+			List<ValueWithQualifiers> fromWikidata = descriptor.fromWikidata(entity, false);
 			ReconsiliationAction action = descriptor.getAction(fromWikipedia, fromWikidata);
 
-			final List<Statement> claims = entity.getClaims(descriptor.property);
-			if (claims.stream().anyMatch(x -> x.isImportedFrom(ITEM_RUWIKI))) {
-				if (action == ReconsiliationAction.report_difference) {
-					toBeDeleted.addAll(claims.stream().filter(x -> x.isImportedFrom(ITEM_RUWIKI)).map(x -> x.getId())
-							.collect(Collectors.toList()));
-					fromWikidata = claims.stream().filter(x -> !x.isImportedFrom(ITEM_RUWIKI))
-							.map(x -> new ValueWithQualifiers(x)).collect(Collectors.toList());
-					action = descriptor.getAction(fromWikipedia, fromWikidata);
+			if (action == ReconsiliationAction.report_difference) {
+				final List<ValueWithQualifiers> fromWikidataWithoutImported = descriptor.fromWikidata(entity, true);
+				final ReconsiliationAction actionWithoutImported = descriptor.getAction(fromWikipedia,
+						fromWikidataWithoutImported);
+
+				if (actionWithoutImported != ReconsiliationAction.report_difference) {
+					for (EntityId property : descriptor.properties) {
+						final List<String> toBeDeletedByProperty = new LinkedList<>(entity.getClaims(property).stream()
+								.filter(x -> x.isImportedFrom(ITEM_RUWIKI)).map(x -> x.getId())
+								.collect(Collectors.toList()));
+						toBeDeleted.put(property, toBeDeletedByProperty);
+					}
+					fromWikidata = fromWikidataWithoutImported;
+					action = actionWithoutImported;
 				}
 			}
 
 			switch (action) {
 			case replace: {
-				for (Statement statement : entity.getClaims(descriptor.property)) {
-					if (statement.hasRealReferences()) {
-						statement.setRank(Rank.deprecated);
-						Entity.putProperty(newData, statement);
-					} else {
-						toBeDeleted.add(statement.getId());
+				for (EntityId property : descriptor.properties) {
+					List<String> toBeDeletedByProperty = toBeDeleted.get(property);
+					if (toBeDeletedByProperty == null) {
+						toBeDeletedByProperty = new LinkedList<>();
+						toBeDeleted.put(property, toBeDeletedByProperty);
+					}
+
+					for (Statement statement : entity.getClaims(property)) {
+						if (statement.hasRealReferences()) {
+							statement.setRank(Rank.deprecated);
+							Entity.putProperty(newData, statement);
+						} else {
+							toBeDeletedByProperty.add(statement.getId());
+						}
 					}
 				}
-				if (toBeDeleted.size() == 1 && fromWikipedia.size() == 1) {
-					fillToWikidata(descriptor, fromWikipedia, newData, toBeDeleted.iterator().next());
-					toBeDeleted.clear();
-				} else {
-					fillToWikidata(descriptor, fromWikipedia, newData, null);
-				}
-				break;
 			}
+			case append:
+				descriptor.fillToWikidata(fromWikipedia, newData, toBeDeleted);
+				break;
 			case remove_from_wikipedia_as_empty:
 			case remove_from_wikipedia_as_not_empty:
 				fromPedia.remove(descriptor);
@@ -366,19 +348,11 @@ public class MoveDataToWikidataWorker {
 				report.addLine(revision, descriptor, fromWikipedia, fromWikidata, entity);
 				fromPedia.remove(descriptor);
 				continue;
-			case set:
-				if (toBeDeleted.size() == 1 && fromWikipedia.size() == 1) {
-					fillToWikidata(descriptor, fromWikipedia, newData, toBeDeleted.iterator().next());
-					toBeDeleted.clear();
-				} else {
-					fillToWikidata(descriptor, fromWikipedia, newData, null);
-				}
-				break;
 			default:
 				throw new UnsupportedOperationException("NYI");
 			}
 
-			claimIdsToDelete.addAll(toBeDeleted);
+			claimIdsToDelete.addAll(toBeDeleted.values().stream().flatMap(x -> x.stream()).collect(Collectors.toSet()));
 			if (action.removeFromWikipedia) {
 				for (Template template : fragment.getAllTemplates().get(TEMPLATE.toLowerCase())) {
 					for (String templateParameter : descriptor.templateParameters) {
@@ -393,7 +367,7 @@ public class MoveDataToWikidataWorker {
 			}
 		}
 
-		final String summary = generateSummary(templateId, fromPedia);
+		final String summary = generateWikidataSummary(templateId, fromPedia);
 		if (newData.length() != 0) {
 			wikidataBot.wgEditEntity(entity, newData, summary);
 		}
@@ -408,7 +382,7 @@ public class MoveDataToWikidataWorker {
 	}
 
 	public void process(EntityByLinkResolver entityByLinkResolver, TitleResolver titleResolver, String template,
-			ReconsiliationColumn... columns) {
+			SinglePropertyReconsiliationColumn... columns) {
 		EntityId templateId = entityByLinkResolver.apply("Шаблон:" + template).getId();
 		MoveDataReport report = new MoveDataReport(titleResolver);
 

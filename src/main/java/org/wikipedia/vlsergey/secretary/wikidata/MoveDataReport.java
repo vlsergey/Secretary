@@ -10,22 +10,20 @@ import java.util.function.Function;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 public class MoveDataReport {
 
 	private final Function<EntityId, String> labelResolver;
 
-	private final Map<EntityId, SortedMap<String, String>> results = new HashMap<>();
+	private final Map<ReconsiliationColumn, SortedMap<String, String>> results = new HashMap<>();
 
 	public MoveDataReport(final Function<EntityId, String> labelResolver) {
 		this.labelResolver = labelResolver;
 	}
 
 	public void addLine(Revision revision, ReconsiliationColumn descriptor,
-			Collection<ValueWithQualifiers> fromWikipedia, Collection<ValueWithQualifiers> fromWikidata,
-			Entity entity) {
+			Collection<ValueWithQualifiers> fromWikipedia, Collection<ValueWithQualifiers> fromWikidata, Entity entity) {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
@@ -40,10 +38,10 @@ public class MoveDataReport {
 
 	private void addLine(Revision revision, ReconsiliationColumn descriptor, final String line) {
 		synchronized (this) {
-			if (!results.containsKey(descriptor.property)) {
-				results.put(descriptor.property, new TreeMap<>());
+			if (!results.containsKey(descriptor)) {
+				results.put(descriptor, new TreeMap<>());
 			}
-			results.get(descriptor.property).put(revision.getPage().getTitle(), line);
+			results.get(descriptor).put(revision.getPage().getTitle(), line);
 		}
 	}
 
@@ -73,7 +71,7 @@ public class MoveDataReport {
 		for (ReconsiliationColumn column : columns) {
 			// for (Map.Entry<EntityId, SortedMap<String, String>> entry :
 			// results.entrySet()) {
-			SortedMap<String, String> discrepancies = results.get(column.property);
+			SortedMap<String, String> discrepancies = results.get(column);
 
 			if (discrepancies != null && !discrepancies.isEmpty()) {
 				StringBuilder result = new StringBuilder("{| class=\"wikitable sortable\"\n");
@@ -98,18 +96,20 @@ public class MoveDataReport {
 					result.append("Too many items, stop report");
 				}
 
-				ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/" + template + "/P"
-						+ column.property.getId(), null, result.toString(), null, "Update reconsiliation report", true,
-						false);
-				ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/" + template + "/P"
-						+ column.property.getId() + "/count", null, "" + discrepancies.size(), null,
-						"Update reconsiliation report", true, false);
+				ruWikipediaBot.writeContent(
+						"User:" + ruWikipediaBot.getLogin() + "/" + template + "/" + column.getCode(), null,
+						result.toString(), null, "Update reconsiliation report", true, false);
+				ruWikipediaBot.writeContent(
+						"User:" + ruWikipediaBot.getLogin() + "/" + template + "/" + column.getCode() + "/count", null,
+						"" + discrepancies.size(), null, "Update reconsiliation report — " + discrepancies.size(),
+						true, false);
 			} else {
-				ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/" + template + "/P"
-						+ column.property.getId(), null, "(empty)", null, "Update reconsiliation report", true, false);
-				ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/" + template + "/P"
-						+ column.property.getId() + "/count", null, "" + 0, null, "Update reconsiliation report", true,
-						false);
+				ruWikipediaBot.writeContent(
+						"User:" + ruWikipediaBot.getLogin() + "/" + template + "/" + column.getCode(), null, "(empty)",
+						null, "Update reconsiliation report", true, false);
+				ruWikipediaBot.writeContent(
+						"User:" + ruWikipediaBot.getLogin() + "/" + template + "/" + column.getCode() + "/count", null,
+						"" + 0, null, "Update reconsiliation report — 0", true, false);
 			}
 		}
 	}

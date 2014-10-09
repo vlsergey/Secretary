@@ -29,6 +29,8 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
 @Component
 public class CountriesHelper extends AbstractHelper {
 
+	public static Map<EntityId, EntityId> SPORTS_COUNTRIES = new HashMap<>();
+
 	public static List<DataValue> VALUES_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(Places.Россия));
 	public static List<DataValue> VALUES_RUSSIAN_EMPIRE = Arrays.asList(new WikibaseEntityIdValue(
 			Places.Российская_империя));
@@ -37,6 +39,14 @@ public class CountriesHelper extends AbstractHelper {
 	public static List<DataValue> VALUES_USSR = Arrays.asList(new WikibaseEntityIdValue(Places.СССР));
 	public static List<DataValue> VALUES_USSR_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(Places.СССР),
 			new WikibaseEntityIdValue(Places.Россия));
+
+	static {
+		SPORTS_COUNTRIES.put(Places.Англия, Places.Великобритания);
+		SPORTS_COUNTRIES.put(Places.Северная_Ирландия, Places.Великобритания);
+		SPORTS_COUNTRIES.put(Places.Уэльс, Places.Великобритания);
+		SPORTS_COUNTRIES.put(Places.Шотландия, Places.Великобритания);
+		SPORTS_COUNTRIES.put(Places.Китайский_Тайбэй, Places.Китайская_Республика);
+	}
 
 	private Map<String, String> DICTIONARY = new HashMap<>();
 
@@ -344,7 +354,7 @@ public class CountriesHelper extends AbstractHelper {
 			return ReconsiliationAction.remove_from_wikipedia_as_empty;
 		}
 		if (wikidataSnaks.isEmpty()) {
-			return ReconsiliationAction.set;
+			return ReconsiliationAction.append;
 		}
 
 		List<DataValue> wikipedia = wikipediaSnaks.stream()

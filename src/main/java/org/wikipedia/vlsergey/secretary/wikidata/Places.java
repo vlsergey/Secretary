@@ -6,6 +6,8 @@ public interface Places {
 
 	EntityId Амстердам = EntityId.item(727);
 
+	EntityId Англия = EntityId.item(21);
+
 	EntityId Аргентина = EntityId.item(414);
 
 	EntityId Буэнос_Айрес = EntityId.item(1486);
@@ -17,6 +19,10 @@ public interface Places {
 	EntityId Италия = EntityId.item(38);
 
 	EntityId Калифорния = EntityId.item(99);
+
+	EntityId Китайская_Республика = EntityId.item(865);
+
+	EntityId Китайский_Тайбэй = EntityId.item(216923);
 
 	EntityId Кишинёв = EntityId.item(21197);
 
@@ -52,12 +58,18 @@ public interface Places {
 
 	EntityId Санкт_Петербург = EntityId.item(656);
 
+	EntityId Северная_Ирландия = EntityId.item(25);
+
 	EntityId СССР = EntityId.item(15180);
 
 	EntityId США = EntityId.item(30);
 
 	EntityId Украина = EntityId.item(212);
 
+	EntityId Уэльс = EntityId.item(25);
+
 	EntityId Франция = EntityId.item(142);
+
+	EntityId Шотландия = EntityId.item(22);
 
 }

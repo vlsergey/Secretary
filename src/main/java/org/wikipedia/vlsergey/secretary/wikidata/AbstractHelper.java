@@ -24,7 +24,7 @@ class AbstractHelper {
 			return ReconsiliationAction.remove_from_wikipedia_as_empty;
 		}
 		if (wikidataSnaks.isEmpty()) {
-			return ReconsiliationAction.set;
+			return ReconsiliationAction.append;
 		}
 
 		if (wikidataSnaks.containsAll(wikipediaSnaks)) {

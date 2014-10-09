@@ -10,7 +10,7 @@ enum ReconsiliationAction {
 
 	report_difference(false),
 
-	set(true),
+	append(true),
 
 	;
 

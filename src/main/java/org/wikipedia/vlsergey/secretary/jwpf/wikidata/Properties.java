@@ -12,6 +12,8 @@ public interface Properties {
 
 	EntityId COUNTRY = EntityId.property(17);
 
+	EntityId COUNTRY_FOR_SPORT = EntityId.property(1532);
+
 	EntityId DATE_OF_BIRTH = EntityId.property(569);
 
 	EntityId DATE_OF_DEATH = EntityId.property(570);

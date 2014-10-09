@@ -70,7 +70,7 @@ public class TimeHelper extends AbstractHelper {
 		}
 
 		if (wikidata.isEmpty()) {
-			return ReconsiliationAction.set;
+			return ReconsiliationAction.append;
 		}
 
 		if (wikidata.containsAll(wikipedia)) {
