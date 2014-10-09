@@ -159,6 +159,8 @@ public class MediaWikiBot extends HttpBot {
 				}
 			}
 		}
+
+		writeActions.add(System.currentTimeMillis());
 	}
 
 	public ExpandTemplates expandTemplates(final String text, final String title, final boolean includeComments,
