@@ -14,6 +14,10 @@
 		class="org.wikipedia.vlsergey.secretary.cache.StoredRevisionDao"
 		p:sessionFactory-ref="sessionFactory" />
 
+	<bean id="storedSitelinksDao"
+		class="org.wikipedia.vlsergey.secretary.cache.wikidata.StoredSitelinksDao"
+		p:sessionFactory-ref="sessionFactory" />
+
 	<bean id="transactionManager"
 		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
 		<property name="sessionFactory" ref="sessionFactory" />

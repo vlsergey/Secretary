@@ -43,7 +43,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	private List<ParsedPage> pages;
 
-	private final List<RevisionPropery> properties;
+	protected final List<RevisionPropery> properties;
 
 	public Map<String, List<String>> redirectedFrom;
 
@@ -225,6 +225,13 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 		revisionFlagged.setTagsAccuracy(tagsAccuracy);
 
 		return revisionFlagged;
+	}
+
+	@Override
+	public void reset() {
+		super.reset();
+		this.pages = null;
+		this.redirectedFrom = null;
 	}
 
 }

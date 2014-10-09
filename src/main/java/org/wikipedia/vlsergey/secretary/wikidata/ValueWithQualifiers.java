@@ -4,31 +4,38 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 
 public class ValueWithQualifiers {
 
-	public static List<ValueWithQualifiers> fromSnak(ApiSnak apiSnak) {
-		return Collections.singletonList(new ValueWithQualifiers(apiSnak, Collections.emptyList()));
+	public static List<ValueWithQualifiers> fromSnak(Snak Snak) {
+		return Collections.singletonList(new ValueWithQualifiers(Snak, Collections.emptyList()));
 	}
 
-	private final List<ApiSnak> qualifiers;
+	public static List<ValueWithQualifiers> fromStatements(List<Statement> statements) {
+		if (statements == null || statements.isEmpty()) {
+			return Collections.emptyList();
+		}
+		return statements.stream().map(x -> new ValueWithQualifiers(x)).collect(Collectors.toList());
+	}
 
-	private final ApiSnak value;
+	private final List<Snak> qualifiers;
 
-	public ValueWithQualifiers(ApiSnak value, List<ApiSnak> qualifiers) {
+	private final Snak value;
+
+	public ValueWithQualifiers(Snak value, List<Snak> qualifiers) {
 		super();
 		this.value = value;
 		this.qualifiers = qualifiers;
 	}
 
-	public ValueWithQualifiers(ApiStatement statement) {
+	public ValueWithQualifiers(Statement statement) {
 		this.value = statement.getMainSnak();
 		this.qualifiers = Arrays.asList(statement.getQualifiers());
 	}
@@ -55,11 +62,11 @@ public class ValueWithQualifiers {
 		return true;
 	}
 
-	public List<ApiSnak> getQualifiers() {
+	public List<Snak> getQualifiers() {
 		return qualifiers;
 	}
 
-	public ApiSnak getValue() {
+	public Snak getValue() {
 		return value;
 	}
 
@@ -72,18 +79,27 @@ public class ValueWithQualifiers {
 		return result;
 	}
 
+	@Override
+	public String toString() {
+		return toString(x -> x.toString(), 0);
+	}
+
 	public String toString(Function<EntityId, String> labelResolver, int level) {
 		StringBuilder builder = new StringBuilder();
 		builder.append(toString(labelResolver, this.getValue()));
 		for (Snak qualifier : this.getQualifiers()) {
 			builder.append("\n");
 			builder.append(StringUtils.repeat("*", level + 1));
-			builder.append(" [[:d:Property:");
-			builder.append(qualifier.getProperty());
+			builder.append(" [[:d:");
+			builder.append(qualifier.getProperty().getPageTitle());
 			builder.append("|");
 			builder.append(labelResolver.apply(qualifier.getProperty()));
 			builder.append("]] → ");
-			builder.append(toString(labelResolver, qualifier));
+			try {
+				builder.append(toString(labelResolver, qualifier));
+			} catch (Exception exc) {
+				builder.append("(error)");
+			}
 		}
 		return builder.toString();
 	}

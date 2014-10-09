@@ -10,6 +10,7 @@ import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
 import org.wikipedia.vlsergey.secretary.wikidata.ChangeQualifierType;
+import org.wikipedia.vlsergey.secretary.wikidata.ConstrainCheckerPeriod;
 import org.wikipedia.vlsergey.secretary.wikidata.ConstrainCheckerQualifiers;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryFlagsUpdate;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate;
@@ -34,6 +35,7 @@ public class Secretary {
 
 		scheduleWithFixedDelayOfType(appContext, BuildUnreviewedLists.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, ChangeQualifierType.class, DateUtils.MILLIS_PER_DAY);
+		scheduleWithFixedDelayOfType(appContext, ConstrainCheckerPeriod.class, DateUtils.MILLIS_PER_HOUR * 12);
 		scheduleWithFixedDelayOfType(appContext, ConstrainCheckerQualifiers.class, DateUtils.MILLIS_PER_HOUR * 12);
 		scheduleWithFixedDelayOfType(appContext, CountBooks.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, DictinaryFlagsUpdate.class, DateUtils.MILLIS_PER_HOUR);

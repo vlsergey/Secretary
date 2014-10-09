@@ -1,7 +1,11 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ActionException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.actions.WbEditEntityAction;
@@ -10,6 +14,31 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.actions.WbRemoveClaimsActi
 
 public class WikidataBot extends MediaWikiBot {
 
+	private static final Log log = LogFactory.getLog(MediaWikiBot.class);
+
+	@Override
+	public boolean isCachedRevisionValid(Revision stored) {
+		if (!super.isCachedRevisionValid(stored)) {
+			return false;
+		}
+
+		if (stored.getPage().getNamespace().intValue() == Namespace.MAIN.id) {
+			try {
+				Entity apiEntity = new Entity(new JSONObject(stored.getContent()));
+				apiEntity.hasClaims(Properties.INSTANCE_OF);
+				apiEntity.hasLabel("en");
+				apiEntity.hasDescription("en");
+				apiEntity.hasSitelink("enwiki");
+				return true;
+			} catch (Exception exc) {
+				log.debug("Invalid cached entity: " + exc, exc);
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	public String queryTokenEdit(EntityId entityId) throws ActionException, ProcessException {
 		return queryTokenEdit(entityId.toString());
 	}
@@ -17,7 +46,9 @@ public class WikidataBot extends MediaWikiBot {
 	/**
 	 * Create entity in Wikidata
 	 */
-	public ApiEntity wgCreateEntity(JSONObject data, String summary) {
+	public Entity wgCreateEntity(JSONObject data, String summary) {
+		enforceWriteLimit();
+
 		String token = queryTokenEdit("Q1");
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
 		action.new_ = "item";
@@ -31,7 +62,9 @@ public class WikidataBot extends MediaWikiBot {
 	/**
 	 * Edit entity in Wikidata
 	 */
-	public ApiEntity wgEditEntity(Entity entity, JSONObject data, String summary) {
+	public Entity wgEditEntity(Entity entity, JSONObject data, String summary) {
+		enforceWriteLimit();
+
 		String token = queryTokenEdit(entity.getId());
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
 		action.id = entity.getId();
@@ -43,7 +76,7 @@ public class WikidataBot extends MediaWikiBot {
 		return action.result;
 	}
 
-	public ApiEntity wgGetEntity(EntityId entityId, EntityProperty... props) {
+	public Entity wgGetEntity(EntityId entityId, EntityProperty... props) {
 		WbGetEntitiesAction action = new WbGetEntitiesAction(isBot());
 		action.ids = new String[] { entityId.toString() };
 		action.normalize = Boolean.TRUE;
@@ -60,7 +93,7 @@ public class WikidataBot extends MediaWikiBot {
 		return action.result.values().iterator().next();
 	}
 
-	public ApiEntity wgGetEntityBySitelink(String site, String title, EntityProperty... props) {
+	public Entity wgGetEntityBySitelink(String site, String title, EntityProperty... props) {
 		WbGetEntitiesAction action = new WbGetEntitiesAction(isBot());
 		action.normalize = Boolean.TRUE;
 		action.sites = new String[] { site };
@@ -82,6 +115,8 @@ public class WikidataBot extends MediaWikiBot {
 	 * Edit entity in Wikidata
 	 */
 	public void wgRemoveClaims(Entity entity, String[] claims, String summary) {
+		enforceWriteLimit();
+
 		String token = queryTokenEdit(entity.getId());
 		WbRemoveClaimsAction action = new WbRemoveClaimsAction(isBot());
 		action.claim = claims;

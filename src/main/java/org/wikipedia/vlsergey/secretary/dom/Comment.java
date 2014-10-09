@@ -20,6 +20,8 @@ package org.wikipedia.vlsergey.secretary.dom;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 public class Comment extends AbstractContainer {
 
 	private static final long serialVersionUID = 1L;
@@ -49,7 +51,9 @@ public class Comment extends AbstractContainer {
 
 	@Override
 	public String toWiki(boolean removeComments) {
+		if (removeComments) {
+			return StringUtils.EMPTY;
+		}
 		return content.toWiki(removeComments);
 	}
-
 }

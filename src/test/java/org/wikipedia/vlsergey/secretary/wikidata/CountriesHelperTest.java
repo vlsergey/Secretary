@@ -21,6 +21,10 @@ public class CountriesHelperTest {
 				Arrays.asList("Османская империя", "Армянская ССР"),
 				countriesHelper
 						.normalize("{{Флаг|Османская империя}} [[Османская империя]]<br /> {{Флаг|Армянская ССР}} [[Армянская ССР]]"));
+
+		Assert.assertEquals(Arrays.asList("Российская империя", "Швейцария"),
+				countriesHelper.normalize("{{Флагификация|Российская империя}} → {{SUI}}"));
+
 	}
 
 }

@@ -1,13 +1,13 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang.NullArgumentException;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +41,6 @@ public class WikiCache {
 
 	private MediaWikiBot mediaWikiBot;
 
-	private Project project;
-
 	@Autowired
 	private StoredRevisionDao storedRevisionDao;
 
@@ -55,8 +53,9 @@ public class WikiCache {
 		return mediaWikiBot;
 	}
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Project getProject() {
-		return project;
+		return getMediaWikiBot().getProject();
 	}
 
 	private boolean isCacheRecordValid(Revision stored) {
@@ -64,69 +63,40 @@ public class WikiCache {
 			return false;
 		}
 
-		boolean doNotCheckXml = stored.getPage() != null && stored.getPage().getNamespace() != null
-				&& stored.getPage().getNamespace().intValue() == 0
-				&& !getProject().isMainNamespaceHasXmlRepresentation();
-		if (!doNotCheckXml && !stored.hasXml()) {
-			return false;
-		}
-
-		return stored.hasContent() && StringUtils.isNotEmpty(stored.getUser()) && stored.getTimestamp() != null
-				&& stored.getTimestamp().getTime() != 0 && stored.getSize() != null && stored.getSize().longValue() > 0;
-	}
-
-	public Iterable<Revision> queryAllRevisions(Long pageId, Direction direction) {
-		List<Revision> revisionIdHolders = new ArrayList<Revision>(getMediaWikiBot().queryRevisionsByPageId(pageId,
-				null, direction, FAST));
-
-		return queryRevisionsImplF().apply(revisionIdHolders);
-	}
-
-	public Iterable<Revision> queryAllRevisions(Page page, Direction direction) {
-		List<Revision> revisionIdHolders = new ArrayList<Revision>(getMediaWikiBot().queryRevisionsByPageId(
-				page.getId(), null, direction, FAST));
-
-		return queryRevisionsImplF().apply(revisionIdHolders);
-	}
-
-	public Iterable<Revision> queryAllRevisions(String pageTitle, Direction direction) {
-		List<Revision> revisionIdHolders = new ArrayList<Revision>(getMediaWikiBot().queryRevisionsByPageTitle(
-				pageTitle, null, direction, FAST));
-
-		return queryRevisionsImplF().apply(revisionIdHolders);
+		return getMediaWikiBot().isCachedRevisionValid(stored);
 	}
 
 	public Iterable<Revision> queryByAllPages(Namespace namespace) {
-		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByAllPages(namespace,
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByAllPages(namespace,
 				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
 	public Iterable<Revision> queryByBacklinks(Long pageId, Namespace... namespaces) {
-		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByBacklinks(pageId, namespaces,
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByBacklinks(pageId, namespaces,
 				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
 	public Iterable<Revision> queryByCaterogyMembers(String title, Namespace[] namespaces, CmType type) {
-		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByCategoryMembers(title, namespaces,
-				type, new RevisionPropery[] { RevisionPropery.IDS }));
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByCategoryMembers(title, namespaces, type,
+				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
 	public Iterable<Revision> queryByEmbeddedIn(String title, Namespace... namespaces) {
-		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByEmbeddedIn(title, namespaces,
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByEmbeddedIn(title, namespaces,
 				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
 	public Iterable<Revision> queryByLinks(Long pageId, Namespace... namespaces) {
-		return queryContentByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByLinks(pageId, namespaces,
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByLinks(pageId, namespaces,
 				new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
-	public Iterable<Revision> queryContentByPagesAndRevisions(Iterable<ParsedPage> pagesWithLatestsRevisions)
+	private Iterable<Revision> queryByPagesAndRevisions(Iterable<ParsedPage> pagesWithLatestsRevisions)
 			throws ActionException, ProcessException {
-		return queryContentByPagesAndRevisionsF().makeBatched(2048).apply(pagesWithLatestsRevisions);
+		return queryByPagesAndRevisionsF().makeBatched(2048).apply(pagesWithLatestsRevisions);
 	}
 
-	public MultiresultFunction<ParsedPage, Revision> queryContentByPagesAndRevisionsF() throws ActionException,
+	private MultiresultFunction<ParsedPage, Revision> queryByPagesAndRevisionsF() throws ActionException,
 			ProcessException {
 
 		return new MultiresultFunction<ParsedPage, Revision>() {
@@ -183,165 +153,45 @@ public class WikiCache {
 		};
 	}
 
-	public List<Revision> queryLatestContentByPageIds(Iterable<? extends Long> pageIds) throws ActionException,
-			ProcessException {
-		log.info("queryLatestContentByPageIds: " + pageIds);
-
-		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
-		for (Revision revision : mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, FAST)) {
-			// update info in DB
-			revision = storedRevisionDao.getOrCreate(getProject(), revision);
-
-			pageIdToLatestRevision.put(revision.getPage().getId(), revision.getId());
-		}
-
-		Map<Long, Revision> resultMap = new LinkedHashMap<Long, Revision>(pageIdToLatestRevision.size());
-		List<Long> toLoad = new ArrayList<Long>(pageIdToLatestRevision.size());
-
-		for (Long pageId : pageIds) {
-			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
-			if (latestRevisionId == null) {
-				log.warn("Page #" + pageId + " has no revisions");
-				continue;
-			}
-
-			Revision stored = storedRevisionDao.getRevisionById(getProject(), latestRevisionId);
-			if (isCacheRecordValid(stored)) {
-				resultMap.put(latestRevisionId, stored);
-			} else {
-				toLoad.add(latestRevisionId);
-			}
-		}
-
-		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED).apply(toLoad)) {
-			// update cache
-			revision = storedRevisionDao.getOrCreate(getProject(), revision);
-			resultMap.put(revision.getId(), revision);
-		}
-
-		List<Revision> result = new ArrayList<Revision>();
-		for (Long pageId : pageIds) {
-			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
-			if (latestRevisionId == null)
-				continue;
-
-			Revision revision = resultMap.get(latestRevisionId);
-			if (revision == null) {
-				log.warn("Page #" + pageId + " has no revisions");
-				continue;
-			}
-
-			result.add(revision);
-		}
-		return result;
+	public Iterable<Revision> queryByRecentChanges(Direction direction, Date start) {
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByRecentChanges(direction, start,
+				"edit|new", true, new RevisionPropery[] { RevisionPropery.IDS }));
 	}
 
-	public MultiresultFunction<Long, Revision> queryLatestContentByPageIdsF() {
-		return new MultiresultFunction<Long, Revision>() {
-			@Override
-			public Iterable<Revision> apply(Iterable<? extends Long> pageIds) {
-				return queryLatestContentByPageIds(pageIds);
-			}
-		};
+	public Iterable<Revision> queryLatestByPageIds(Iterable<Long> pageIds) {
+		log.info("queryLatestByPageIds: " + pageIds);
+
+		return queryByPagesAndRevisions(mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, FAST));
 	}
 
-	public List<Revision> queryLatestContentByPageTitles(Iterable<String> pageTitles, boolean followRedirects)
+	public Iterable<Revision> queryLatestByPageTitles(Iterable<String> pageTitles, boolean followRedirects)
 			throws ActionException, ProcessException {
 		log.info("queryLatestContentByPageTitles: " + pageTitles);
 
-		List<Long> pageIds = new ArrayList<>();
-		Map<Long, Long> pageIdToLatestRevision = new LinkedHashMap<Long, Long>();
-		for (Revision revision : mediaWikiBot.queryLatestRevisionsByPageTitles(pageTitles, followRedirects, FAST)) {
-			// update info in DB
-			revision = storedRevisionDao.getOrCreate(getProject(), revision);
-
-			pageIds.add(revision.getPage().getId());
-			pageIdToLatestRevision.put(revision.getPage().getId(), revision.getId());
-		}
-
-		Map<Long, Revision> resultMap = new LinkedHashMap<Long, Revision>(pageIdToLatestRevision.size());
-		List<Long> toLoad = new ArrayList<Long>(pageIdToLatestRevision.size());
-
-		for (Long pageId : pageIds) {
-			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
-			if (latestRevisionId == null) {
-				log.warn("Page #" + pageId + " has no revisions");
-				continue;
-			}
-
-			Revision stored = storedRevisionDao.getRevisionById(getProject(), latestRevisionId);
-			if (isCacheRecordValid(stored)) {
-				resultMap.put(latestRevisionId, stored);
-			} else {
-				toLoad.add(latestRevisionId);
-			}
-		}
-
-		for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED).apply(toLoad)) {
-			// update cache
-			revision = storedRevisionDao.getOrCreate(getProject(), revision);
-			resultMap.put(revision.getId(), revision);
-		}
-
-		List<Revision> result = new ArrayList<Revision>();
-		for (Long pageId : pageIds) {
-			Long latestRevisionId = pageIdToLatestRevision.get(pageId);
-			if (latestRevisionId == null)
-				continue;
-
-			Revision revision = resultMap.get(latestRevisionId);
-			if (revision == null) {
-				log.warn("Page #" + pageId + " has no revisions");
-				continue;
-			}
-
-			result.add(revision);
-		}
-		return result;
+		return queryByPagesAndRevisions(mediaWikiBot
+				.queryLatestRevisionsByPageTitles(pageTitles, followRedirects, FAST));
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(Long pageId) {
 		log.debug("queryLatestRevision(" + pageId + ")");
-
 		Revision latest = mediaWikiBot.queryLatestRevision(pageId, FAST);
-
 		if (latest == null)
 			return null;
-
-		Revision stored = storedRevisionDao.getOrCreate(getProject(), latest);
-		if (isCacheRecordValid(stored))
-			return stored;
-
-		Revision withContent = mediaWikiBot.queryRevisionByRevisionId(latest.getId(), true, CACHED);
-
-		if (withContent == null)
-			// deleted
-			return null;
-
-		storedRevisionDao.getOrCreate(getProject(), withContent);
-		return withContent;
+		return queryRevision(latest);
 	}
 
+	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(String pageTitle) {
 		log.debug("queryLatestRevision('" + pageTitle + "')");
-
 		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, false, FAST);
-
 		if (latest == null)
 			return null;
-
-		Revision stored = storedRevisionDao.getOrCreate(getProject(), latest);
-		if (isCacheRecordValid(stored))
-			return stored;
-
-		latest = mediaWikiBot.queryRevisionByRevisionId(latest.getId(), true, CACHED);
-		return latest;
+		return queryRevision(latest);
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
 	public StoredRevision queryRevision(Long revisionId) throws JwbfException {
-		log.debug("queryRevision(" + revisionId + ")");
 
 		StoredRevision stored = storedRevisionDao.getRevisionById(getProject(), revisionId);
 		if (isCacheRecordValid(stored)) {
@@ -369,33 +219,8 @@ public class WikiCache {
 		return queryRevision(revision.getId());
 	}
 
-	@Transactional(propagation = Propagation.NEVER)
-	public String queryRevisionContent(Long revisionId) throws JwbfException {
-		log.debug("queryRevision(" + revisionId + ")");
-
-		Revision stored = storedRevisionDao.getRevisionById(getProject(), revisionId);
-		if (stored != null && StringUtils.isNotEmpty(stored.getContent()))
-			return stored.getContent();
-
-		Revision withContent = mediaWikiBot.queryRevisionByRevisionId(revisionId, false, CACHED);
-
-		if (withContent == null)
-			// deleted
-			return null;
-
-		storedRevisionDao.getOrCreate(getProject(), withContent);
-		return withContent.getContent();
-	}
-
 	public Iterable<Revision> queryRevisions(Iterable<? extends Revision> revisions) {
 		return queryRevisionsImplF().apply(revisions);
-	}
-
-	public Iterable<Revision> queryRevisions(Page page, Long startRevId, Direction direction) {
-		List<Revision> revisionIdHolders = new ArrayList<Revision>(getMediaWikiBot().queryRevisionsByPageId(
-				page.getId(), startRevId, direction, FAST));
-
-		return queryRevisionsImplF().apply(revisionIdHolders);
 	}
 
 	private MultiresultFunction<Revision, Revision> queryRevisionsImplF() {
@@ -431,7 +256,7 @@ public class WikiCache {
 
 				return result;
 			}
-		}.makeBatched(100);
+		}.makeBatched(1000);
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
@@ -446,7 +271,4 @@ public class WikiCache {
 		this.mediaWikiBot = mediaWikiBot;
 	}
 
-	public void setProject(Project project) {
-		this.project = project;
-	}
 }

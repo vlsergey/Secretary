@@ -16,7 +16,11 @@ public interface Properties {
 
 	EntityId DATE_OF_DEATH = EntityId.property(570);
 
+	EntityId DATE_RETRIEVED = EntityId.property(813);
+
 	EntityId DESCRIBED_BY = EntityId.property(1343);
+
+	EntityId EARLIEST_DATE = EntityId.property(1319);
 
 	EntityId ENCYCLOPÆDIA_BRITANNICA_ONLINE_ID = EntityId.property(31);
 
@@ -24,9 +28,13 @@ public interface Properties {
 
 	EntityId GRAN_ENCICLOPÈDIA_CATALANA_ID = EntityId.property(1296);
 
+	EntityId IMPORTED_FROM = EntityId.property(143);
+
 	EntityId INSTANCE_OF = EntityId.property(31);
 
 	EntityId JEWISH_ENCYCLOPEDIA_ID = EntityId.property(1438);
+
+	EntityId LATEST_DATE = EntityId.property(1326);
 
 	EntityId MAIN_TOPIC = EntityId.property(921);
 
@@ -38,9 +46,13 @@ public interface Properties {
 
 	EntityId PLACE_OF_BIRTH = EntityId.property(19);
 
+	EntityId PLACE_OF_BURIAL = EntityId.property(119);
+
 	EntityId PLACE_OF_DEATH = EntityId.property(20);
 
 	EntityId SECTION_VERSE_OR_PARAGRAPH = EntityId.property(958);
+
+	EntityId SOURCING_CIRCUMSTANCES = EntityId.property(1480);
 
 	EntityId STATED_IN = EntityId.property(248);
 

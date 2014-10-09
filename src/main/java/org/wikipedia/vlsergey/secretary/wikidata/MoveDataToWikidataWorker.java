@@ -4,15 +4,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.mutable.MutableInt;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,22 +22,24 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
+import org.wikipedia.vlsergey.secretary.cache.wikidata.SitelinksCache;
+import org.wikipedia.vlsergey.secretary.dom.AbstractContainer;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
+import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiReference;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataValue;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Rank;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Reference;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.StringValue;
@@ -62,11 +66,36 @@ public class MoveDataToWikidataWorker {
 
 	);
 
-	private static ApiReference REFERENCE_FROM_RUWIKI = new ApiReference();
+	private static Reference REFERENCE_FROM_RUWIKI = new Reference();
 
 	static {
-		REFERENCE_FROM_RUWIKI.addSnak(ApiSnak.newSnak(ApiStatement.PROPERTY_IMPORTED_FROM, ITEM_RUWIKI));
+		REFERENCE_FROM_RUWIKI.addSnak(Snak.newSnak(Properties.IMPORTED_FROM, ITEM_RUWIKI));
 	}
+
+	static Content prepareParameterValue(Content content) {
+		if (content instanceof AbstractContainer) {
+			AbstractContainer container = (AbstractContainer) content;
+			final List<? extends Content> originalChildren = container.getChildren();
+			List<Content> children = new ArrayList<>(originalChildren.size());
+			for (Content child : originalChildren) {
+				if (child instanceof Template) {
+					Template template = (Template) child;
+					if (StringUtils.equalsIgnoreCase("s", template.getName().toWiki(true))
+							&& template.getParameters().size() == 1) {
+						children.add(template.getParameter(0));
+					} else {
+						children.add(template);
+					}
+				} else {
+					children.add(prepareParameterValue(child));
+				}
+			}
+			return new ArticleFragment(children);
+		}
+		return content;
+	}
+
+	private TreeMap<String, MutableInt> errorsCounter = new TreeMap<>();
 
 	@Autowired
 	@Qualifier("ruWikipediaBot")
@@ -77,10 +106,65 @@ public class MoveDataToWikidataWorker {
 	private WikiCache ruWikipediaCache;
 
 	@Autowired
+	private SitelinksCache sitelinksCache;
+
+	@Autowired
 	private WikidataBot wikidataBot;
 
-	private void fillFromWikidata(ApiEntity entity, EntityId property, Collection<ValueWithQualifiers> result) {
-		for (ApiStatement statement : entity.getClaims(property)) {
+	void countException(UnsupportedParameterValueException exc) {
+		String message = exc.getMessage();
+
+		String wikiMessage = "<nowiki>" + message + "</nowiki>";
+		if (exc.getEntityId() != null) {
+			wikiMessage += " <span class='entity-link' data-entity-id='" + exc.getEntityId() + "'>("
+					+ exc.getEntityId().toWikilink(true) + ")</span>";
+		}
+
+		synchronized (this) {
+			if (!errorsCounter.containsKey(wikiMessage)) {
+				errorsCounter.put(wikiMessage, new MutableInt(0));
+			}
+			errorsCounter.get(wikiMessage).increment();
+		}
+	}
+
+	void errorsReportClear() {
+		synchronized (this) {
+			errorsCounter.clear();
+		}
+	}
+
+	void errorsReportDump() {
+		List<String> allMessages = new ArrayList<>(errorsCounter.keySet());
+		Collections.sort(allMessages, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				return -Integer.compare(errorsCounter.get(o1).intValue(), errorsCounter.get(o2).intValue());
+			}
+		});
+
+		StringBuilder stringBuilder = new StringBuilder();
+		int count = 0;
+		for (String errorMessage : allMessages) {
+
+			stringBuilder.append("# ");
+			stringBuilder.append(errorsCounter.get(errorMessage).intValue());
+			stringBuilder.append(": ");
+			stringBuilder.append(errorMessage);
+			stringBuilder.append("\n");
+			count++;
+			if (count == 100) {
+				break;
+			}
+		}
+
+		ruWikipediaCache.getMediaWikiBot().writeContent(
+				"User:" + ruWikipediaCache.getMediaWikiBot().getLogin() + "/Top100Errors", null,
+				stringBuilder.toString(), null, "Update reconsiliation stats", true, false);
+	}
+
+	private void fillFromWikidata(Entity entity, EntityId property, Collection<ValueWithQualifiers> result) {
+		for (Statement statement : entity.getClaims(property)) {
 			result.add(new ValueWithQualifiers(statement));
 		}
 	}
@@ -92,20 +176,13 @@ public class MoveDataToWikidataWorker {
 				final Content parameterValue = part.getValue();
 				if (parameterValue != null) {
 					try {
-						String value;
-						if (parameterValue instanceof Template
-								&& StringUtils
-										.equalsIgnoreCase("s", ((Template) parameterValue).getName().toWiki(true))) {
-							value = ((Template) parameterValue).getParameter(0).getValue().toWiki(true);
-						} else {
-							value = parameterValue.toWiki(true).trim();
-						}
-
+						String value = StringUtils.trimToEmpty(prepareParameterValue(parameterValue).toWiki(true));
 						if (StringUtils.isNotBlank(value)) {
-							result.addAll(descriptor.toWikidata.apply(value));
+							result.addAll(descriptor.parseF.apply(value));
 						}
 					} catch (UnsupportedParameterValueException exc) {
 						exc.setTemplatePartValue(parameterValue);
+						countException(exc);
 						throw exc;
 					}
 				}
@@ -114,15 +191,18 @@ public class MoveDataToWikidataWorker {
 	}
 
 	private void fillToWikidata(ReconsiliationColumn descriptor, Collection<ValueWithQualifiers> source,
-			JSONObject result) {
+			JSONObject result, String claimIdToUse) {
 		for (ValueWithQualifiers newValue : source) {
-			ApiStatement statement = ApiStatement.newStatement(descriptor.property, newValue.getValue());
+			Statement statement = Statement.newStatement(descriptor.property, newValue.getValue());
 			// add qualifiers
-			for (ApiSnak qualifier : newValue.getQualifiers()) {
+			for (Snak qualifier : newValue.getQualifiers()) {
 				statement.addQualifier(qualifier);
 			}
 			statement.addReference(REFERENCE_FROM_RUWIKI);
-			ApiEntity.putProperty(result, statement);
+			if (!StringUtils.isBlank(claimIdToUse)) {
+				statement.setId(claimIdToUse);
+			}
+			Entity.putProperty(result, statement);
 		}
 	}
 
@@ -157,8 +237,8 @@ public class MoveDataToWikidataWorker {
 	}
 
 	private void process(EntityByLinkResolver entityByLinkResolver, TitleResolver titleResolver, String TEMPLATE,
-			EntityId templateId, ReconsiliationColumn[] parametersToMove, Revision revision, MoveDataReport report)
-			throws Exception {
+			EntityId templateId, ReconsiliationColumn[] parametersToMove, Revision revision, Entity entity,
+			MoveDataReport report) throws Exception {
 
 		Map<ReconsiliationColumn, List<ValueWithQualifiers>> fromPedia = new LinkedHashMap<>();
 
@@ -186,7 +266,6 @@ public class MoveDataToWikidataWorker {
 			return;
 		}
 
-		ApiEntity entity = entityByLinkResolver.apply(revision.getPage().getTitle());
 		if (entity != null) {
 			titleResolver.update(entity);
 		}
@@ -206,7 +285,7 @@ public class MoveDataToWikidataWorker {
 				sitelink.put("title", revision.getPage().getTitle());
 				data.put("sitelinks", Collections.singletonMap("ruwiki", sitelink));
 			}
-			ApiEntity.putProperty(data, ApiStatement.newStatement(Properties.INSTANCE_OF, ITEM_HUMAN));
+			Entity.putProperty(data, Statement.newStatement(Properties.INSTANCE_OF, ITEM_HUMAN));
 
 			entity = wikidataBot.wgCreateEntity(data, "Precreate item for transferring fields");
 			entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(), EntityProperty.claims);
@@ -239,6 +318,7 @@ public class MoveDataToWikidataWorker {
 
 		for (ReconsiliationColumn descriptor : parametersToMove) {
 			List<ValueWithQualifiers> fromWikipedia = fromPedia.get(descriptor);
+			Set<String> toBeDeleted = new HashSet<>();
 
 			if (fromWikipedia == null) {
 				// skip, not parsed
@@ -249,11 +329,11 @@ public class MoveDataToWikidataWorker {
 			fillFromWikidata(entity, descriptor.property, fromWikidata);
 			ReconsiliationAction action = descriptor.getAction(fromWikipedia, fromWikidata);
 
-			final List<ApiStatement> claims = Arrays.asList(entity.getClaims(descriptor.property));
+			final List<Statement> claims = entity.getClaims(descriptor.property);
 			if (claims.stream().anyMatch(x -> x.isImportedFrom(ITEM_RUWIKI))) {
 				if (action == ReconsiliationAction.report_difference) {
-					claimIdsToDelete.addAll(claims.stream().filter(x -> x.isImportedFrom(ITEM_RUWIKI))
-							.map(x -> x.getId()).collect(Collectors.toList()));
+					toBeDeleted.addAll(claims.stream().filter(x -> x.isImportedFrom(ITEM_RUWIKI)).map(x -> x.getId())
+							.collect(Collectors.toList()));
 					fromWikidata = claims.stream().filter(x -> !x.isImportedFrom(ITEM_RUWIKI))
 							.map(x -> new ValueWithQualifiers(x)).collect(Collectors.toList());
 					action = descriptor.getAction(fromWikipedia, fromWikidata);
@@ -262,15 +342,20 @@ public class MoveDataToWikidataWorker {
 
 			switch (action) {
 			case replace: {
-				for (ApiStatement statement : entity.getClaims(descriptor.property)) {
+				for (Statement statement : entity.getClaims(descriptor.property)) {
 					if (statement.hasRealReferences()) {
 						statement.setRank(Rank.deprecated);
-						ApiEntity.putProperty(newData, statement);
+						Entity.putProperty(newData, statement);
 					} else {
-						claimIdsToDelete.add(statement.getId());
+						toBeDeleted.add(statement.getId());
 					}
 				}
-				fillToWikidata(descriptor, fromWikipedia, newData);
+				if (toBeDeleted.size() == 1 && fromWikipedia.size() == 1) {
+					fillToWikidata(descriptor, fromWikipedia, newData, toBeDeleted.iterator().next());
+					toBeDeleted.clear();
+				} else {
+					fillToWikidata(descriptor, fromWikipedia, newData, null);
+				}
 				break;
 			}
 			case remove_from_wikipedia:
@@ -281,12 +366,18 @@ public class MoveDataToWikidataWorker {
 				fromPedia.remove(descriptor);
 				continue;
 			case set:
-				fillToWikidata(descriptor, fromWikipedia, newData);
+				if (toBeDeleted.size() == 1 && fromWikipedia.size() == 1) {
+					fillToWikidata(descriptor, fromWikipedia, newData, toBeDeleted.iterator().next());
+					toBeDeleted.clear();
+				} else {
+					fillToWikidata(descriptor, fromWikipedia, newData, null);
+				}
 				break;
 			default:
 				throw new UnsupportedOperationException("NYI");
 			}
 
+			claimIdsToDelete.addAll(toBeDeleted);
 			if (action.removeFromWikipedia) {
 				for (Template template : fragment.getAllTemplates().get(TEMPLATE.toLowerCase())) {
 					for (String templateParameter : descriptor.templateParameters) {
@@ -318,31 +409,18 @@ public class MoveDataToWikidataWorker {
 		EntityId templateId = entityByLinkResolver.apply("Шаблон:" + template).getId();
 		MoveDataReport report = new MoveDataReport(titleResolver);
 
-		ExecutorService executorService = Executors.newFixedThreadPool(4);
-		List<Future<?>> tasks = new ArrayList<>();
+		final Iterable<Revision> revisions = ruWikipediaCache.queryByEmbeddedIn("Шаблон:" + template,
+				Namespace.NSS_MAIN);
+		final Iterable<Map.Entry<Revision, Entity>> revisionsWithEntity = sitelinksCache.getWithEntitiesF(
+				Project.RUWIKIPEDIA).apply(revisions);
 
-		for (Revision revision : ruWikipediaCache.queryByEmbeddedIn("Шаблон:" + template, Namespace.NSS_MAIN)) {
-			// for (Revision revision :
-			// Collections.singletonList(ruWikipediaCache.queryLatestRevision("Альдрованди, Улиссе")))
-			// {
-			tasks.add(executorService.submit(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						process(entityByLinkResolver, titleResolver, template, templateId, columns, revision, report);
-					} catch (Exception exc) {
-						log.error(exc.toString(), exc);
-						// throw new RuntimeException(e);
-					}
-				}
-			}));
-		}
-
-		for (Future<?> task : tasks) {
+		for (Map.Entry<Revision, Entity> revisionAndEntity : revisionsWithEntity) {
 			try {
-				task.get();
+				process(entityByLinkResolver, titleResolver, template, templateId, columns, revisionAndEntity.getKey(),
+						revisionAndEntity.getValue(), report);
 			} catch (Exception exc) {
 				log.error(exc.toString(), exc);
+				// throw new RuntimeException(e);
 			}
 		}
 

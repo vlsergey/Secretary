@@ -18,6 +18,11 @@ public class TimeValueTest {
 	@Test
 	public void testFloor() throws Exception {
 		{
+			TimeValue timeValue = new TimeValue(TimeValue.PRECISION_DAY, OffsetDateTime.now());
+			timeValue.setTimeString("+0000000992-05-25T00:00:00Z");
+			Assert.assertEquals("0992-05-25T00:00Z", timeValue.floor().toString());
+		}
+		{
 			TimeValue timeValue = new TimeValue(11, OffsetDateTime.now());
 			timeValue.setTimeString("+00000001794-05-20T00:00:00Z");
 			Assert.assertEquals("1794-05-20T00:00Z", timeValue.floor().toString());

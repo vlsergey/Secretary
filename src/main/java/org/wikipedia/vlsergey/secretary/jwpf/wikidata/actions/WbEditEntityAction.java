@@ -8,7 +8,7 @@ import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.AbstractApiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 /**
@@ -54,7 +54,7 @@ public class WbEditEntityAction extends AbstractApiAction {
 	 */
 	public String new_;
 
-	public ApiEntity result;
+	public Entity result;
 
 	/**
 	 * An identifier for the site on which the page resides. Use together with
@@ -124,7 +124,7 @@ public class WbEditEntityAction extends AbstractApiAction {
 			throw new ProcessException("No 'entity' in response");
 		}
 
-		this.result = new ApiEntity(jsonObject.getJSONObject("entity"));
+		this.result = new Entity(jsonObject.getJSONObject("entity"));
 	}
 
 }

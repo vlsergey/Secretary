@@ -6,7 +6,6 @@
 
 	<bean id="commonsCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
 		<property name="mediaWikiBot" ref="commonsBot" />
-		<property name="project" value="commons" />
 	</bean>
 
 	<bean id="commonsXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"

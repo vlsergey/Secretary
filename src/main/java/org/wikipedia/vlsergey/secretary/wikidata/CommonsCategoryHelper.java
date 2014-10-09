@@ -11,7 +11,7 @@ import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;
 import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 @Component
@@ -43,7 +43,7 @@ public class CommonsCategoryHelper extends AbstractHelper {
 					throw new CantParseValueException(categoryName + " (no such category)");
 				}
 
-				return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, categoryName));
+				return ValueWithQualifiers.fromSnak(Snak.newSnak(property, categoryName));
 			}
 		} catch (UnsupportedParameterValueException exc) {
 			throw exc;

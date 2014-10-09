@@ -185,7 +185,7 @@ public class HttpManager {
 	public void setDefaultHttpClientParams(final HttpParams clientParams) {
 		HttpClientParams.setRedirecting(clientParams, true);
 		HttpProtocolParams.setUserAgent(clientParams,
-				"SecretaryBot (https://github/vlsergey/Secretary; vlsergey@gmail.com) BasedOnJWBF");
+				"Java Bot (https://github/vlsergey/Secretary; vlsergey@gmail.com) BasedOnJWBF");
 		HttpConnectionParams.setConnectionTimeout(clientParams, 60 * 1000);
 		HttpConnectionParams.setSoTimeout(clientParams, 5 * 60 * 1000);
 	}

@@ -36,9 +36,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ProjectType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
@@ -314,9 +314,9 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 		MAPPED_FIELDS.put("лентапедия", Dictionary.ЛЕНТАПЕДИЯ);
 	}
 
-	private final Map<EntityId, ApiEntity> entitiesByIdCache = new HashMap<>();
+	private final Map<EntityId, Entity> entitiesByIdCache = new HashMap<>();
 
-	private final Map<String, ApiEntity> entitiesByPageTitleCache = new HashMap<>();
+	private final Map<String, Entity> entitiesByPageTitleCache = new HashMap<>();
 
 	@Autowired
 	@Qualifier("ruWikipediaBot")
@@ -492,7 +492,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 	}
 
 	private Entity getWikidataEntity(EntityId entityId) {
-		ApiEntity result = entitiesByIdCache.get(entityId);
+		Entity result = entitiesByIdCache.get(entityId);
 		if (result == null) {
 			result = wikidataBot.wgGetEntity(entityId, EntityProperty.claims, EntityProperty.descriptions,
 					EntityProperty.labels, EntityProperty.sitelinks);
@@ -503,7 +503,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private Entity getWikidataEntity(Project project, String pageTitle) {
 		final String key = project.getCode() + "/" + pageTitle;
-		ApiEntity result = entitiesByPageTitleCache.get(key);
+		Entity result = entitiesByPageTitleCache.get(key);
 		if (result == null) {
 			result = wikidataBot.wgGetEntityBySitelink(project.getCode(), pageTitle, EntityProperty.claims,
 					EntityProperty.descriptions, EntityProperty.labels, EntityProperty.sitelinks);
@@ -625,7 +625,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		Entity apiEntity = link.apiEntity;
 		if (apiEntity == null) {
-			apiEntity = new ApiEntity(new JSONObject());
+			apiEntity = new Entity(new JSONObject());
 		}
 
 		final JSONObject newData = new JSONObject();
@@ -662,11 +662,11 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 					.collect(Collectors.toList())) {
 				if (!Arrays.stream(claims).anyMatch(x -> x.isWikibaseEntityIdValue(sublink.dictionary.wikidataId))) {
 					// need to create new
-					ApiStatement apiStatement = ApiStatement.newStatement(Properties.DESCRIBED_BY,
+					Statement apiStatement = Statement.newStatement(Properties.DESCRIBED_BY,
 							sublink.dictionary.wikidataId);
 
 					{
-						ApiSnak qualifier = new ApiSnak();
+						Snak qualifier = new Snak();
 						qualifier.setProperty(Properties.STATED_IN);
 						qualifier.setSnakType(SnakType.value);
 						qualifier.setDataType(DataType.WIKIBASE_ITEM);
@@ -674,7 +674,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 						apiStatement.addQualifier(qualifier);
 					}
 					{
-						ApiSnak qualifier = new ApiSnak();
+						Snak qualifier = new Snak();
 						qualifier.setProperty(Properties.TITLE);
 						qualifier.setSnakType(SnakType.value);
 						qualifier.setDataType(DataType.STRING);
@@ -682,7 +682,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 						apiStatement.addQualifier(qualifier);
 					}
 
-					ApiEntity.putProperty(newData, apiStatement);
+					Entity.putProperty(newData, apiStatement);
 				}
 			}
 		}
@@ -692,26 +692,26 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 				Link wikipediaLink = circle.links.get(Dictionary.ВИКИПЕДИЯ) != null ? circle.links.get(
 						Dictionary.ВИКИПЕДИЯ).first() : null;
 				if (wikipediaLink != null && wikipediaLink.entityId != null) {
-					ApiEntity.putProperty(newData,
-							ApiStatement.newStatement(Properties.MAIN_TOPIC, wikipediaLink.entityId));
+					Entity.putProperty(newData,
+							Statement.newStatement(Properties.MAIN_TOPIC, wikipediaLink.entityId));
 				}
 			}
 
 			if (!apiEntity.hasClaims(Properties.PART_OF)) {
 				if (link.dictionary.wikidataId != null) {
-					ApiEntity.putProperty(newData,
-							ApiStatement.newStatement(Properties.PART_OF, link.dictionary.wikidataId));
+					Entity.putProperty(newData,
+							Statement.newStatement(Properties.PART_OF, link.dictionary.wikidataId));
 				}
 			}
 
 			if (!apiEntity.hasClaims(Properties.INSTANCE_OF)) {
-				ApiEntity.putProperty(newData,
-						ApiStatement.newStatement(Properties.INSTANCE_OF, ITEM_encyclopedic_article));
+				Entity.putProperty(newData,
+						Statement.newStatement(Properties.INSTANCE_OF, ITEM_encyclopedic_article));
 			}
 
 			if (!apiEntity.hasClaims(Properties.TITLE)) {
 				if (StringUtils.isNotBlank(link.articleName)) {
-					ApiEntity.putProperty(newData, ApiStatement.newStatement(Properties.TITLE, link.articleName));
+					Entity.putProperty(newData, Statement.newStatement(Properties.TITLE, link.articleName));
 				}
 			}
 		}

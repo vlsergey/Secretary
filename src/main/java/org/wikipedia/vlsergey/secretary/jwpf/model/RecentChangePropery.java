@@ -17,13 +17,41 @@
  */
 package org.wikipedia.vlsergey.secretary.jwpf.model;
 
-public enum Direction {
+public enum RecentChangePropery {
 
-	NEWER("newer"), OLDER("older");
+	COMMENT("comment"),
+
+	FLAGS("flags"),
+
+	IDS("ids"),
+
+	LOGINFO("loginfo"),
+
+	PARSEDCOMMENT("parsedcomment"),
+
+	PATROLLED("patrolled"),
+
+	REDIRECT("redirect"),
+
+	SHA1("sha1"),
+
+	SIZES("sizes"),
+
+	TAGS("tags"),
+
+	TIMESTAMP("timestamp"),
+
+	TITLE("title"),
+
+	USER("user"),
+
+	USERID("userid"),
+
+	;
 
 	private String queryString;
 
-	private Direction(String queryString) {
+	private RecentChangePropery(String queryString) {
 		this.queryString = queryString;
 	}
 

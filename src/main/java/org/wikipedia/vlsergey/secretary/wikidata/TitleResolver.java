@@ -7,23 +7,30 @@ import java.util.function.Function;
 import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Label;
 
-class TitleResolver implements Function<EntityId, String> {
+public class TitleResolver implements Function<EntityId, String> {
 
 	private final Map<EntityId, String> cache = new HashMap<>();
 
 	private final WikiCache wikidataCache;
 
-	TitleResolver(WikiCache wikidataCache) {
+	public TitleResolver(WikiCache wikidataCache) {
 		this.wikidataCache = wikidataCache;
 	}
 
 	@Override
 	public String apply(EntityId t) {
+		if (t.equals(Places.РСФСР)) {
+			return "РСФСР";
+		} else if (t.equals(Places.СССР)) {
+			return "СССР";
+		} else if (t.equals(Places.США)) {
+			return "США";
+		}
+
 		synchronized (this) {
 			if (cache.containsKey(t)) {
 				return cache.get(t);
@@ -49,7 +56,7 @@ class TitleResolver implements Function<EntityId, String> {
 		if (revision == null) {
 			return entityId.toString();
 		}
-		return build(new ApiEntity(new JSONObject(revision.getContent())));
+		return build(new Entity(new JSONObject(revision.getContent())));
 	}
 
 	public void update(Entity entity) {

@@ -8,7 +8,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 @Component
@@ -43,7 +43,7 @@ public class UrlHelper extends AbstractHelper {
 								uri.getQuery(), uri.getFragment());
 					}
 
-					return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, uri.toString()));
+					return ValueWithQualifiers.fromSnak(Snak.newSnak(property, uri.toString()));
 				}
 			}
 

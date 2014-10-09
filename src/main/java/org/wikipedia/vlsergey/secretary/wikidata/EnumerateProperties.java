@@ -10,7 +10,7 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 
 @Component
 public class EnumerateProperties implements Runnable {
@@ -35,7 +35,7 @@ public class EnumerateProperties implements Runnable {
 		for (Revision revision : wikidataCache.queryByAllPages(Namespace.WIKIDATA_PROPERTY)) {
 			try {
 				JSONObject jsonObject = new JSONObject(revision.getContent());
-				ApiEntity apiEntity = new ApiEntity(jsonObject);
+				Entity apiEntity = new Entity(jsonObject);
 
 				stringBuilder.append("| " + revision.getPage().getId() + "\n");
 				stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");

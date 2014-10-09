@@ -122,6 +122,8 @@ public enum Namespace {
 
 	public static final Namespace[] NSS_PROPERTY_TALK = new Namespace[] { Namespace.PROPERTY_TALK };
 
+	public static final Namespace[] NSS_TALK = new Namespace[] { Namespace.TALK };
+
 	public static final Namespace[] NSS_TEMPLATE_TALK = new Namespace[] { Namespace.TEMPLATE_TALK };
 
 	public final int id;

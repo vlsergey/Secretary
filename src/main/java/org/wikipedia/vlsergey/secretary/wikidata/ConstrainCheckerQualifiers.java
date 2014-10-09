@@ -19,7 +19,7 @@ import org.wikipedia.vlsergey.secretary.dom.Template;
 import org.wikipedia.vlsergey.secretary.dom.TemplatePart;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
@@ -65,7 +65,7 @@ public class ConstrainCheckerQualifiers implements Runnable {
 				final Long propertyPageId = wikidataCache.queryLatestRevision("Property:" + propertyToCheck).getPage()
 						.getId();
 				for (Revision toCheck : wikidataCache.queryByBacklinks(propertyPageId, Namespace.NSS_MAIN)) {
-					final Entity entity = new ApiEntity(new JSONObject(toCheck.getContent()));
+					final Entity entity = new Entity(new JSONObject(toCheck.getContent()));
 					final EntityId entityId = entity.getId();
 
 					for (Statement statement : entity.getClaims(propertyToCheck)) {

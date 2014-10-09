@@ -6,7 +6,7 @@ import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.dom.Content;
 import org.wikipedia.vlsergey.secretary.dom.Text;
 
-public class DataValue extends ApiValue {
+public class DataValue extends Value {
 
 	public static final String KEY_TYPE = "type";
 	public static final String KEY_VALUE = "value";

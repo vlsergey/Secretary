@@ -19,7 +19,7 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
@@ -27,20 +27,16 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
 
 @Component
-public class CountriesHelper {
+public class CountriesHelper extends AbstractHelper {
 
-	private static final EntityId COUNTRY_RUSSIA = EntityId.item(159l);
-	private static final EntityId COUNTRY_RUSSIAN_EMPIRE = EntityId.item(34266l);
-	private static final EntityId COUNTRY_USSR = EntityId.item(15180l);
-
-	public static List<DataValue> VALUES_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_RUSSIA));
+	public static List<DataValue> VALUES_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(Places.Россия));
 	public static List<DataValue> VALUES_RUSSIAN_EMPIRE = Arrays.asList(new WikibaseEntityIdValue(
-			COUNTRY_RUSSIAN_EMPIRE));
+			Places.Российская_империя));
 	public static List<DataValue> VALUES_RUSSIAN_EMPIRE_USSR = Arrays.asList(new WikibaseEntityIdValue(
-			COUNTRY_RUSSIAN_EMPIRE), new WikibaseEntityIdValue(COUNTRY_USSR));
-	public static List<DataValue> VALUES_USSR = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_USSR));
-	public static List<DataValue> VALUES_USSR_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(COUNTRY_USSR),
-			new WikibaseEntityIdValue(COUNTRY_RUSSIA));
+			Places.Российская_империя), new WikibaseEntityIdValue(Places.СССР));
+	public static List<DataValue> VALUES_USSR = Arrays.asList(new WikibaseEntityIdValue(Places.СССР));
+	public static List<DataValue> VALUES_USSR_RUSSIA = Arrays.asList(new WikibaseEntityIdValue(Places.СССР),
+			new WikibaseEntityIdValue(Places.Россия));
 
 	private Map<String, String> DICTIONARY = new HashMap<>();
 
@@ -71,6 +67,7 @@ public class CountriesHelper {
 		addToDictionary("sui", "Швейцария");
 		addToDictionary("sun", "СССР");
 		addToDictionary("uk", "Великобритания");
+		addToDictionary("us", "США");
 		addToDictionary("urs", "СССР");
 		addToDictionary("URSS", "СССР");
 
@@ -159,6 +156,7 @@ public class CountriesHelper {
 		/**/addToDictionaryWithFlag("Кипра", "Республика Кипр");
 		addToDictionaryWithFlag("Киргизии", "Киргизия");
 		addToDictionaryWithFlag("Китая", "Китай");
+		addToDictionaryWithFlag("Китая", "КНР");
 		addToDictionaryWithFlag("КНДР", "КНДР");
 		addToDictionaryWithFlag("Колумбии", "Колумбия");
 		addToDictionaryWithFlag("Королевства Югославия", "Королевство Югославия");
@@ -210,6 +208,7 @@ public class CountriesHelper {
 		/**/addToDictionaryWithFlag("России (1991-1993)", "России");
 		/**/addToDictionaryWithFlag("Российской Федерации", "Российская Федерация");
 		/**/addToDictionaryWithFlag("РФ", "РФ");
+		/**/addToDictionary("{{Флаг Россия|20px}} [[Россия]]", "Россия");
 		addToDictionaryWithFlag("Румынии", "Румыния");
 		/**/addToDictionaryWithFlag("Румынии (1965-1989)", "Румыния");
 		addToDictionaryWithFlag("Сальвадора", "Сальвадор");
@@ -222,10 +221,11 @@ public class CountriesHelper {
 		addToDictionaryWithFlag("Сербии и Черногории", "Сербия и Черногория");
 		addToDictionaryWithFlag("Сирии", "Сирия");
 		addToDictionaryWithFlag("Словакии", "Словакия");
-		addToDictionaryWithFlag("Словении", "Словении");
+		addToDictionaryWithFlag("Словении", "Словения");
 		addToDictionaryWithFlag("СРЮ", "Сербия и Черногория");
 		addToDictionaryWithFlag("СССР", "СССР");
 		/**/addToDictionaryWithFlag("СССР (1923-1955)", "СССР");
+		/**/addToDictionary("{{Флаг|СССР||20px}} [[Союз Советских Социалистических Республик|СССР]]", "СССР");
 		addToDictionaryWithFlag("Судана", "Судан");
 		addToDictionaryWithFlag("СФРЮ", "СФРЮ");
 		addToDictionaryWithFlag("США", "США");
@@ -255,6 +255,7 @@ public class CountriesHelper {
 		/**/addToDictionaryWithFlag("Хорватии (1941-1945)", "Хорватия");
 		addToDictionaryWithFlag("Черногории", "Черногория");
 		addToDictionaryWithFlag("Чехии", "Чехия");
+		addToDictionaryWithFlag("Чехословакии", "Чехословакия");
 		addToDictionaryWithFlag("Чили", "Чили");
 		addToDictionaryWithFlag("Швейцарии", "Швейцария");
 		addToDictionaryWithFlag("Швеции", "Швеция");
@@ -335,6 +336,7 @@ public class CountriesHelper {
 		}
 	}
 
+	@Override
 	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipediaSnaks,
 			Collection<ValueWithQualifiers> wikidataSnaks) {
 
@@ -398,7 +400,6 @@ public class CountriesHelper {
 	}
 
 	public List<String> normalize(String strValue) {
-		strValue = StringUtils.replace(strValue, "&nbsp;", " ");
 		strValue = StringUtils.replace(strValue, "</br>", ";");
 		strValue = StringUtils.replace(strValue, "<br / >", ";");
 		strValue = StringUtils.replace(strValue, "<b r/>", ";");
@@ -469,14 +470,39 @@ public class CountriesHelper {
 	public synchronized List<ValueWithQualifiers> parse(final EntityByLinkResolver entityByLinkResolver,
 			EntityId property, String strValue) {
 		List<ValueWithQualifiers> result = new ArrayList<>();
+
+		strValue = StringUtils.replace(strValue, "&nbsp;", " ");
+		strValue = strValue.trim();
+
+		if (UNKNOWN.contains(strValue.toLowerCase())) {
+			return ValueWithQualifiers.fromSnak(Snak.newSnak(property, SnakType.somevalue));
+		}
+
+		if (StringUtils.equalsIgnoreCase("{{Российская империя}} {{USSR}}", strValue)) {
+			return Arrays.asList(new ValueWithQualifiers(Snak.newSnak(property, Places.Российская_империя),
+					Collections.emptyList()), new ValueWithQualifiers(Snak.newSnak(property, Places.СССР),
+					Collections.emptyList()));
+		}
+		if (StringUtils.equalsIgnoreCase("{{USSR}} {{RUS}}", strValue)
+				|| StringUtils.equalsIgnoreCase("{{Флагификация|СССР}} {{Флагификация|Россия}}", strValue)) {
+			return Arrays.asList(
+					new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()),
+					new ValueWithQualifiers(Snak.newSnak(property, Places.Россия), Collections.emptyList()));
+		}
+		if (StringUtils.equalsIgnoreCase("{{USSR}} {{UKR}}", strValue)) {
+			return Arrays.asList(
+					new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()),
+					new ValueWithQualifiers(Snak.newSnak(property, Places.Украина), Collections.emptyList()));
+		}
+
 		List<String> countryNames = normalize(strValue);
 		for (String countryName : countryNames) {
 			Entity entity = entityByLinkResolver.apply(countryName);
 			if (entity == null) {
-				throw new CantParseValueException(countryName);
+				throw new NoWikidataElementException(countryName);
 			}
 
-			result.add(new ValueWithQualifiers(ApiSnak.newSnak(property, entity.getId()), Collections.emptyList()));
+			result.add(new ValueWithQualifiers(Snak.newSnak(property, entity.getId()), Collections.emptyList()));
 		}
 		return result;
 	}

@@ -6,7 +6,6 @@
 
 	<bean id="ruWikisourceCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
 		<property name="mediaWikiBot" ref="ruWikisourceBot" />
-		<property name="project" value="ruwikisource" />
 	</bean>
 
 	<bean id="ruWikisourceXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
@@ -21,10 +20,13 @@
 
 	<bean id="ruWikisourceBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot">
 		<property name="bot" value="0" />
-		<property name="login" value="Secretary" />
-		<property name="password" value="#{systemProperties.SecretaryPassword}" />
+		<property name="login" value="VlsergeyBot" />
+		<property name="password" value="#{systemProperties.VlsergeyBotPassword}" />
+<!-- 		<property name="login" value="Vlsergey" /> -->
+<!-- 		<property name="password" value="#{systemProperties.VlsergeyPassword}" /> -->
 		<property name="site" value="https://ru.wikisource.org/w" />
 		<property name="xmlParser" ref="ruWikisourceRefAwareParser" />
+		<property name="project" value="ruwikisource" />
 	</bean>
 
 </beans>

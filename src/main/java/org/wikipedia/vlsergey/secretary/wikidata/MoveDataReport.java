@@ -9,7 +9,8 @@ import java.util.function.Function;
 
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 public class MoveDataReport {
@@ -24,7 +25,7 @@ public class MoveDataReport {
 
 	public void addLine(Revision revision, ReconsiliationColumn descriptor,
 			Collection<ValueWithQualifiers> fromWikipedia, Collection<ValueWithQualifiers> fromWikidata,
-			ApiEntity entity) {
+			Entity entity) {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");
@@ -46,8 +47,7 @@ public class MoveDataReport {
 		}
 	}
 
-	public synchronized void addLine(Revision revision, ReconsiliationColumn descriptor, String problem,
-			ApiEntity entity) {
+	public synchronized void addLine(Revision revision, ReconsiliationColumn descriptor, String problem, Entity entity) {
 		final StringBuilder stringBuilder = new StringBuilder();
 
 		stringBuilder.append("| [[" + revision.getPage().getTitle() + "]]\n");

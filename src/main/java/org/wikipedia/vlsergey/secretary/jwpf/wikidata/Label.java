@@ -2,7 +2,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
 import org.json.JSONObject;
 
-public class Label extends ApiValue {
+public class Label extends Value {
 
 	private static final String KEY_LANGUAGE = "language";
 	private static final String KEY_VALUE = "value";

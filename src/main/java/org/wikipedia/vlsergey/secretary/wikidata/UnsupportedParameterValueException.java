@@ -1,10 +1,13 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
 import org.wikipedia.vlsergey.secretary.dom.Content;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 
 public class UnsupportedParameterValueException extends RuntimeException {
 
 	private static final long serialVersionUID = 1L;
+
+	private EntityId entityId;
 
 	private Content templatePartValue;
 
@@ -20,12 +23,20 @@ public class UnsupportedParameterValueException extends RuntimeException {
 		this.unparsedValue = unparsedValue;
 	}
 
+	public EntityId getEntityId() {
+		return entityId;
+	}
+
 	public Content getTemplatePartValue() {
 		return templatePartValue;
 	}
 
 	public String getUnparsedValue() {
 		return unparsedValue;
+	}
+
+	public void setEntityId(EntityId entityId) {
+		this.entityId = entityId;
 	}
 
 	public void setTemplatePartValue(Content templatePartValue) {

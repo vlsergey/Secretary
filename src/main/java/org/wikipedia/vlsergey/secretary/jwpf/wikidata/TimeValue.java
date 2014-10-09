@@ -42,8 +42,7 @@ public class TimeValue extends DataValue {
 	private static final String KEY_TIME = "time";
 	private static final String KEY_TIMEZONE = "timezone";
 
-	private static final DateTimeFormatter parser = DateTimeFormatter
-			.ofPattern("['+']uuuuuuuuuuu'-'MM'-'dd'T'HH':'mm':'ssX");
+	private static final DateTimeFormatter parser = DateTimeFormatter.ofPattern("['+']u'-'MM'-'dd'T'HH':'mm':'ssX");
 
 	public static final int PRECISION_CENTURY = 7;
 	public static final int PRECISION_DAY = 11;
@@ -61,7 +60,7 @@ public class TimeValue extends DataValue {
 	public static int getCentury(TemporalAccessor dateTime) {
 		final int year = dateTime.get(ChronoField.YEAR);
 		if (year > 0) {
-			return (int) Math.floor((year - 1) / 100);
+			return (int) Math.floor((year - 1) / 100) + 1;
 		} else {
 			return (int) Math.floor(year / 100);
 		}
@@ -239,9 +238,9 @@ public class TimeValue extends DataValue {
 			case 7:
 				int century = getCentury(time);
 				if (century < 0) {
-					return new Text(Math.abs(century) + ". century");
-				} else {
 					return new Text(Math.abs(century) + ". century BCE");
+				} else {
+					return new Text(Math.abs(century) + ". century");
 				}
 			case 9:
 				return new Text(formatYear.format(time));

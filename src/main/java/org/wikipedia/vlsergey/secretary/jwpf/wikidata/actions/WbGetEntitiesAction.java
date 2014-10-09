@@ -10,7 +10,7 @@ import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.AbstractApiAction;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Direction;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 
 public class WbGetEntitiesAction extends AbstractApiAction {
@@ -49,7 +49,7 @@ public class WbGetEntitiesAction extends AbstractApiAction {
 	 */
 	public EntityProperty[] props;
 
-	public LinkedHashMap<String, ApiEntity> result;
+	public LinkedHashMap<String, Entity> result;
 
 	/**
 	 * Filter sitelinks in entities to those with these siteids.
@@ -128,7 +128,7 @@ public class WbGetEntitiesAction extends AbstractApiAction {
 				continue;
 			}
 
-			this.result.put(key.toString(), new ApiEntity(entities.getJSONObject(key.toString())));
+			this.result.put(key.toString(), new Entity(entities.getJSONObject(key.toString())));
 		}
 	}
 

@@ -9,32 +9,34 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiSnak;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.TimeValue;
 
 import com.frequal.romannumerals.Converter;
 
 @Component
-public class TimeHelper {
+public class TimeHelper extends AbstractHelper {
 
 	private static final OffsetDateTime BORDER = OffsetDateTime.parse("1582-10-15T00:00:00Z");
+
+	private static final DateTimeFormatter PARSER_DATE = DateTimeFormatter.ofPattern("d.M.u").withZone(ZoneOffset.UTC);
 
 	private static final DateTimeFormatter PARSER_YEAR = DateTimeFormatter.ofPattern("u");
 
 	private static final Converter ROMAN_CONVERTER = new Converter();
-
-	private static final Set<String> UNKNOWN = new HashSet<>(Arrays.asList("?", "неизвестно", "неизвестна"));
 
 	/**
 	 * Convert the parsed date represented in Julian calendar into one
@@ -53,9 +55,10 @@ public class TimeHelper {
 	private List<ValueWithQualifiers> asCentury(EntityId property, int century) {
 		TemporalAccessor temporalAccessor = PARSER_YEAR.parse((century * 100) + "");
 		final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_CENTURY, temporalAccessor);
-		return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, timeValue));
+		return ValueWithQualifiers.fromSnak(Snak.newSnak(property, timeValue));
 	}
 
+	@Override
 	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipedia,
 			Collection<ValueWithQualifiers> wikidata) {
 		if (wikipedia.size() > 1) {
@@ -118,11 +121,61 @@ public class TimeHelper {
 		return ReconsiliationAction.report_difference;
 	}
 
+	private Integer getMonth(String group) {
+		switch (group.toLowerCase()) {
+		case "январь":
+			return 1;
+		case "февраль":
+			return 2;
+		case "март":
+			return 3;
+		case "апрель":
+			return 4;
+		case "май":
+			return 5;
+		case "июнь":
+			return 6;
+		case "июль":
+			return 7;
+		case "август":
+			return 8;
+		case "сентябрь":
+			return 9;
+		case "октябрь":
+			return 10;
+		case "ноябрь":
+			return 11;
+		case "декабрь":
+			return 12;
+		}
+		return null;
+	}
+
+	private String normalizeWithPrefix(String t, String prefixRegexp, String normalizedPrefix) {
+		if (t.matches("^(" + prefixRegexp + ")\\s*\\[\\[([0-9]+) год\\|\\2\\]\\]$")) {
+			t = t.replaceAll("^(" + prefixRegexp + ")\\s*\\[\\[([0-9]+) год\\|\\2\\]\\]$", normalizedPrefix + " $2");
+		}
+		if (t.matches("^(" + prefixRegexp + ")\\s*\\[\\[([0-9]+) год\\|\\2 года\\]\\]$")) {
+			t = t.replaceAll("^(" + prefixRegexp + ")\\s*\\[\\[([0-9]+) год\\|\\2 года\\]\\]$", normalizedPrefix
+					+ " $2");
+		}
+		if (t.matches("^(" + prefixRegexp + ")\\s*\\[\\[([0-9]+)\\]\\]$")) {
+			t = t.replaceAll("^(" + prefixRegexp + ") \\[\\[([0-9]+)\\]\\]$", normalizedPrefix + " $2");
+		}
+		if (t.matches("^(" + prefixRegexp + ")\\s*\\[\\[([0-9]+) год\\]\\]а$")) {
+			t = t.replaceAll("^(" + prefixRegexp + ") \\[\\[([0-9]+) год\\]\\]а$", normalizedPrefix + " $2");
+		}
+		if (t.matches("^(" + prefixRegexp + ")\\s*([0-9]+)$")) {
+			t = t.replaceAll("^(" + prefixRegexp + ")\\s*([0-9]+)$", normalizedPrefix + " $2");
+		}
+		return t;
+	}
+
 	public List<ValueWithQualifiers> parse(EntityId property, String t) {
 		t = t.trim();
 
 		if (UNKNOWN.contains(t.toLowerCase())) {
-			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, SnakType.somevalue));
+			return ValueWithQualifiers.fromSnak(Snak.newSnak(property, SnakType.somevalue));
 		}
 
 		boolean appendJulian = false;
@@ -152,6 +205,67 @@ public class TimeHelper {
 		} catch (ParseException exc) {
 		}
 
+		{
+			t = normalizeWithPrefix(t, "около|ок\\.", "около");
+
+			try {
+				if (t.matches("^около ([0-9]+)$")) {
+					final String strYear = t.replaceAll("^около ([0-9]+)$", "$1");
+
+					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
+					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
+					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property, timeValue),
+							CIRCUMSTANCES_CIRCA));
+				}
+			} catch (NumberFormatException exc) {
+			}
+		}
+
+		{
+			t = normalizeWithPrefix(t, "до", "до");
+			try {
+				if (t.matches("^до ([0-9]+)$")) {
+					String strYear = t.replaceAll("^до ([0-9]+)$", "$1");
+					strYear = "" + (Integer.parseInt(strYear) - 1);
+					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
+					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
+					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property,
+							SnakType.somevalue), Collections.singletonList(Snak.newSnak(Properties.LATEST_DATE,
+							timeValue))));
+				}
+			} catch (NumberFormatException exc) {
+			}
+		}
+		{
+			t = normalizeWithPrefix(t, "не ранее", "не ранее");
+			try {
+				if (t.matches("^не ранее ([0-9]+)$")) {
+					final String strYear = t.replaceAll("^не ранее ([0-9]+)$", "$1");
+					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
+					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
+					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property,
+							SnakType.somevalue), Collections.singletonList(Snak.newSnak(Properties.EARLIEST_DATE,
+							timeValue))));
+				}
+			} catch (NumberFormatException exc) {
+			}
+		}
+		{
+			t = normalizeWithPrefix(t, "после", "после");
+			try {
+				if (t.matches("^после ([0-9]+)$")) {
+					String strYear = t.replaceAll("^после ([0-9]+)$", "$1");
+					strYear = "" + (Integer.parseInt(strYear) + 1);
+					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
+					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
+					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property,
+							SnakType.somevalue), Collections.singletonList(Snak.newSnak(Properties.EARLIEST_DATE,
+							timeValue))));
+				}
+			} catch (NumberFormatException exc) {
+			}
+		}
+
 		try {
 			if (t.matches("^([0-9]+|[XIV]+)\\s*век\\s+до\\s+н\\.?\\s*э\\.?$")) {
 				final String strCentury = StringUtils.substringBefore(t, "век").trim();
@@ -173,8 +287,7 @@ public class TimeHelper {
 		}
 
 		try {
-			final DateTimeFormatter parser = DateTimeFormatter.ofPattern("d.M.u").withZone(ZoneOffset.UTC);
-			TemporalAccessor parsed = parser.parse(t);
+			TemporalAccessor parsed = PARSER_DATE.parse(t);
 			final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_DAY, parsed);
 			if (appendJulian) {
 				timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
@@ -186,23 +299,66 @@ public class TimeHelper {
 					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
 				}
 			}
-			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, timeValue));
+			return ValueWithQualifiers.fromSnak(Snak.newSnak(property, timeValue));
 		} catch (DateTimeParseException exc) {
 		}
 
 		try {
-			final DateTimeFormatter parser = PARSER_YEAR;
-			TemporalAccessor date = parser.parse(t);
-			final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, date);
+			final Matcher matcher = Pattern.compile("^\\[\\[([а-я]+)\\]\\]\\s+\\[\\[([0-9]+)\\s+год\\]\\]а$")
+					.matcher(t);
+			if (matcher.matches()) {
+				Integer month = getMonth(matcher.group(1));
+				if (month != null) {
+					t = "1." + month + "." + matcher.group(2);
+
+					TemporalAccessor parsed = PARSER_DATE.parse(t);
+					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_MONTH, parsed);
+					if (appendJulian) {
+						timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
+					} else {
+						OffsetDateTime dateTime = OffsetDateTime.from(timeValue.getTime());
+						if (dateTime.isBefore(BORDER)) {
+							timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
+						}
+					}
+					return ValueWithQualifiers.fromSnak(Snak.newSnak(property, timeValue));
+				}
+			}
+		} catch (DateTimeParseException exc) {
+		}
+
+		try {
+			if (t.matches("^\\[\\[([0-9]+) год\\]\\] или \\[\\[([0-9]+) год\\]\\]$")) {
+				String y1 = StringUtils.substringBetween(t, "[[", " год]] или [[");
+				String y2 = StringUtils.substringBetween(t, " год]] или [[", " год]]");
+
+				final TimeValue timeValue1 = new TimeValue(TimeValue.PRECISION_YEAR, PARSER_YEAR.parse(y1));
+				final TimeValue timeValue2 = new TimeValue(TimeValue.PRECISION_YEAR, PARSER_YEAR.parse(y2));
+
+				if (OffsetDateTime.from(timeValue1.getTime()).isBefore(BORDER)) {
+					timeValue1.setCalendarModel(TimeValue.CALENDAR_JULIAN);
+				}
+				if (OffsetDateTime.from(timeValue2.getTime()).isBefore(BORDER)) {
+					timeValue2.setCalendarModel(TimeValue.CALENDAR_JULIAN);
+				}
+
+				return Arrays.asList(
+						new ValueWithQualifiers(Snak.newSnak(property, timeValue1), Collections.emptyList()),
+						new ValueWithQualifiers(Snak.newSnak(property, timeValue2), Collections.emptyList()));
+			}
+		} catch (DateTimeParseException exc) {
+		}
+
+		try {
+			final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, PARSER_YEAR.parse(t));
 			if (appendJulian) {
 				timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
 			} else {
-				OffsetDateTime dateTime = OffsetDateTime.from(timeValue.getTime());
-				if (dateTime.isBefore(BORDER)) {
+				if (OffsetDateTime.from(timeValue.getTime()).isBefore(BORDER)) {
 					timeValue.setCalendarModel(TimeValue.CALENDAR_JULIAN);
 				}
 			}
-			return ValueWithQualifiers.fromSnak(ApiSnak.newSnak(property, timeValue));
+			return ValueWithQualifiers.fromSnak(Snak.newSnak(property, timeValue));
 		} catch (DateTimeParseException exc) {
 		}
 

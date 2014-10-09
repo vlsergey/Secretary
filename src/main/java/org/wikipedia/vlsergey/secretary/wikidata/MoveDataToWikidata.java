@@ -63,6 +63,7 @@ public class MoveDataToWikidata implements Runnable {
 		final TitleResolver titleResolver = new TitleResolver(wikidataCache);
 		final EntityByLinkResolver entityByLinkResolver = new EntityByLinkResolver(wikidataCache, titleResolver);
 
+		worker.errorsReportClear();
 		for (String templateName : Arrays.asList("Архитектор", "Боксёр", "Киберспортсмен", "Кинематографист",
 				"Персона", "Писатель", "Предприниматель", "Снукерист", "Театральный деятель", "Теннисист", "Учёный",
 				"Футболист", "Художник")) {
@@ -135,7 +136,8 @@ public class MoveDataToWikidata implements Runnable {
 							return commonsCategoryHelper.getAction(wikipedia, wikidata);
 						}
 					});
-
 		}
+		worker.errorsReportDump();
+		worker.errorsReportClear();
 	}
 }

@@ -151,12 +151,48 @@ public class TimeHelperTest {
 	}
 
 	@Test
-	public void testParse() {
-		Assert.assertEquals(
-				"{\"datatype\":\"time\",\"datavalue\":{\"type\":\"time\",\"value\":{\"before\":0,\"timezone\":0,\"precision\":7,\"time\":\"-00000000400-01-01T00:00:00Z\",\"after\":0,\"calendarmodel\":\"http://www.wikidata.org/entity/Q1985727\"}},\"property\":\"P569\",\"snaktype\":\"value\"}",
-				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "4 век до н.э.").get(0).getJsonObject().toString());
-		Assert.assertEquals(
-				"{\"datatype\":\"time\",\"datavalue\":{\"type\":\"time\",\"value\":{\"before\":0,\"timezone\":0,\"precision\":7,\"time\":\"+00000001600-01-01T00:00:00Z\",\"after\":0,\"calendarmodel\":\"http://www.wikidata.org/entity/Q1985727\"}},\"property\":\"P569\",\"snaktype\":\"value\"}",
-				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "[[XVI век]]").get(0).getJsonObject().toString());
+	public void testParseCenturies() {
+
+		Assert.assertEquals("4. century BCE", new TimeHelper().parse(Properties.DATE_OF_BIRTH, "4 век до н.э.").get(0)
+				.toString());
+		Assert.assertEquals("16. century", new TimeHelper().parse(Properties.DATE_OF_BIRTH, "[[XVI век]]").get(0)
+				.toString());
+	}
+
+	@Test
+	public void testParseMonthes() {
+		Assert.assertEquals("Февраль 1526 н.э.",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "[[февраль]] [[1526 год]]а").get(0).toString());
+	}
+
+	@Test
+	public void testParseMultiple() {
+		Assert.assertEquals("[1474 н.э., 1480 н.э.]",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "[[1474 год]] или [[1480 год]]").toString());
+	}
+
+	@Test
+	public void testParsePrefixes() {
+		Assert.assertEquals("1290 н.э.\n" + "* [[:d:Property:P1480|P1480]] → [[:d:Q18086598|Q18086598]]",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "ок. [[1290 год|1290]]").get(0).toString());
+		Assert.assertEquals("1680 н.э.\n" + "* [[:d:Property:P1480|P1480]] → [[:d:Q18086598|Q18086598]]",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "ок.1680").get(0).toString());
+		Assert.assertEquals("1700 н.э.\n" + "* [[:d:Property:P1480|P1480]] → [[:d:Q18086598|Q18086598]]",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "ок. [[1700]]").get(0).toString());
+		Assert.assertEquals("1786 н.э.\n" + "* [[:d:Property:P1480|P1480]] → [[:d:Q18086598|Q18086598]]",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "около [[1786 год]]а").get(0).toString());
+
+		Assert.assertEquals("(somevalue)\n" + "* [[:d:Property:P1326|P1326]] → 1638 н.э.",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "до [[1639]]").get(0).toString());
+
+		Assert.assertEquals("(somevalue)\n" + "* [[:d:Property:P1319|P1319]] → 1937 н.э.",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "не ранее 1937").get(0).toString());
+
+		Assert.assertEquals("(somevalue)\n" + "* [[:d:Property:P1319|P1319]] → 1795 н.э.",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "после [[1794 год|1794 года]]").get(0).toString());
+		Assert.assertEquals("(somevalue)\n" + "* [[:d:Property:P1319|P1319]] → 1918 н.э.",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "после 1917").get(0).toString());
+		Assert.assertEquals("(somevalue)\n" + "* [[:d:Property:P1319|P1319]] → 1929 н.э.",
+				new TimeHelper().parse(Properties.DATE_OF_BIRTH, "после [[1928 год]]а").get(0).toString());
 	}
 }

@@ -3,6 +3,7 @@
 	<session-factory>
 		<mapping class="org.wikipedia.vlsergey.secretary.cache.StoredPage" />
 		<mapping class="org.wikipedia.vlsergey.secretary.cache.StoredRevision" />
+		<mapping class="org.wikipedia.vlsergey.secretary.cache.wikidata.StoredSitelinks" />
 		<mapping class="org.wikipedia.vlsergey.secretary.cache.XmlCacheItem" />
 		<mapping class="org.wikipedia.vlsergey.secretary.gost.BadLink" />
 		<mapping class="org.wikipedia.vlsergey.secretary.gost.ProtectGostRuEntry" />

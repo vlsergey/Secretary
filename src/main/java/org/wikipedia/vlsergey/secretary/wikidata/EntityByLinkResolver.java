@@ -4,10 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONObject;
+import org.wikipedia.vlsergey.secretary.cache.StoredRevision;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
@@ -29,14 +31,18 @@ class EntityByLinkResolver implements Function<String, Entity> {
 	}
 
 	@Override
-	public ApiEntity apply(String wikiPageTitle) {
+	public Entity apply(String wikiPageTitle) {
 		synchronized (this) {
 			if (cache.containsKey(wikiPageTitle)) {
 				Long revisionId = cache.get(wikiPageTitle);
 				if (revisionId == null) {
 					return null;
 				}
-				return new ApiEntity(new JSONObject(wikidataCache.queryRevisionContent(revisionId)));
+				final StoredRevision revision = wikidataCache.queryRevision(revisionId);
+				if (revision == null || StringUtils.isBlank(revision.getContent())) {
+					return null;
+				}
+				return new Entity(new JSONObject(revision.getContent()));
 			}
 
 			Revision value = build(wikiPageTitle);
@@ -46,7 +52,7 @@ class EntityByLinkResolver implements Function<String, Entity> {
 			}
 
 			cache.put(wikiPageTitle, value.getId());
-			final ApiEntity result = new ApiEntity(new JSONObject(value.getContent()));
+			final Entity result = new Entity(new JSONObject(value.getContent()));
 			titleResolver.update(result);
 			return result;
 		}
@@ -54,7 +60,7 @@ class EntityByLinkResolver implements Function<String, Entity> {
 
 	private Revision build(final String wikiPageTitle) {
 		try {
-			ApiEntity apiEntity = wikidataBot.wgGetEntityBySitelink("ruwiki", wikiPageTitle, EntityProperty.info);
+			Entity apiEntity = wikidataBot.wgGetEntityBySitelink("ruwiki", wikiPageTitle, EntityProperty.info);
 			if (apiEntity == null) {
 				return null;
 			}

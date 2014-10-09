@@ -23,7 +23,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
@@ -66,7 +66,7 @@ public class DictinaryUpdate implements Runnable {
 			try {
 				String content = revision.getContent();
 				JSONObject jsonObject = new JSONObject(content);
-				Entity entity = new ApiEntity(jsonObject);
+				Entity entity = new Entity(jsonObject);
 
 				List<Statement> values = new ArrayList<>();
 				for (Statement statement : entity.getClaims(property)) {
@@ -95,10 +95,10 @@ public class DictinaryUpdate implements Runnable {
 			}
 			final Map<EntityId, String> localNames = new HashMap<>();
 			final List<String> toCheckPageTitles = toCheck.stream().map(x -> x.toString()).collect(Collectors.toList());
-			for (Revision revision : wikidataCache.queryLatestContentByPageTitles(toCheckPageTitles, false)) {
+			for (Revision revision : wikidataCache.queryLatestByPageTitles(toCheckPageTitles, false)) {
 				String content = revision.getContent();
 				JSONObject jsonObject = new JSONObject(content);
-				Entity entity = new ApiEntity(jsonObject);
+				Entity entity = new Entity(jsonObject);
 				if (entity.hasSitelink("ruwiki")) {
 					localNames.put(entity.getId(), entity.getSiteLink("ruwiki").getTitle());
 				}

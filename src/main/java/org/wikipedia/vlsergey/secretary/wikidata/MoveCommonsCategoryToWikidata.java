@@ -26,8 +26,8 @@ import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiEntity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ApiStatement;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
@@ -72,8 +72,8 @@ public class MoveCommonsCategoryToWikidata implements Runnable {
 	private void fillToWikidata(Set<String> source, EntityId property, JSONObject result) {
 		if (!source.isEmpty()) {
 			for (String newValue : source) {
-				ApiStatement statement = ApiStatement.newStatement(property, newValue);
-				ApiEntity.putProperty(result, statement);
+				Statement statement = Statement.newStatement(property, newValue);
+				Entity.putProperty(result, statement);
 			}
 		}
 	}
@@ -144,7 +144,7 @@ public class MoveCommonsCategoryToWikidata implements Runnable {
 
 		if (!fromPedia.isEmpty()) {
 
-			ApiEntity entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(),
+			Entity entity = wikidataBot.wgGetEntityBySitelink("ruwiki", revision.getPage().getTitle(),
 					EntityProperty.claims);
 
 			if (entity == null) {
@@ -239,7 +239,8 @@ public class MoveCommonsCategoryToWikidata implements Runnable {
 
 		report.append("|}\n");
 
-		ruWikipediaBot.writeContent("User:Secretary/commonscat", null, report.toString(), null, "", true, false);
+		ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/commonscat", null, report.toString(), null,
+				"", true, false);
 		executorService.shutdown();
 	}
 

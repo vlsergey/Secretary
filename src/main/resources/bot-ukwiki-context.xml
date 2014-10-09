@@ -6,7 +6,6 @@
 
 	<bean id="ukWikipediaCache" class="org.wikipedia.vlsergey.secretary.cache.WikiCache">
 		<property name="mediaWikiBot" ref="ukWikipediaBot" />
-		<property name="project" value="ukwiki" />
 	</bean>
 
 	<bean id="ukWikipediaXmlCache" class="org.wikipedia.vlsergey.secretary.cache.XmlCache"
@@ -21,10 +20,11 @@
 
 	<bean id="ukWikipediaBot" class="org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot">
 		<property name="bot" value="0" />
-		<property name="login" value="Secretary" />
-		<property name="password" value="#{systemProperties.SecretaryPassword}" />
+		<property name="login" value="VlsergeyBot" />
+		<property name="password" value="#{systemProperties.VlsergeyBotPassword}" />
 		<property name="site" value="https://uk.wikipedia.org/w" />
 		<property name="xmlParser" ref="ukRefAwareParser" />
+		<property name="project" value="ukwiki" />
 	</bean>
 
 </beans>

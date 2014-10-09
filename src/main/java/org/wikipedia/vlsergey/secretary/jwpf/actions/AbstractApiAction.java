@@ -4,10 +4,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.Vector;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
@@ -89,9 +89,9 @@ public abstract class AbstractApiAction implements ContentProcessable {
 		}
 	}
 
-	protected static void setParameter(MultipartEntity multipartEntity, String name, Enum value) {
+	protected static void setParameter(MultipartEntity multipartEntity, String name, Enum<?> value) {
 		if (value != null) {
-			setParameter(multipartEntity, name, value.name());
+			setParameter(multipartEntity, name, value.toString());
 		}
 	}
 
@@ -191,7 +191,7 @@ public abstract class AbstractApiAction implements ContentProcessable {
 
 	protected final Log log = LogFactory.getLog(getClass());
 
-	protected List<HttpRequestBase> msgs = new Vector<HttpRequestBase>();
+	protected List<HttpRequestBase> msgs = new ArrayList<HttpRequestBase>(1);
 
 	public AbstractApiAction(boolean bot) {
 		this.bot = bot;
@@ -228,6 +228,10 @@ public abstract class AbstractApiAction implements ContentProcessable {
 	@Override
 	public final void processReturningText(final HttpRequestBase hm, final String s) throws ProcessException {
 		parseResult(s);
+	}
+
+	public void reset() {
+		this.msgs = new ArrayList<HttpRequestBase>(1);
 	}
 
 	protected void setMaxLag(MultipartEntity multipartEntity) {

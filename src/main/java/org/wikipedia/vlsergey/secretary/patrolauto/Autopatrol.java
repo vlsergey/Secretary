@@ -51,7 +51,7 @@ public class Autopatrol implements Runnable {
 		for (Page page : mediaWikiBot.queryUnreviewedPages(new Namespace[] { Namespace.RU_WIKI_PORTAL },
 				FilterRedirects.ALL)) {
 
-			Collection<Revision> allRevisions = mediaWikiBot.queryRevisionsByPageId(page.getId(), null,
+			Collection<? extends Revision> allRevisions = mediaWikiBot.queryRevisionsByPageId(page.getId(), null,
 					Direction.NEWER, RevisionPropery.IDS, RevisionPropery.USER);
 
 			Set<String> trustIn = new LinkedHashSet<String>();

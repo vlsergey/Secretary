@@ -100,7 +100,8 @@ public class CalculateCountries implements Runnable {
 					break;
 				}
 			}
-			ruWikipediaCache.getMediaWikiBot().writeContent("User:Secretary/countries/unparsed", null,
+			ruWikipediaCache.getMediaWikiBot().writeContent(
+					"User:" + ruWikipediaCache.getMediaWikiBot().getLogin() + "/countries/unparsed", null,
 					stringBuilder.toString(), null, "update", true, false);
 		}
 
@@ -122,8 +123,9 @@ public class CalculateCountries implements Runnable {
 					break;
 				}
 			}
-			ruWikipediaCache.getMediaWikiBot().writeContent("User:Secretary/countries", null, stringBuilder.toString(),
-					null, "update", true, false);
+			ruWikipediaCache.getMediaWikiBot().writeContent(
+					"User:" + ruWikipediaCache.getMediaWikiBot().getLogin() + "/countries", null,
+					stringBuilder.toString(), null, "update", true, false);
 		}
 	}
 }

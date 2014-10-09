@@ -2,7 +2,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
 import org.json.JSONObject;
 
-public class Sitelink extends ApiValue {
+public class Sitelink extends Value {
 
 	protected Sitelink(JSONObject jsonObject) {
 		super(jsonObject);
