@@ -116,28 +116,29 @@ public abstract class HttpBot {
 				try {
 					action.validateReturningCookies(httpClient.getCookieStore().getCookies(), getMethod);
 
-					// logger.debug("" + getMethod.getURI());
-					// logger.debug("GET: " +
-					// httpResponse.getStatusLine().toString());
-
 					InputStream inputStream = httpResponse.getEntity().getContent();
 					String contentEncoding = httpResponse.getEntity().getContentEncoding() != null ? httpResponse
 							.getEntity().getContentEncoding().getValue() : "";
 					if ("gzip".equalsIgnoreCase(contentEncoding))
 						inputStream = new GZIPInputStream(inputStream);
 
-					String encoding = StringUtils.substringAfter(httpResponse.getEntity().getContentType().getValue(),
-							"charset=");
-					String out = IoUtils.readToString(inputStream, encoding);
-					action.processReturningText(getMethod, out);
-
 					int statuscode = httpResponse.getStatusLine().getStatusCode();
 
 					if (statuscode == HttpStatus.SC_NOT_FOUND) {
 						log.warn("Not Found: " + getMethod.getRequestLine().getUri());
-
 						throw new FileNotFoundException(getMethod.getRequestLine().getUri());
 					}
+					if (statuscode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+						throw new ServerErrorException(httpResponse.getStatusLine());
+					}
+					if (statuscode != HttpStatus.SC_OK) {
+						throw new ClientProtocolException(httpResponse.getStatusLine().toString());
+					}
+
+					String encoding = StringUtils.substringAfter(httpResponse.getEntity().getContentType().getValue(),
+							"charset=");
+					String out = IoUtils.readToString(inputStream, encoding);
+					action.processReturningText(getMethod, out);
 				} catch (CookieException exc) {
 					throw new ClientProtocolException(exc);
 				} catch (ProcessException exc) {
@@ -193,6 +194,13 @@ public abstract class HttpBot {
 					});
 					return;
 				}
+			}
+
+			if (statuscode == HttpStatus.SC_INTERNAL_SERVER_ERROR) {
+				throw new ServerErrorException(response.getStatusLine());
+			}
+			if (statuscode != HttpStatus.SC_OK) {
+				throw new ClientProtocolException(response.getStatusLine().toString());
 			}
 
 			final Header databaseLag = response.getFirstHeader("X-Database-Lag");
@@ -284,7 +292,13 @@ public abstract class HttpBot {
 						} catch (InterruptedException e) {
 						}
 					} catch (SocketException exc) {
-						log.info("SocketException, wait 6 seconds");
+						log.info("SocketException, wait 5 seconds");
+						try {
+							Thread.sleep(5 * 1000);
+						} catch (InterruptedException e) {
+						}
+					} catch (ServerErrorException exc) {
+						log.info("ServerErrorException (" + exc.getStatusLine() + "), wait 5 seconds");
 						try {
 							Thread.sleep(5 * 1000);
 						} catch (InterruptedException e) {
