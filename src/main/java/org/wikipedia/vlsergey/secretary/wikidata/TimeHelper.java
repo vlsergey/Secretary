@@ -19,9 +19,9 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Component;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.TimeValue;
 
@@ -66,7 +66,7 @@ public class TimeHelper extends AbstractHelper {
 		}
 
 		if (wikipedia.isEmpty()) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_empty;
 		}
 
 		if (wikidata.isEmpty()) {
@@ -74,7 +74,7 @@ public class TimeHelper extends AbstractHelper {
 		}
 
 		if (wikidata.containsAll(wikipedia)) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_not_empty;
 		}
 
 		// if (wikipedia.size() == 1 && wikidata.size() == 1) {
@@ -229,9 +229,9 @@ public class TimeHelper extends AbstractHelper {
 					strYear = "" + (Integer.parseInt(strYear) - 1);
 					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
 					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
-					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property,
-							SnakType.somevalue), Collections.singletonList(Snak.newSnak(Properties.LATEST_DATE,
-							timeValue))));
+					return Collections.singletonList(new ValueWithQualifiers(
+							Snak.newSnak(property, SnakType.somevalue), Collections.singletonList(Snak.newSnak(
+									Properties.LATEST_DATE, timeValue))));
 				}
 			} catch (NumberFormatException exc) {
 			}
@@ -243,9 +243,9 @@ public class TimeHelper extends AbstractHelper {
 					final String strYear = t.replaceAll("^не ранее ([0-9]+)$", "$1");
 					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
 					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
-					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property,
-							SnakType.somevalue), Collections.singletonList(Snak.newSnak(Properties.EARLIEST_DATE,
-							timeValue))));
+					return Collections.singletonList(new ValueWithQualifiers(
+							Snak.newSnak(property, SnakType.somevalue), Collections.singletonList(Snak.newSnak(
+									Properties.EARLIEST_DATE, timeValue))));
 				}
 			} catch (NumberFormatException exc) {
 			}
@@ -258,9 +258,9 @@ public class TimeHelper extends AbstractHelper {
 					strYear = "" + (Integer.parseInt(strYear) + 1);
 					TemporalAccessor temporalAccessor = PARSER_YEAR.parse(strYear);
 					final TimeValue timeValue = new TimeValue(TimeValue.PRECISION_YEAR, temporalAccessor);
-					return Collections.singletonList(new ValueWithQualifiers(Snak.newSnak(property,
-							SnakType.somevalue), Collections.singletonList(Snak.newSnak(Properties.EARLIEST_DATE,
-							timeValue))));
+					return Collections.singletonList(new ValueWithQualifiers(
+							Snak.newSnak(property, SnakType.somevalue), Collections.singletonList(Snak.newSnak(
+									Properties.EARLIEST_DATE, timeValue))));
 				}
 			} catch (NumberFormatException exc) {
 			}

@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 
 class AbstractHelper {
 
@@ -21,14 +21,14 @@ class AbstractHelper {
 			Collection<ValueWithQualifiers> wikidataSnaks) {
 
 		if (wikipediaSnaks.isEmpty()) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_empty;
 		}
 		if (wikidataSnaks.isEmpty()) {
 			return ReconsiliationAction.set;
 		}
 
 		if (wikidataSnaks.containsAll(wikipediaSnaks)) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_not_empty;
 		}
 
 		return ReconsiliationAction.report_difference;

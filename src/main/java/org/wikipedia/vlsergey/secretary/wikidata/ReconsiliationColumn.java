@@ -25,13 +25,13 @@ class ReconsiliationColumn {
 	public ReconsiliationAction getAction(Collection<ValueWithQualifiers> wikipedia,
 			Collection<ValueWithQualifiers> wikidata) {
 		if (wikipedia.isEmpty()) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_empty;
 		}
 		if (wikidata.isEmpty()) {
 			return ReconsiliationAction.set;
 		}
 		if (wikidata.containsAll(wikipedia)) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_not_empty;
 		}
 		return ReconsiliationAction.report_difference;
 	}

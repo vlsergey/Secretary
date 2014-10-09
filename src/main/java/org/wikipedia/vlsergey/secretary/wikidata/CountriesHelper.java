@@ -19,10 +19,10 @@ import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
 
@@ -341,7 +341,7 @@ public class CountriesHelper extends AbstractHelper {
 			Collection<ValueWithQualifiers> wikidataSnaks) {
 
 		if (wikipediaSnaks.isEmpty()) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_empty;
 		}
 		if (wikidataSnaks.isEmpty()) {
 			return ReconsiliationAction.set;
@@ -365,7 +365,7 @@ public class CountriesHelper extends AbstractHelper {
 		}
 
 		if (wikidata.containsAll(wikipedia)) {
-			return ReconsiliationAction.remove_from_wikipedia;
+			return ReconsiliationAction.remove_from_wikipedia_as_not_empty;
 		}
 		return ReconsiliationAction.report_difference;
 	}
@@ -479,19 +479,18 @@ public class CountriesHelper extends AbstractHelper {
 		}
 
 		if (StringUtils.equalsIgnoreCase("{{Российская империя}} {{USSR}}", strValue)) {
-			return Arrays.asList(new ValueWithQualifiers(Snak.newSnak(property, Places.Российская_империя),
-					Collections.emptyList()), new ValueWithQualifiers(Snak.newSnak(property, Places.СССР),
-					Collections.emptyList()));
+			return Arrays
+					.asList(new ValueWithQualifiers(Snak.newSnak(property, Places.Российская_империя), Collections
+							.emptyList()),
+							new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()));
 		}
 		if (StringUtils.equalsIgnoreCase("{{USSR}} {{RUS}}", strValue)
 				|| StringUtils.equalsIgnoreCase("{{Флагификация|СССР}} {{Флагификация|Россия}}", strValue)) {
-			return Arrays.asList(
-					new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()),
+			return Arrays.asList(new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()),
 					new ValueWithQualifiers(Snak.newSnak(property, Places.Россия), Collections.emptyList()));
 		}
 		if (StringUtils.equalsIgnoreCase("{{USSR}} {{UKR}}", strValue)) {
-			return Arrays.asList(
-					new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()),
+			return Arrays.asList(new ValueWithQualifiers(Snak.newSnak(property, Places.СССР), Collections.emptyList()),
 					new ValueWithQualifiers(Snak.newSnak(property, Places.Украина), Collections.emptyList()));
 		}
 

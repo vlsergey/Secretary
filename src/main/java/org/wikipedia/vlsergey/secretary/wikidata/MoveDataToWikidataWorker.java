@@ -358,7 +358,8 @@ public class MoveDataToWikidataWorker {
 				}
 				break;
 			}
-			case remove_from_wikipedia:
+			case remove_from_wikipedia_as_empty:
+			case remove_from_wikipedia_as_not_empty:
 				fromPedia.remove(descriptor);
 				break;
 			case report_difference:
@@ -383,7 +384,9 @@ public class MoveDataToWikidataWorker {
 					for (String templateParameter : descriptor.templateParameters) {
 						if (!template.getParameters(templateParameter).isEmpty()) {
 							template.removeParameter(templateParameter);
-							needWikipediaSave = true;
+							if (action != ReconsiliationAction.remove_from_wikipedia_as_empty) {
+								needWikipediaSave = true;
+							}
 						}
 					}
 				}
@@ -399,8 +402,8 @@ public class MoveDataToWikidataWorker {
 		}
 
 		if (needWikipediaSave) {
-			ruWikipediaBot.writeContent(revision, fragment.toWiki(false), "Move [[Шаблон:" + TEMPLATE
-					+ "]] parameters to Wikidata", true);
+			ruWikipediaBot.writeContent(revision, fragment.toWiki(false), "Перенос параметров [[Шаблон:" + TEMPLATE
+					+ "]] на [[Викиданные]]", true);
 		}
 	}
 
