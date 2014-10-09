@@ -288,7 +288,8 @@ public class ConstrainCheckerPeriod implements Runnable {
 
 					wikidataCache.getMediaWikiBot().writeContent(
 							"Wikidata:Database reports/Constraint violations/" + itemToCheckId + "/Period", null,
-							stringBuilder.toString(), null, "Update constrains report", true, false);
+							stringBuilder.toString(), null,
+							"Update constrains report " + checkedItems + " / " + problemItems, true, false);
 				}
 				{
 
@@ -378,7 +379,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 
 					ruWikipediaBot.writeContent("User:" + ruWikipediaBot.getLogin() + "/Constraint violations/"
 							+ itemToCheckId + "/Period", null, stringBuilder.toString(), null,
-							"Update constrains report", true, false);
+							"Update constrains report " + checkedItems + " / " + problemItems, true, false);
 				}
 
 			} catch (Exception exc) {
