@@ -5,6 +5,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.function.Function;
 
 import org.apache.commons.lang.StringUtils;
@@ -231,7 +232,7 @@ public class TimeValue extends DataValue {
 	}
 
 	@Override
-	public Content toWiki(Function<EntityId, String> labelResolver) {
+	public Content toWiki(Locale locale, Function<EntityId, String> labelResolver) {
 		try {
 			final TemporalAccessor time = getTime();
 			switch (getPrecision()) {
@@ -243,11 +244,11 @@ public class TimeValue extends DataValue {
 					return new Text(Math.abs(century) + ". century");
 				}
 			case 9:
-				return new Text(formatYear.format(time));
+				return new Text(formatYear.withLocale(locale).format(time));
 			case 10:
-				return new Text(formatMonth.format(time));
+				return new Text(formatMonth.withLocale(locale).format(time));
 			case 11:
-				return new Text(formatDay.format(time) + getCalendarModelSuffix());
+				return new Text(formatDay.withLocale(locale).format(time) + getCalendarModelSuffix());
 			}
 		} catch (Exception exc) {
 		}

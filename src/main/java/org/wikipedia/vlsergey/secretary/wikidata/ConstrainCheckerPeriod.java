@@ -6,12 +6,15 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
@@ -49,20 +52,8 @@ public class ConstrainCheckerPeriod implements Runnable {
 	@Qualifier("wikidataCache")
 	private WikiCache wikidataCache;
 
-	private void addFailure(Set<String> failures, Entity toCheckInItem, EntityId toCheckInProperty,
-			EntityId toCheckExistenceOf, EntityId timeProperty, TimeValue timeValue) {
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.append(toCheckInProperty.toWikilink(true));
-		stringBuilder.append(" (");
-		stringBuilder.append(timeProperty.toWikilink(true));
-		stringBuilder.append("→");
-		stringBuilder.append(timeValue.toWiki(x -> x.toWikilink(false)));
-		stringBuilder.append(")");
-		failures.add(stringBuilder.toString());
-	}
-
 	private void checkIsNotAfter(Entity toCheckInItem, EntityId toCheckInProperty, EntityId toCheckExistenceOf,
-			EntityId timeProperty, TemporalAccessor end, Set<String> failures) {
+			EntityId timeProperty, TemporalAccessor end, Set<EntityId> propertiesWithFailures) {
 		if (end == null) {
 			return;
 		}
@@ -76,7 +67,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 				}
 				int year = value.get(ChronoField.YEAR);
 				if (year > end.get(ChronoField.YEAR)) {
-					addFailure(failures, toCheckInItem, toCheckInProperty, toCheckExistenceOf, timeProperty, timeValue);
+					propertiesWithFailures.add(toCheckInProperty);
 					return;
 				}
 				if (year < end.get(ChronoField.YEAR)) {
@@ -89,7 +80,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 				}
 				int month = value.get(ChronoField.MONTH_OF_YEAR);
 				if (month > end.get(ChronoField.MONTH_OF_YEAR)) {
-					addFailure(failures, toCheckInItem, toCheckInProperty, toCheckExistenceOf, timeProperty, timeValue);
+					propertiesWithFailures.add(toCheckInProperty);
 					return;
 				}
 				if (month < end.get(ChronoField.YEAR)) {
@@ -102,7 +93,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 				}
 				int day = value.get(ChronoField.DAY_OF_MONTH);
 				if (day > end.get(ChronoField.DAY_OF_MONTH)) {
-					addFailure(failures, toCheckInItem, toCheckInProperty, toCheckExistenceOf, timeProperty, timeValue);
+					propertiesWithFailures.add(toCheckInProperty);
 					return;
 				}
 			}
@@ -110,7 +101,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 	}
 
 	private void checkIsNotBefore(Entity toCheckInItem, EntityId toCheckInProperty, EntityId toCheckExistenceOf,
-			EntityId timeProperty, TemporalAccessor start, Set<String> failures) {
+			EntityId timeProperty, TemporalAccessor start, Set<EntityId> propertiesWithFailures) {
 		if (start == null) {
 			return;
 		}
@@ -124,7 +115,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 				}
 				int year = value.get(ChronoField.YEAR);
 				if (year < start.get(ChronoField.YEAR)) {
-					addFailure(failures, toCheckInItem, toCheckInProperty, toCheckExistenceOf, timeProperty, timeValue);
+					propertiesWithFailures.add(toCheckInProperty);
 					return;
 				}
 				if (year > start.get(ChronoField.YEAR)) {
@@ -137,7 +128,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 				}
 				int month = value.get(ChronoField.MONTH_OF_YEAR);
 				if (month < start.get(ChronoField.MONTH_OF_YEAR)) {
-					addFailure(failures, toCheckInItem, toCheckInProperty, toCheckExistenceOf, timeProperty, timeValue);
+					propertiesWithFailures.add(toCheckInProperty);
 					return;
 				}
 				if (month > start.get(ChronoField.YEAR)) {
@@ -150,7 +141,7 @@ public class ConstrainCheckerPeriod implements Runnable {
 				}
 				int day = value.get(ChronoField.DAY_OF_MONTH);
 				if (day < start.get(ChronoField.DAY_OF_MONTH)) {
-					addFailure(failures, toCheckInItem, toCheckInProperty, toCheckExistenceOf, timeProperty, timeValue);
+					propertiesWithFailures.add(toCheckInProperty);
 					return;
 				}
 			}
@@ -196,9 +187,48 @@ public class ConstrainCheckerPeriod implements Runnable {
 		return false;
 	}
 
+	protected void resolveTitles(final Map<EntityId, Entity> cache, SortedMap<EntityId, Set<EntityId>> failures,
+			EntityId[] propertiesToCacheTitles, final TitleResolver... resolvers) {
+
+		Set<EntityId> ids = new TreeSet<>();
+		ids.addAll(Arrays.asList(propertiesToCacheTitles));
+		for (EntityId entityId : failures.keySet()) {
+			try {
+				ids.add(entityId);
+				Entity entity = cache.get(entityId);
+				for (EntityId propertyId : propertiesToCacheTitles) {
+					for (Statement statement : entity.getClaims(propertyId)) {
+						if (statement.hasValue() && statement.getValueType() == ValueType.WIKIBASE_ENTITYID) {
+							ids.add(statement.getMainSnak().getWikibaseEntityIdValue().getEntityId());
+						}
+						for (Snak snak : statement.getQualifiers()) {
+							if (snak.hasValue() && snak.getValueType() == ValueType.WIKIBASE_ENTITYID) {
+								ids.add(snak.getWikibaseEntityIdValue().getEntityId());
+							}
+						}
+					}
+				}
+			} catch (Exception exc) {
+				exc.printStackTrace();
+			}
+		}
+
+		for (Revision revision : wikidataCache.queryLatestByPageTitles(
+				ids.stream().map(x -> x.getPageTitle()).collect(Collectors.toSet()), false)) {
+			try {
+				for (TitleResolver titleResolver : resolvers) {
+					titleResolver.update(new Entity(revision));
+				}
+			} catch (Exception exc) {
+				exc.printStackTrace();
+			}
+		}
+	}
+
 	@Override
 	public void run() {
-		final TitleResolver titleResolver = new TitleResolver(wikidataCache);
+		final TitleResolver enTitleResolver = new TitleResolver(wikidataCache, Locale.US);
+		final TitleResolver ruTitleResolver = new TitleResolver(wikidataCache, new Locale("ru"));
 
 		// for (Revision itemTalkRevision :
 		// Collections.singletonList(wikidataCache.queryLatestRevision("Talk:Q184")))
@@ -221,8 +251,8 @@ public class ConstrainCheckerPeriod implements Runnable {
 				System.err.println("Need to check that usage of " + itemToCheckId + " is in period " + start + " — "
 						+ end);
 
-				Map<EntityId, Entity> cache = new HashMap<EntityId, Entity>();
-				SortedMap<EntityId, Set<String>> failures = new TreeMap<>();
+				final Map<EntityId, Entity> cache = new HashMap<EntityId, Entity>();
+				SortedMap<EntityId, Set<EntityId>> failures = new TreeMap<>();
 
 				int checkedItems = 0;
 				int problemItems = 0;
@@ -234,105 +264,53 @@ public class ConstrainCheckerPeriod implements Runnable {
 					// {
 					final Entity entity = new Entity(new JSONObject(toCheck.getContent()));
 					final EntityId entityId = entity.getId();
-					Set<String> itemFailures = new TreeSet<>();
+					Set<EntityId> itemPropertiesWithFailures = new HashSet<>();
 
 					// nationality
 					if (presentIn(entity, Properties.NATIONALITY, itemToCheckId)) {
 						checkIsNotAfter(entity, Properties.NATIONALITY, itemToCheckId, Properties.DATE_OF_BIRTH, end,
-								itemFailures);
+								itemPropertiesWithFailures);
 						checkIsNotBefore(entity, Properties.NATIONALITY, itemToCheckId, Properties.DATE_OF_DEATH,
-								start, itemFailures);
+								start, itemPropertiesWithFailures);
 					}
 					if (presentInR(entity, Properties.PLACE_OF_BIRTH, new EntityId[] { Properties.ADMINISTRATIVE_UNIT,
 							Properties.COUNTRY }, itemToCheckId)) {
 						checkIsNotBefore(entity, Properties.PLACE_OF_BIRTH, itemToCheckId, Properties.DATE_OF_BIRTH,
-								start, itemFailures);
+								start, itemPropertiesWithFailures);
 						checkIsNotAfter(entity, Properties.PLACE_OF_BIRTH, itemToCheckId, Properties.DATE_OF_BIRTH,
-								end, itemFailures);
+								end, itemPropertiesWithFailures);
 					}
 					if (presentInR(entity, Properties.PLACE_OF_DEATH, new EntityId[] { Properties.ADMINISTRATIVE_UNIT,
 							Properties.COUNTRY }, itemToCheckId)) {
 						checkIsNotBefore(entity, Properties.PLACE_OF_DEATH, itemToCheckId, Properties.DATE_OF_DEATH,
-								start, itemFailures);
+								start, itemPropertiesWithFailures);
 						checkIsNotAfter(entity, Properties.PLACE_OF_DEATH, itemToCheckId, Properties.DATE_OF_DEATH,
-								end, itemFailures);
+								end, itemPropertiesWithFailures);
 					}
 
 					checkedItems++;
-					if (!itemFailures.isEmpty()) {
+					if (!itemPropertiesWithFailures.isEmpty()) {
 						problemItems++;
 						cache.put(entityId, entity);
-						failures.put(entityId, new TreeSet<>(itemFailures));
+						failures.put(entityId, new TreeSet<>(itemPropertiesWithFailures));
 					}
 				}
 
 				{
-					StringBuilder stringBuilder = new StringBuilder();
-					stringBuilder.append("{{constraint violations report description:period|itemId=" + itemToCheckId
-							+ "}}\n\n");
+					final EntityId[] propertiesToCacheTitles = new EntityId[] { Properties.NATIONALITY,
+							Properties.DATE_OF_BIRTH, Properties.PLACE_OF_BIRTH, Properties.DATE_OF_DEATH,
+							Properties.PLACE_OF_DEATH, Properties.PLACE_OF_BURIAL };
+					resolveTitles(cache, failures, propertiesToCacheTitles, enTitleResolver, ruTitleResolver);
+				}
 
-					stringBuilder.append("\n\n");
-					stringBuilder.append("Checked items: " + checkedItems + "\n\n");
-					stringBuilder.append("Problem items: " + problemItems + "\n\n");
-					for (EntityId key : failures.keySet()) {
-						stringBuilder.append("* [[");
-						stringBuilder.append(key);
-						stringBuilder.append("]] —");
-						for (String failure : failures.get(key)) {
-							stringBuilder.append(" ");
-							stringBuilder.append(failure);
-							stringBuilder.append(";");
-						}
-						stringBuilder.append("\n");
-					}
-
-					wikidataCache.getMediaWikiBot().writeContent(
-							"Wikidata:Database reports/Constraint violations/" + itemToCheckId + "/Period", null,
-							stringBuilder.toString(), null,
-							"Update constrains report " + checkedItems + " / " + problemItems, true, false);
+				{
+					writeWikidataReport(itemToCheckId, cache, checkedItems, problemItems, failures, Locale.US,
+							enTitleResolver);
+					writeWikidataReport(itemToCheckId, cache, checkedItems, problemItems, failures, new Locale("ru"),
+							ruTitleResolver);
 				}
 				{
-
-					// prebuild cache of titles
-					{
-						final EntityId[] propertiesToCacheTitles = new EntityId[] { Properties.NATIONALITY,
-								Properties.DATE_OF_BIRTH, Properties.PLACE_OF_BIRTH, Properties.DATE_OF_DEATH,
-								Properties.PLACE_OF_DEATH, Properties.PLACE_OF_BURIAL };
-
-						Set<EntityId> ids = new TreeSet<>();
-						ids.addAll(Arrays.asList(propertiesToCacheTitles));
-						for (EntityId entityId : failures.keySet()) {
-							try {
-								ids.add(entityId);
-								Entity entity = cache.get(entityId);
-								for (EntityId propertyId : propertiesToCacheTitles) {
-									for (Statement statement : entity.getClaims(propertyId)) {
-										if (statement.hasValue()
-												&& statement.getValueType() == ValueType.WIKIBASE_ENTITYID) {
-											ids.add(statement.getMainSnak().getWikibaseEntityIdValue().getEntityId());
-										}
-										for (Snak snak : statement.getQualifiers()) {
-											if (snak.hasValue() && snak.getValueType() == ValueType.WIKIBASE_ENTITYID) {
-												ids.add(snak.getWikibaseEntityIdValue().getEntityId());
-											}
-										}
-									}
-								}
-							} catch (Exception exc) {
-								exc.printStackTrace();
-							}
-						}
-
-						for (Revision revision : wikidataCache.queryLatestByPageTitles(
-								ids.stream().map(x -> x.getPageTitle()).collect(Collectors.toSet()), false)) {
-							try {
-								titleResolver.update(new Entity(revision));
-							} catch (Exception exc) {
-								exc.printStackTrace();
-							}
-						}
-					}
-
+					Locale ru = Locale.getDefault();
 					StringBuilder stringBuilder = new StringBuilder();
 					stringBuilder.append("{{Constraint violations report:Period|itemId=" + itemToCheckId
 							+ "|itemLabel=" + StringUtils.trimToEmpty(itemToCheckEntity.getLabelValue("ru"))
@@ -361,17 +339,18 @@ public class ConstrainCheckerPeriod implements Runnable {
 							stringBuilder.append("| " + entityId.toWikilink(true) + "\n");
 							stringBuilder.append("| [[" + entity.getSiteLink("ruwiki").getTitle() + "]]\n");
 
-							stringBuilder.append("| " + toString(titleResolver, entity, Properties.NATIONALITY) + "\n");
-							stringBuilder.append("| " + toString(titleResolver, entity, Properties.DATE_OF_BIRTH)
+							stringBuilder.append("| " + toString(ru, ruTitleResolver, entity, Properties.NATIONALITY)
 									+ "\n");
-							stringBuilder.append("| " + toString(titleResolver, entity, Properties.PLACE_OF_BIRTH)
+							stringBuilder.append("| " + toString(ru, ruTitleResolver, entity, Properties.DATE_OF_BIRTH)
 									+ "\n");
-							stringBuilder.append("| " + toString(titleResolver, entity, Properties.DATE_OF_DEATH)
+							stringBuilder.append("| "
+									+ toString(ru, ruTitleResolver, entity, Properties.PLACE_OF_BIRTH) + "\n");
+							stringBuilder.append("| " + toString(ru, ruTitleResolver, entity, Properties.DATE_OF_DEATH)
 									+ "\n");
-							stringBuilder.append("| " + toString(titleResolver, entity, Properties.PLACE_OF_DEATH)
-									+ "\n");
-							stringBuilder.append("| " + toString(titleResolver, entity, Properties.PLACE_OF_BURIAL)
-									+ "\n");
+							stringBuilder.append("| "
+									+ toString(ru, ruTitleResolver, entity, Properties.PLACE_OF_DEATH) + "\n");
+							stringBuilder.append("| "
+									+ toString(ru, ruTitleResolver, entity, Properties.PLACE_OF_BURIAL) + "\n");
 							stringBuilder.append("|-\n");
 						}
 					}
@@ -388,14 +367,14 @@ public class ConstrainCheckerPeriod implements Runnable {
 		}
 	}
 
-	private String toString(TitleResolver titleResolver, Entity entity, EntityId property) {
+	private String toString(Locale locale, Function<EntityId, String> labelResolver, Entity entity, EntityId property) {
 		final List<Statement> claims = entity.getClaims(property);
 		if (claims == null || claims.isEmpty()) {
 			return StringUtils.EMPTY;
 		}
 		if (claims.size() == 1) {
 			final ValueWithQualifiers value = ValueWithQualifiers.fromStatements(claims).get(0);
-			String result = value.toString(titleResolver, 0);
+			String result = value.toString(0, locale, labelResolver);
 			if (value.getValue().hasValue() && value.getValue().getValueType() == ValueType.TIME) {
 				return " data-sort-value=\"" + value.getValue().getTimeValue().getTimeString() + "\" | " + result;
 			}
@@ -403,7 +382,50 @@ public class ConstrainCheckerPeriod implements Runnable {
 		}
 		return "\n* "
 				+ StringUtils.join(
-						ValueWithQualifiers.fromStatements(claims).stream().map(x -> x.toString(titleResolver, 1))
-								.iterator(), "\n*");
+						ValueWithQualifiers.fromStatements(claims).stream()
+								.map(x -> x.toString(1, locale, labelResolver)).iterator(), "\n*");
+	}
+
+	protected void writeWikidataReport(EntityId itemToCheckId, final Map<EntityId, Entity> cache, int checkedItems,
+			int problemItems, SortedMap<EntityId, Set<EntityId>> failures, Locale locale,
+			final TitleResolver titleResolver) {
+		StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("{{constraint violations report description:period|itemId=" + itemToCheckId + "|language="
+				+ locale.getLanguage() + "}}\n\n");
+
+		stringBuilder.append("\n\n");
+		stringBuilder.append("Checked elements: " + checkedItems + "\n\n");
+		stringBuilder.append("Problem elements: " + problemItems + "\n\n");
+		stringBuilder.append("{| class=\"wikitable sortable\" |\n");
+		stringBuilder.append("! \n");
+		stringBuilder.append("! \n");
+		stringBuilder.append("! {{P|" + Properties.NATIONALITY.getId() + "}}\n");
+		stringBuilder.append("! {{P|" + Properties.DATE_OF_BIRTH.getId() + "}}\n");
+		stringBuilder.append("! {{P|" + Properties.PLACE_OF_BIRTH.getId() + "}}\n");
+		stringBuilder.append("! {{P|" + Properties.DATE_OF_DEATH.getId() + "}}\n");
+		stringBuilder.append("! {{P|" + Properties.PLACE_OF_DEATH.getId() + "}}\n");
+		stringBuilder.append("! {{P|" + Properties.PLACE_OF_BURIAL.getId() + "}}\n");
+		stringBuilder.append("|-\n");
+		for (EntityId entityId : failures.keySet()) {
+			Entity entity = cache.get(entityId);
+			titleResolver.update(entity);
+
+			stringBuilder.append("| " + entityId.toWikilink(false) + "\n");
+			stringBuilder.append("| " + titleResolver.apply(entityId) + "\n");
+
+			stringBuilder.append("| " + toString(locale, titleResolver, entity, Properties.NATIONALITY) + "\n");
+			stringBuilder.append("| " + toString(locale, titleResolver, entity, Properties.DATE_OF_BIRTH) + "\n");
+			stringBuilder.append("| " + toString(locale, titleResolver, entity, Properties.PLACE_OF_BIRTH) + "\n");
+			stringBuilder.append("| " + toString(locale, titleResolver, entity, Properties.DATE_OF_DEATH) + "\n");
+			stringBuilder.append("| " + toString(locale, titleResolver, entity, Properties.PLACE_OF_DEATH) + "\n");
+			stringBuilder.append("| " + toString(locale, titleResolver, entity, Properties.PLACE_OF_BURIAL) + "\n");
+			stringBuilder.append("|-\n");
+		}
+		stringBuilder.append("|}\n");
+
+		wikidataCache.getMediaWikiBot().writeContent(
+				"Wikidata:Database reports/Constraint violations/" + itemToCheckId + "/Period/" + locale.getLanguage(),
+				null, stringBuilder.toString(), null,
+				"Update constrains report " + checkedItems + " / " + problemItems, true, false);
 	}
 }

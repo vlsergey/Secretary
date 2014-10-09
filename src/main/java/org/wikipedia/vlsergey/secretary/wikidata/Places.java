@@ -58,7 +58,7 @@ public interface Places {
 
 	EntityId Санкт_Петербург = EntityId.item(656);
 
-	EntityId Северная_Ирландия = EntityId.item(25);
+	EntityId Северная_Ирландия = EntityId.item(26);
 
 	EntityId СССР = EntityId.item(15180);
 

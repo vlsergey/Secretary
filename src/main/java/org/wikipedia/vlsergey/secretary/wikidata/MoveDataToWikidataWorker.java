@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
@@ -200,7 +201,7 @@ public class MoveDataToWikidataWorker {
 						stringBuilder.append(((WikibaseEntityIdValue) value).getEntityId().toWikilink(false));
 						stringBuilder.append("; ");
 					} else {
-						stringBuilder.append(value.toWiki(x -> x.toString()).toWiki(true));
+						stringBuilder.append(value.toWiki(new Locale("en"), x -> x.toString()).toWiki(true));
 						stringBuilder.append("; ");
 					}
 				}
@@ -384,7 +385,7 @@ public class MoveDataToWikidataWorker {
 	public void process(EntityByLinkResolver entityByLinkResolver, TitleResolver titleResolver, String template,
 			SinglePropertyReconsiliationColumn... columns) {
 		EntityId templateId = entityByLinkResolver.apply("Шаблон:" + template).getId();
-		MoveDataReport report = new MoveDataReport(titleResolver);
+		MoveDataReport report = new MoveDataReport(new Locale("ru"), titleResolver);
 
 		final Iterable<Revision> revisions = ruWikipediaCache.queryByEmbeddedIn("Шаблон:" + template,
 				Namespace.NSS_MAIN);

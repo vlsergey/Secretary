@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.jwpf.wikidata;
 
+import java.util.Locale;
 import java.util.function.Function;
 
 import org.json.JSONObject;
@@ -26,10 +27,10 @@ public class DataValue extends Value {
 
 	@Override
 	public String toString() {
-		return toWiki(x -> x.toString()).toWiki(true);
+		return toWiki(Locale.getDefault(), x -> x.toString()).toWiki(true);
 	}
 
-	public Content toWiki(Function<EntityId, String> labelResolver) {
+	public Content toWiki(Locale locale, Function<EntityId, String> labelResolver) {
 		return new Text(jsonObject.toString());
 	}
 }

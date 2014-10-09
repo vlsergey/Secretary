@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -15,20 +16,25 @@ public class TitleResolver implements Function<EntityId, String> {
 
 	private final Map<EntityId, String> cache = new HashMap<>();
 
+	private final Locale locale;
+
 	private final WikiCache wikidataCache;
 
-	public TitleResolver(WikiCache wikidataCache) {
+	public TitleResolver(WikiCache wikidataCache, Locale locale) {
 		this.wikidataCache = wikidataCache;
+		this.locale = locale;
 	}
 
 	@Override
 	public String apply(EntityId t) {
-		if (t.equals(Places.РСФСР)) {
-			return "РСФСР";
-		} else if (t.equals(Places.СССР)) {
-			return "СССР";
-		} else if (t.equals(Places.США)) {
-			return "США";
+		if (locale.getLanguage().equals(new Locale("ru").getLanguage())) {
+			if (t.equals(Places.РСФСР)) {
+				return "РСФСР";
+			} else if (t.equals(Places.СССР)) {
+				return "СССР";
+			} else if (t.equals(Places.США)) {
+				return "США";
+			}
 		}
 
 		synchronized (this) {
@@ -42,9 +48,9 @@ public class TitleResolver implements Function<EntityId, String> {
 	}
 
 	private String build(final Entity entity) {
-		Label ru = entity.getLabel("ru");
-		if (ru != null)
-			return ru.getValue();
+		Label localized = entity.getLabel(locale.getLanguage());
+		if (localized != null)
+			return localized.getValue();
 		Label en = entity.getLabel("en");
 		if (en != null)
 			return en.getValue();

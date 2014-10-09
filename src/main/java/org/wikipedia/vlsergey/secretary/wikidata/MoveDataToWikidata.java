@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -60,7 +61,7 @@ public class MoveDataToWikidata implements Runnable {
 	@Override
 	public void run() {
 
-		final TitleResolver titleResolver = new TitleResolver(wikidataCache);
+		final TitleResolver titleResolver = new TitleResolver(wikidataCache, Locale.getDefault());
 		final EntityByLinkResolver entityByLinkResolver = new EntityByLinkResolver(wikidataCache, titleResolver);
 
 		worker.errorsReportClear();

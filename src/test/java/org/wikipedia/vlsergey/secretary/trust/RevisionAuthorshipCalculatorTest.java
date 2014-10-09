@@ -27,7 +27,7 @@ public class RevisionAuthorshipCalculatorTest {
 		TextChunkList chunks2 = TextChunkList.toTextChunkList(locale, "B", text2);
 
 		final TextChunkList joined = calculator.join(chunks1, chunks2);
-		Assert.assertEquals("A 97,21%; B 2,79%;", calculator.toString(joined, false));
+		Assert.assertEquals("A 97,21%; B 2,79%;", calculator.toString(joined));
 	}
 
 	@Test
@@ -60,7 +60,7 @@ public class RevisionAuthorshipCalculatorTest {
 
 		TextChunkList joined = calculator.join(baseRevision, newRevision);
 
-		Assert.assertEquals("C 40%; B 33,33%; A 26,67%;", calculator.toString(joined, false));
+		Assert.assertEquals("C 40%; B 33,33%; A 26,67%;", calculator.toString(joined));
 	}
 
 }

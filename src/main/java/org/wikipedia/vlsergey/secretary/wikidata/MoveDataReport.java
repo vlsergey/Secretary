@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -16,10 +17,13 @@ public class MoveDataReport {
 
 	private final Function<EntityId, String> labelResolver;
 
+	private final Locale locale;
+
 	private final Map<ReconsiliationColumn, SortedMap<String, String>> results = new HashMap<>();
 
-	public MoveDataReport(final Function<EntityId, String> labelResolver) {
+	public MoveDataReport(Locale locale, final Function<EntityId, String> labelResolver) {
 		this.labelResolver = labelResolver;
+		this.locale = locale;
 	}
 
 	public void addLine(Revision revision, ReconsiliationColumn descriptor,
@@ -118,10 +122,10 @@ public class MoveDataReport {
 		result.append("| ");
 		if (values.size() == 1) {
 			final ValueWithQualifiers value = values.iterator().next();
-			result.append(value.toString(labelResolver, 0));
+			result.append(value.toString(0, locale, labelResolver));
 		} else {
 			for (ValueWithQualifiers value : values) {
-				result.append("\n* " + value.toString(labelResolver, 1));
+				result.append("\n* " + value.toString(1, locale, labelResolver));
 			}
 		}
 	}

@@ -3,6 +3,7 @@ package org.wikipedia.vlsergey.secretary.wikidata;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -81,12 +82,12 @@ public class ValueWithQualifiers {
 
 	@Override
 	public String toString() {
-		return toString(x -> x.toString(), 0);
+		return toString(0, Locale.getDefault(), x -> x.toString());
 	}
 
-	public String toString(Function<EntityId, String> labelResolver, int level) {
+	public String toString(int level, Locale locale, Function<EntityId, String> labelResolver) {
 		StringBuilder builder = new StringBuilder();
-		builder.append(toString(labelResolver, this.getValue()));
+		builder.append(toString(locale, labelResolver, this.getValue()));
 		for (Snak qualifier : this.getQualifiers()) {
 			builder.append("\n");
 			builder.append(StringUtils.repeat("*", level + 1));
@@ -96,7 +97,7 @@ public class ValueWithQualifiers {
 			builder.append(labelResolver.apply(qualifier.getProperty()));
 			builder.append("]] → ");
 			try {
-				builder.append(toString(labelResolver, qualifier));
+				builder.append(toString(locale, labelResolver, qualifier));
 			} catch (Exception exc) {
 				builder.append("(error)");
 			}
@@ -104,9 +105,9 @@ public class ValueWithQualifiers {
 		return builder.toString();
 	}
 
-	private String toString(Function<EntityId, String> labelResolver, final Snak snak) {
+	private String toString(Locale locale, Function<EntityId, String> labelResolver, final Snak snak) {
 		if (snak.getSnakType() == SnakType.value) {
-			return snak.getDataValue().toWiki(labelResolver).toWiki(true);
+			return snak.getDataValue().toWiki(locale, labelResolver).toWiki(true);
 		} else {
 			return "(" + snak.getSnakType() + ")";
 		}

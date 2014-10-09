@@ -113,7 +113,6 @@ public class PlacesHelperTest {
 
 	@Test
 	public void testParse() {
-
 		final PlacesHelper placesHelper = mockPlacesHelper();
 		final EntityByLinkResolver entityByLinkResolver = mockEntityByLinkResolver();
 
@@ -125,7 +124,7 @@ public class PlacesHelperTest {
 						+ "* " + Properties.COUNTRY.toWikilink(true) + " → " + Places.СССР.toWikilink(true),
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
-								"{{МестоРождения|Кишинёв}}, [[МССР]], [[СССР]]").get(0).toString(x -> x.toString(), 0));
+								"{{МестоРождения|Кишинёв}}, [[МССР]], [[СССР]]").get(0).toString());
 
 		Assert.assertEquals(
 				Places.Лос_Анджелес.toWikilink(true)
@@ -135,8 +134,7 @@ public class PlacesHelperTest {
 						+ "* " + Properties.COUNTRY.toWikilink(true) + " → " + Places.США.toWikilink(true),
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
-								"[[Лос-Анджелес]], [[Калифорния]], [[Соединённые Штаты Америки]]").get(0)
-						.toString(x -> x.toString(), 0));
+								"[[Лос-Анджелес]], [[Калифорния]], [[Соединённые Штаты Америки]]").get(0).toString());
 		Assert.assertEquals(
 				Places.Лос_Анджелес.toWikilink(true)
 						+ "\n" //
@@ -146,36 +144,33 @@ public class PlacesHelperTest {
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
 								"{{МестоРождения|Лос-Анджелес}}, [[Калифорния]], [[Соединённые Штаты Америки|США]]")
-						.get(0).toString(x -> x.toString(), 0));
+						.get(0).toString());
 
-		Assert.assertEquals(
-				"[[:d:Q649|Q649]]",
-				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[Москва]]").get(0)
-						.toString(x -> x.toString(), 0));
+		Assert.assertEquals("[[:d:Q649|Q649]]",
+				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[Москва]]").get(0).toString());
 
 		Assert.assertEquals("[[:d:Q649|Q649]]\n" //
 				+ "* [[:d:Property:P131|P131]] → [[:d:Q2184|Q2184]]\n" //
 				+ "* [[:d:Property:P17|P17]] → [[:d:Q15180|Q15180]]",
 				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[Москва]], [[РСФСР]], [[СССР]]")
-						.get(0).toString(x -> x.toString(), 0));
+						.get(0).toString());
 
 		Assert.assertEquals("[[:d:Q649|Q649]]",
 				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "{{Место смерти|Москва}}").get(0)
-						.toString(x -> x.toString(), 0));
+						.toString());
 
 		Assert.assertEquals("[[:d:Q649|Q649]]",
 				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "{{Место смерти|Москва|в Москве}}")
-						.get(0).toString(x -> x.toString(), 0));
+						.get(0).toString());
 
 		Assert.assertEquals(
 				"[[:d:Q60|Q60]]\n" + "* [[:d:Property:P17|P17]] → [[:d:Q30|Q30]]",
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
-								"{{МестоРождения|Нью-Йорк}}, [[Соединённые Штаты Америки|США]]").get(0)
-						.toString(x -> x.toString(), 0));
+								"{{МестоРождения|Нью-Йорк}}, [[Соединённые Штаты Америки|США]]").get(0).toString());
 		Assert.assertEquals("[[:d:Q60|Q60]]\n" + "* [[:d:Property:P17|P17]] → [[:d:Q30|Q30]]",
 				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[Нью-Йорк]], США").get(0)
-						.toString(x -> x.toString(), 0));
+						.toString());
 		Assert.assertEquals(
 				Places.Нью_Йорк_город.toWikilink(true)
 						+ "\n" //
@@ -185,21 +180,19 @@ public class PlacesHelperTest {
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
 								"[[Нью-Йорк]], [[Нью-Йорк (штат)|Нью-Йорк]], [[Соединённые Штаты Америки]]").get(0)
-						.toString(x -> x.toString(), 0));
+						.toString());
 
 		Assert.assertEquals(
 				"[[:d:Q656|Q656]]\n" + "* [[:d:Property:P17|P17]] → [[:d:Q34266|Q34266]]",
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
-								"{{Место рождения|Санкт-Петербург}}, [[Российская империя]]").get(0)
-						.toString(x -> x.toString(), 0));
+								"{{Место рождения|Санкт-Петербург}}, [[Российская империя]]").get(0).toString());
 
 		Assert.assertEquals(
 				"[[:d:Q656|Q656]]\n" + "* [[:d:Property:P17|P17]] → [[:d:Q34266|Q34266]]",
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
-								"{{МестоРождения|Санкт-Петербург}},<br /> [[Российская империя]]").get(0)
-						.toString(x -> x.toString(), 0));
+								"{{МестоРождения|Санкт-Петербург}},<br /> [[Российская империя]]").get(0).toString());
 		try {
 			Assert.assertEquals(
 					Places.Санкт_Петербург.toWikilink(true) + "\n" //
@@ -207,33 +200,29 @@ public class PlacesHelperTest {
 					placesHelper
 							.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
 									"{{МестоРождения|Ленинград|в Санкт-Петербурге|Санкт-Петербург}}, [[Союз Советских Социалистических Республик]]")
-							.get(0).toString(x -> x.toString(), 0));
+							.get(0).toString());
 			Assert.fail("NotSameLabelException expected");
 		} catch (NotSameLabelException exc) {
 			// success
 		}
 
-		Assert.assertEquals(
-				Places.СССР.toWikilink(true),
-				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[СССР]]").get(0)
-						.toString(x -> x.toString(), 0));
+		Assert.assertEquals(Places.СССР.toWikilink(true),
+				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[СССР]]").get(0).toString());
 
-		Assert.assertEquals(
-				Places.США.toWikilink(true),
-				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[США]]").get(0)
-						.toString(x -> x.toString(), 0));
+		Assert.assertEquals(Places.США.toWikilink(true),
+				placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "[[США]]").get(0).toString());
 
 		Assert.assertEquals(
 				Places.Ростов_на_Дону.toWikilink(true),
 				placesHelper
 						.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH,
-								"{{МР|Ростов-на-Дону|в Ростове-на-Дону}}").get(0).toString(x -> x.toString(), 0));
+								"{{МР|Ростов-на-Дону|в Ростове-на-Дону}}").get(0).toString());
 
 		try {
 			Assert.assertEquals(
 					"[[:d:Q649|Q649]]",
 					placesHelper.parse(entityByLinkResolver, Properties.PLACE_OF_BIRTH, "{{Место смерти|Одесса}}")
-							.get(0).toString(x -> x.toString(), 0));
+							.get(0).toString());
 			Assert.fail("AutocategorizationRequiredException required");
 		} catch (AutocategorizationRequiredException exc) {
 			// success
