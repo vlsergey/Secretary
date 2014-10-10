@@ -130,6 +130,9 @@ public abstract class Value {
 		if (!jsonObject.has(mapName)) {
 			return Collections.emptyList();
 		}
+		if (isEmptyArray(jsonObject, mapName)) {
+			return Collections.emptyList();
+		}
 		final JSONObject map = jsonObject.getJSONObject(mapName);
 		if (!map.has(key)) {
 			return Collections.emptyList();
