@@ -5,7 +5,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
@@ -62,7 +61,7 @@ public class TitleResolver implements Function<EntityId, String> {
 		if (revision == null) {
 			return entityId.toString();
 		}
-		return build(new Entity(new JSONObject(revision.getContent())));
+		return build(new Entity(revision));
 	}
 
 	public void update(Entity entity) {
