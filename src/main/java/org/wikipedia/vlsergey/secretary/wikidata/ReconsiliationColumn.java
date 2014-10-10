@@ -34,7 +34,7 @@ public abstract class ReconsiliationColumn {
 				statement.addQualifier(qualifier);
 			}
 			statement.addReference(REFERENCE_FROM_RUWIKI);
-			if (!claimIdsToBeDeleted.isEmpty()) {
+			if (claimIdsToBeDeleted != null && !claimIdsToBeDeleted.isEmpty()) {
 				statement.setId(claimIdsToBeDeleted.remove(0));
 			}
 			Entity.putProperty(result, statement);
