@@ -159,22 +159,17 @@ public class WikiCache {
 	}
 
 	public Iterable<Revision> queryLatestByPageIds(Iterable<Long> pageIds) {
-		log.info("queryLatestByPageIds: " + pageIds);
-
 		return queryByPagesAndRevisions(mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, FAST));
 	}
 
 	public Iterable<Revision> queryLatestByPageTitles(Iterable<String> pageTitles, boolean followRedirects)
 			throws ActionException, ProcessException {
-		log.info("queryLatestContentByPageTitles: " + pageTitles);
-
 		return queryByPagesAndRevisions(mediaWikiBot
 				.queryLatestRevisionsByPageTitles(pageTitles, followRedirects, FAST));
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(Long pageId) {
-		log.debug("queryLatestRevision(" + pageId + ")");
 		Revision latest = mediaWikiBot.queryLatestRevision(pageId, FAST);
 		if (latest == null)
 			return null;
@@ -183,7 +178,6 @@ public class WikiCache {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(String pageTitle) {
-		log.debug("queryLatestRevision('" + pageTitle + "')");
 		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, false, FAST);
 		if (latest == null)
 			return null;
