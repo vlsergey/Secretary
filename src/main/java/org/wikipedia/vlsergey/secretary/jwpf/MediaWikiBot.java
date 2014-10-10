@@ -385,11 +385,8 @@ public class MediaWikiBot extends HttpBot {
 
 	public Revision queryLatestRevision(Long pageId, RevisionPropery[] properties) throws ActionException,
 			ProcessException {
-		log.info("queryRevisionByPageId(" + pageId + ", " + Arrays.toString(properties) + ")");
-
 		QueryRevisionsByPageIds action = new QueryRevisionsByPageIds(isBot(), Collections.singleton(pageId), properties);
 		performAction(action);
-
 		return getSingleRevision(action.getResults());
 	}
 
@@ -413,7 +410,6 @@ public class MediaWikiBot extends HttpBot {
 		return new MultiresultFunction<Long, ParsedPage>() {
 			@Override
 			public Iterable<ParsedPage> apply(Iterable<? extends Long> a) {
-				log.info("queryLatestRevisionsByPageIdsF: " + a + "; " + Arrays.asList(properties));
 				QueryRevisionsByPageIds bufferAction = new QueryRevisionsByPageIds(isBot(), a, properties);
 				performAction(bufferAction);
 				return bufferAction.getResults();
