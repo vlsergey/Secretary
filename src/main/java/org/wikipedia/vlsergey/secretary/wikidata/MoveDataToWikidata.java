@@ -65,8 +65,8 @@ public class MoveDataToWikidata implements Runnable {
 		final EntityByLinkResolver entityByLinkResolver = new EntityByLinkResolver(wikidataCache, titleResolver);
 
 		worker.errorsReportClear();
-		for (String templateName : Arrays.asList("Архитектор", "Боксёр",
-		// "Киберспортсмен",
+		for (String templateName : Arrays.asList("Архитектор",
+		// "Боксёр", "Киберспортсмен",
 				"Кинематографист", "Персона", "Писатель", "Предприниматель",
 				// "Снукерист",
 				"Театральный деятель",
