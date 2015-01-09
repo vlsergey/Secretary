@@ -79,9 +79,9 @@ public class Edit extends AbstractApiXmlAction {
 		HttpPost postMethod = new HttpPost("/api.php");
 
 		MultipartEntity multipartEntity = new MultipartEntity();
+		setFormatXml(multipartEntity);
 		setParameter(multipartEntity, "action", "edit");
 		setParameter(multipartEntity, "title", pageTitle);
-		setParameter(multipartEntity, "token", token);
 
 		if (prependText != null)
 			setParameter(multipartEntity, "prependtext", prependText);
@@ -109,7 +109,7 @@ public class Edit extends AbstractApiXmlAction {
 			setParameter(multipartEntity, "nocreate", "1");
 		}
 
-		setParameter(multipartEntity, "format", "xml");
+		setParameter(multipartEntity, "token", token);
 
 		postMethod.setEntity(multipartEntity);
 
