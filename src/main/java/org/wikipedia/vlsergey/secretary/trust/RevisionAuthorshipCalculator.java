@@ -41,6 +41,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.utils.LastUserHashMap;
 
 public class RevisionAuthorshipCalculator {
@@ -71,7 +72,7 @@ public class RevisionAuthorshipCalculator {
 			this.pageTitle = pageTitle;
 
 			this.revisionInfosNewer = mediaWikiBot.queryRevisionsByPageTitle(pageTitle, null, Direction.NEWER,
-					WikiCache.FAST);
+					RevisionPropery.IDS, RevisionPropery.TIMESTAMP, RevisionPropery.SIZE);
 			this.revisionInfosNewerIds = new ArrayList<Long>(revisionInfosNewer.size());
 			for (ParsedRevision revision : revisionInfosNewer) {
 				revisionInfosNewerIds.add(revision.getId());
@@ -234,10 +235,11 @@ public class RevisionAuthorshipCalculator {
 			}
 			final String strProcent = new DecimalFormat("###.##", DecimalFormatSymbols.getInstance(Locale.US))
 					.format(procent * 100);
-			stringBuilder.append("{\"" + userName + "\", " + strProcent + "}, ");
+			stringBuilder.append("{\"" + userName + "\"," + strProcent + "},");
 		}
 
-		return stringBuilder.toString().trim();
+		stringBuilder.setLength(stringBuilder.length() - 1);
+		return stringBuilder.toString();
 	}
 
 	private final Lock[] articleLocks;
@@ -686,7 +688,7 @@ public class RevisionAuthorshipCalculator {
 	private void write(SortedMap<String, TextChunkList> results, String groupTitle) {
 		StringBuilder result = new StringBuilder("return {\n");
 		for (String key : results.keySet()) {
-			result.append("\t{title=\"" + key + "\",contrib=" + toString(results.get(key)) + "},\n");
+			result.append("{title=\"" + key + "\",contrib={" + toString(results.get(key)) + "}},\n");
 		}
 		result.append("};\n");
 
