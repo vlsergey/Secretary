@@ -18,8 +18,11 @@
 package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.text.ParseException;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
@@ -38,13 +41,14 @@ public abstract class AbstractQueryAction extends AbstractApiXmlAction {
 		else if (queryContinueElements.size() == 1)
 			parseQueryContinue(queryContinueElements.get(0));
 
-		final ListAdapter<Element> queryElements = new ListAdapter<Element>(root.getElementsByTagName("query"));
-		if (queryElements.size() < 1)
+		final NodeList childNodes = root.getChildNodes();
+		Optional<Element> queryElement = IntStream.range(0, childNodes.getLength()).mapToObj(childNodes::item)
+				.filter(x -> "query".equals(x.getNodeName())).map(x -> (Element) x).findAny();
+
+		if (!queryElement.isPresent()) {
 			throw new IllegalArgumentException("No query elements");
-		if (!queryElements.isEmpty()) {
-			Element queryElement = queryElements.get(0);
-			parseQueryElement(queryElement);
 		}
+		parseQueryElement(queryElement.get());
 	}
 
 	protected ParsedPage parsePage(Element pageElement) throws ProcessException {
