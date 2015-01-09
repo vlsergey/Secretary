@@ -43,7 +43,7 @@ public class WbRemoveClaimsAction extends AbstractApiAction {
 
 	/**
 	 * A "edittoken" token previously obtained through the token module (
-	 * {@link MediaWikiBot#queryTokenEdit(String)} )
+	 * {@link MediaWikiBot#queryTokenEdit()} )
 	 */
 	public String token;
 

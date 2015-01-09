@@ -43,7 +43,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByPageTitles;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRecentChanges;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByRevisionIds;
-import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryTokenEdit;
+import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryToken;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryUnreviewedPages;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryUserContributions;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.Review;
@@ -58,6 +58,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RecentChange;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
+import org.wikipedia.vlsergey.secretary.jwpf.model.TokenType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.User;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserContributionItem;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserContributionProperty;
@@ -184,7 +185,7 @@ public class MediaWikiBot extends HttpBot {
 	}
 
 	private int getWriteLimitPerMinute() {
-		return isBot() ? 10 : 5;
+		return isBot() ? 100 : 5;
 	}
 
 	public XmlParser getXmlParser() {
@@ -218,7 +219,7 @@ public class MediaWikiBot extends HttpBot {
 	@PostConstruct
 	public void login() throws ActionException {
 		for (int i = 0; i < 5; i++) {
-			log.info("Login as " + getLogin());
+			log.info("Login as " + getLogin() + " at " + getProject());
 			try {
 				PostLogin postLogin = new PostLogin(isBot(), getLogin(), getPassword());
 				performAction(postLogin);
@@ -575,24 +576,14 @@ public class MediaWikiBot extends HttpBot {
 		}.makeBatched(batchLimit);
 	}
 
-	public String queryTokenEdit(Revision revision) throws ActionException, ProcessException {
-		QueryTokenEdit queryTokenEdit = new QueryTokenEdit(isBot(), revision);
+	public String queryTokenEdit() throws ActionException, ProcessException {
+		QueryToken queryTokenEdit = new QueryToken(isBot(), TokenType.csrf);
 		performAction(queryTokenEdit);
 
-		if (queryTokenEdit.getEditToken() == null)
-			throw new ActionException("Unable to obtain edit token for " + revision);
+		if (!queryTokenEdit.getTokens().containsKey(TokenType.csrf))
+			throw new ActionException("Unable to obtain edit token of type " + TokenType.csrf);
 
-		return queryTokenEdit.getEditToken();
-	}
-
-	public String queryTokenEdit(String pageTitle) throws ActionException, ProcessException {
-		QueryTokenEdit queryTokenEdit = new QueryTokenEdit(isBot(), pageTitle);
-		performAction(queryTokenEdit);
-
-		if (queryTokenEdit.getEditToken() == null)
-			throw new ActionException("Unable to obtain edit token for '" + pageTitle + "'");
-
-		return queryTokenEdit.getEditToken();
+		return queryTokenEdit.getTokens().get(TokenType.csrf);
 	}
 
 	public Iterable<Page> queryUnreviewedPages(Namespace[] namespaces, FilterRedirects filterRedirects)
@@ -611,7 +602,7 @@ public class MediaWikiBot extends HttpBot {
 		if (!isLoggedIn())
 			throw new ActionException("Please login first");
 
-		String editToken = queryTokenEdit(revision);
+		String editToken = queryTokenEdit();
 
 		Review review = new Review(isBot(), revision, editToken, comment, null, flag_accuracy);
 		performAction(review);
@@ -647,7 +638,7 @@ public class MediaWikiBot extends HttpBot {
 		RuntimeException last = null;
 		for (int i = 0; i < 3; i++) {
 			try {
-				String editToken = queryTokenEdit(currentRevision);
+				String editToken = queryTokenEdit();
 				Edit edit = new Edit(isBot(), currentRevision.getPage(), currentRevision, editToken, text, summary,
 						minor);
 				performAction(edit);
@@ -674,7 +665,7 @@ public class MediaWikiBot extends HttpBot {
 		RuntimeException last = null;
 		for (int i = 0; i < 3; i++) {
 			try {
-				String editToken = queryTokenEdit(pageTitle);
+				String editToken = queryTokenEdit();
 				Edit edit = new Edit(isBot(), pageTitle, editToken, prependText, text, appendText, summary, minor,
 						nocreate);
 				performAction(edit);

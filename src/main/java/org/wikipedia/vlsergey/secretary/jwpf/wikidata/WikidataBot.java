@@ -40,7 +40,7 @@ public class WikidataBot extends MediaWikiBot {
 	}
 
 	public String queryTokenEdit(EntityId entityId) throws ActionException, ProcessException {
-		return queryTokenEdit(entityId.toString());
+		return queryTokenEdit();
 	}
 
 	/**
@@ -49,7 +49,7 @@ public class WikidataBot extends MediaWikiBot {
 	public Entity wgCreateEntity(JSONObject data, String summary) {
 		enforceWriteLimit();
 
-		String token = queryTokenEdit("Q1");
+		String token = queryTokenEdit();
 		WbEditEntityAction action = new WbEditEntityAction(isBot());
 		action.new_ = "item";
 		action.data = data;
