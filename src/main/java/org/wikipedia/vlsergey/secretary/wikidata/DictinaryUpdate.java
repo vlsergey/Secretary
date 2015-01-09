@@ -24,7 +24,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.ValueType;
@@ -34,7 +33,7 @@ public class DictinaryUpdate implements Runnable {
 
 	private static final Log log = LogFactory.getLog(DictinaryUpdate.class);
 
-	@Autowired
+	// @Autowired
 	private List<DictionaryUpdateListener> dictionaryUpdateListeners;
 
 	private EntityId property;
@@ -42,6 +41,8 @@ public class DictinaryUpdate implements Runnable {
 	@Autowired
 	@Qualifier("ruWikipediaBot")
 	private MediaWikiBot ruWikipediaBot;
+
+	private Map<String, String> valuesPrefixes;
 
 	@Autowired
 	private WikidataBot wikidataBot;
@@ -52,6 +53,10 @@ public class DictinaryUpdate implements Runnable {
 
 	public EntityId getProperty() {
 		return property;
+	}
+
+	public Map<String, String> getValuesPrefixes() {
+		return valuesPrefixes;
 	}
 
 	@Override
@@ -126,22 +131,46 @@ public class DictinaryUpdate implements Runnable {
 			}
 		}
 
-		StringBuilder builder = new StringBuilder("return {\n");
-		for (Map.Entry<EntityId, List<Statement>> entry : map.entrySet()) {
-			builder.append(entry.getKey().toString() + " = {");
-			for (Statement value : entry.getValue()) {
-				if (value.hasValue() && value.getValueType() == ValueType.STRING) {
-					builder.append("'");
-					builder.append(value.getStringValue().getValue().replace("'", "\\'"));
-					builder.append("', ");
-				}
-				if (value.hasValue() && value.getValueType() == ValueType.WIKIBASE_ENTITYID) {
-					builder.append("'");
-					builder.append(localName.apply(value.getMainSnak().getWikibaseEntityIdValue().getEntityId())
-							.replace("'", "\\'"));
-					builder.append("', ");
-				}
+		StringBuilder builder = new StringBuilder();
+		if (this.valuesPrefixes != null && !this.valuesPrefixes.isEmpty()) {
+			for (Map.Entry<String, String> valuePrefix : this.valuesPrefixes.entrySet()) {
+				builder.append("local " + valuePrefix.getKey() + "='" + valuePrefix.getValue().replace("'", "\\'")
+						+ "'\n");
 			}
+		}
+
+		builder.append("return {\n");
+		for (Map.Entry<EntityId, List<Statement>> entry : map.entrySet()) {
+			builder.append(entry.getKey().toString() + "={");
+
+			String toAppend = entry
+					.getValue()
+					.stream()
+					.filter(value -> value.hasValue())
+					.map(value -> {
+						if (value.getValueType() == ValueType.STRING) {
+							return value.getStringValue().getValue();
+						}
+						if (value.hasValue() && value.getValueType() == ValueType.WIKIBASE_ENTITYID) {
+							return localName.apply(value.getMainSnak().getWikibaseEntityIdValue().getEntityId());
+						}
+						return null;
+					})
+					.filter(x -> x != null)
+					.map(x -> {
+						// replace with prefix append, if possible
+						if (this.valuesPrefixes != null && !this.valuesPrefixes.isEmpty()) {
+							for (Map.Entry<String, String> valuePrefix : this.valuesPrefixes.entrySet()) {
+								if (x.startsWith(valuePrefix.getValue())) {
+									return valuePrefix.getKey() + "..'"
+											+ x.substring(valuePrefix.getValue().length()).replace("'", "\\'") + "'";
+								}
+							}
+						}
+						return "'" + x.replace("'", "\\'") + "'";
+					}).collect(Collectors.joining(","));
+
+			builder.append(toAppend);
 			builder.append("},\n");
 		}
 		builder.append("};\n");
@@ -163,5 +192,9 @@ public class DictinaryUpdate implements Runnable {
 
 	public void setProperty(EntityId propertyId) {
 		this.property = propertyId;
+	}
+
+	public void setValuesPrefixes(Map<String, String> valuesPrefixes) {
+		this.valuesPrefixes = valuesPrefixes;
 	}
 }

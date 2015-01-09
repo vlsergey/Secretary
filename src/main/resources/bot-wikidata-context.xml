@@ -21,12 +21,12 @@
 
 	<bean id="wikidataBot"
 		class="org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot">
-		<property name="bot" value="0" />
-		<property name="login" value="VlsergeyBot" />
-		<property name="password" value="#{systemProperties.VlsergeyBotPassword}" />
 <!-- 		<property name="bot" value="0" /> -->
-<!-- 		<property name="login" value="Vlsergey" /> -->
-<!-- 		<property name="password" value="#{systemProperties.VlsergeyPassword}" /> -->
+<!-- 		<property name="login" value="VlsergeyBot" /> -->
+<!-- 		<property name="password" value="#{systemProperties.VlsergeyBotPassword}" /> -->
+		<property name="bot" value="0" />
+		<property name="login" value="Vlsergey" />
+		<property name="password" value="#{systemProperties.VlsergeyPassword}" />
 		<property name="site" value="https://www.wikidata.org/w" />
 		<property name="xmlParser" ref="wikidataRefAwareParser" />
 		<property name="project" value="wikidata" />
@@ -60,10 +60,24 @@
 	<bean id="dictionatyUpdateP1464"
 		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P1464" />
+		<property name="valuesPrefixes">
+			<map>
+				<entry key="rV" value="Категория:Родившиеся в " />
+				<entry key="rVo" value="Категория:Родившиеся во " />
+				<entry key="rNa" value="Категория:Родившиеся на " />
+			</map>
+		</property>
 	</bean>
 	<bean id="dictionatyUpdateP1465"
 		class="org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate">
 		<property name="property" value="P1465" />
+		<property name="valuesPrefixes">
+			<map>
+				<entry key="uV" value="Категория:Умершие в " />
+				<entry key="uVo" value="Категория:Умершие во " />
+				<entry key="uNa" value="Категория:Умершие на " />
+			</map>
+		</property>
 	</bean>
 
 	<context:component-scan base-package="org.wikipedia.vlsergey.secretary.wikidata" />
