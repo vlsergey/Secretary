@@ -1,11 +1,7 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.hibernate.HibernateException;
 import org.hibernate.SQLQuery;
@@ -23,20 +19,10 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 @Repository
 public class StoredRevisionDao {
 
-	private static final int SEGMENTS = 64;
-
-	private final Lock[] locks = new Lock[SEGMENTS];
-
 	@Autowired
 	private StoredPageDao storedPageDao;
 
 	protected HibernateTemplate template = null;
-
-	public StoredRevisionDao() {
-		for (int i = 0; i < SEGMENTS; i++) {
-			locks[i] = new ReentrantLock();
-		}
-	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public int clear(final Project project) {
@@ -60,27 +46,7 @@ public class StoredRevisionDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public List<StoredRevision> getOrCreate(Project project, Iterable<? extends Revision> withContent) {
-		List<StoredRevision> result = new ArrayList<StoredRevision>();
-		for (Revision source : withContent) {
-			result.add(getOrCreate(project, source));
-		}
-		return result;
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
 	public StoredRevision getOrCreate(Project project, Revision withContent) {
-		final int segmentIndex = (int) (withContent.getId().longValue() % SEGMENTS);
-		final Lock lock = locks[segmentIndex];
-		lock.lock();
-		try {
-			return getOrCreateImpl(project, withContent);
-		} finally {
-			lock.unlock();
-		}
-	}
-
-	private StoredRevision getOrCreateImpl(Project project, Revision withContent) {
 		final StoredRevisionPk key = new StoredRevisionPk(project, withContent.getId());
 		StoredRevision revisionImpl = getRevisionById(key);
 		if (revisionImpl == null) {
@@ -126,6 +92,9 @@ public class StoredRevisionDao {
 		}
 		if (updateRequired(withContent.getUser(), revisionImpl.getUser())) {
 			revisionImpl.setUser(withContent.getUser());
+		}
+		if (updateRequired(withContent.getUserId(), revisionImpl.getUserId())) {
+			revisionImpl.setUserId(withContent.getUserId());
 		}
 		if (withContent.getXml() != null && updateRequired(withContent.getXml(), revisionImpl.getXml())) {
 			revisionImpl.setXml(withContent.getXml());
@@ -173,11 +142,6 @@ public class StoredRevisionDao {
 
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		template = new HibernateTemplate(sessionFactory);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public void updateCache(Project project, Revision withContent) {
-		getOrCreate(project, withContent);
 	}
 
 	private boolean updateRequired(final Object newValue, final Object oldValue) {

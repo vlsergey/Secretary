@@ -12,7 +12,7 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
@@ -38,9 +38,7 @@ public class DictinaryUpdate implements Runnable {
 
 	private EntityId property;
 
-	@Autowired
-	@Qualifier("ruWikipediaBot")
-	private MediaWikiBot ruWikipediaBot;
+	private MediaWikiBot targetProjectBot;
 
 	private Map<String, String> valuesPrefixes;
 
@@ -53,6 +51,10 @@ public class DictinaryUpdate implements Runnable {
 
 	public EntityId getProperty() {
 		return property;
+	}
+
+	public MediaWikiBot getTargetProjectBot() {
+		return targetProjectBot;
 	}
 
 	public Map<String, String> getValuesPrefixes() {
@@ -175,7 +177,7 @@ public class DictinaryUpdate implements Runnable {
 		}
 		builder.append("};\n");
 
-		ruWikipediaBot.writeContent("Модуль:Wikidata:Dictionary/" + property.toString().toUpperCase(), null,
+		targetProjectBot.writeContent("Модуль:Wikidata:Dictionary/" + property.toString().toUpperCase(), null,
 				builder.toString(), null, "Update dictionary of [[:d:Property:" + property.toString().toUpperCase()
 						+ "]]", true, false);
 
@@ -192,6 +194,10 @@ public class DictinaryUpdate implements Runnable {
 
 	public void setProperty(EntityId propertyId) {
 		this.property = propertyId;
+	}
+
+	public void setTargetProjectBot(MediaWikiBot wikipediaBot) {
+		this.targetProjectBot = wikipediaBot;
 	}
 
 	public void setValuesPrefixes(Map<String, String> valuesPrefixes) {

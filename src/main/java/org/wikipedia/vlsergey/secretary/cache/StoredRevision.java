@@ -27,13 +27,13 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Transient;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.annotations.Index;
-import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.AbstractRevision;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Entity(name = "Revision")
-public class StoredRevision implements Revision {
+public class StoredRevision extends AbstractRevision {
 
 	private Boolean anon;
 
@@ -54,6 +54,8 @@ public class StoredRevision implements Revision {
 	private Date timestamp = null;
 
 	private String user = null;
+
+	private Long userId = null;
 
 	private byte[] xml = null;
 
@@ -131,6 +133,11 @@ public class StoredRevision implements Revision {
 	}
 
 	@Override
+	public Long getUserId() {
+		return userId;
+	}
+
+	@Override
 	@Transient
 	public String getXml() {
 		return IoUtils.stringFromBinary(getBinaryXml(), false);
@@ -194,6 +201,10 @@ public class StoredRevision implements Revision {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public void setUserId(Long userId) {
+		this.userId = userId;
 	}
 
 	@Transient

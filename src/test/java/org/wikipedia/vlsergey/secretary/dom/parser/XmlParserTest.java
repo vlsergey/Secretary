@@ -2,7 +2,7 @@ package org.wikipedia.vlsergey.secretary.dom.parser;
 
 import java.io.IOException;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.wikipedia.vlsergey.secretary.dom.ArticleFragment;

@@ -29,11 +29,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.output.FileWriterWithEncoding;
-import org.apache.commons.lang.NullArgumentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
+import org.wikipedia.vlsergey.secretary.cache.users.StoredUserDao;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
@@ -42,6 +42,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
+import org.wikipedia.vlsergey.secretary.jwpf.model.UserKey;
 import org.wikipedia.vlsergey.secretary.utils.LastUserHashMap;
 
 public class RevisionAuthorshipCalculator {
@@ -72,7 +73,8 @@ public class RevisionAuthorshipCalculator {
 			this.pageTitle = pageTitle;
 
 			this.revisionInfosNewer = mediaWikiBot.queryRevisionsByPageTitle(pageTitle, null, Direction.NEWER,
-					RevisionPropery.IDS, RevisionPropery.TIMESTAMP, RevisionPropery.SIZE);
+					RevisionPropery.IDS, RevisionPropery.TIMESTAMP, RevisionPropery.SIZE, RevisionPropery.USER,
+					RevisionPropery.USERID);
 			this.revisionInfosNewerIds = new ArrayList<Long>(revisionInfosNewer.size());
 			for (ParsedRevision revision : revisionInfosNewer) {
 				revisionInfosNewerIds.add(revision.getId());
@@ -99,8 +101,8 @@ public class RevisionAuthorshipCalculator {
 		synchronized TextChunkList getAnonymChunks(Long revisionId) {
 			TextChunkList chunks = anonymChunksCache.get(revisionId);
 			if (chunks == null) {
-				chunks = TextChunkList.toTextChunkList(getProject().getLocale(), "127.0.0.1", queryRevision(revisionId)
-						.getContent());
+				chunks = TextChunkList.toTextChunkList(getProject().getLocale(), UserKey.LOCALHOST,
+						queryRevision(revisionId).getContent());
 				anonymChunksCache.put(revisionId, chunks);
 			}
 			return chunks;
@@ -125,7 +127,7 @@ public class RevisionAuthorshipCalculator {
 
 		public synchronized Revision queryRevision(Long revisionId) {
 			if (revisionId == null) {
-				throw new NullArgumentException("revisionId");
+				throw new IllegalArgumentException("revisionId");
 			}
 			Revision revision = revisionCache.get(revisionId);
 			if (revision == null) {
@@ -164,7 +166,7 @@ public class RevisionAuthorshipCalculator {
 
 		public synchronized Revision queryRevisionWithPreload(Long revisionId, Direction direction, int preload) {
 			if (revisionId == null) {
-				throw new NullArgumentException("revisionId");
+				throw new IllegalArgumentException("revisionId");
 			}
 			Revision revision = revisionCache.get(revisionId);
 			if (revision == null) {
@@ -197,9 +199,6 @@ public class RevisionAuthorshipCalculator {
 
 	private static final int CONTEXT_CACHES_SIZE = 1000;
 
-	private static final DecimalFormat decimalFormat = new DecimalFormat("#####0.00",
-			DecimalFormatSymbols.getInstance(Locale.US));
-
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipCalculator.class);
 
 	public static final int PRELOAD_BATCH = 25;
@@ -224,24 +223,6 @@ public class RevisionAuthorshipCalculator {
 		return result.toString();
 	}
 
-	static String toString(TextChunkList authorship) {
-		LinkedHashMap<String, Double> result = authorship.getAuthorshipProcents();
-
-		StringBuilder stringBuilder = new StringBuilder();
-		for (String userName : result.keySet()) {
-			double procent = result.get(userName).doubleValue();
-			if (procent < .01) {
-				break;
-			}
-			final String strProcent = new DecimalFormat("###.##", DecimalFormatSymbols.getInstance(Locale.US))
-					.format(procent * 100);
-			stringBuilder.append("{\"" + userName + "\"," + strProcent + "},");
-		}
-
-		stringBuilder.setLength(stringBuilder.length() - 1);
-		return stringBuilder.toString();
-	}
-
 	private final Lock[] articleLocks;
 
 	@Autowired
@@ -257,6 +238,9 @@ public class RevisionAuthorshipCalculator {
 
 	@Autowired
 	private RevisionAuthorshipDao revisionAuthorshipDao;
+
+	@Autowired
+	private StoredUserDao storedUserDao;
 
 	private WikiCache wikiCache;
 
@@ -292,7 +276,7 @@ public class RevisionAuthorshipCalculator {
 
 	private TextChunkList getAuthorship(PageContext pageContext, Long newRevisionId) throws Exception {
 		if (newRevisionId == null) {
-			throw new NullArgumentException("newRevisionId");
+			throw new IllegalArgumentException("newRevisionId");
 		}
 
 		log.info("Get authorwhip for rev#" + newRevisionId);
@@ -308,8 +292,15 @@ public class RevisionAuthorshipCalculator {
 		if (oldRevisionId == null) {
 			// this is the first
 			final Revision newRevision = pageContext.queryRevision(newRevisionId);
-			final TextChunkList authorship = TextChunkList.toTextChunkList(getProject().getLocale(),
-					newRevision.getUser(), newRevision.getContent());
+			assert newRevision.getUser() != null;
+			assert newRevision.getUserId() != null;
+
+			final UserKey userKey = newRevision.getUserKey();
+			if (userKey == null)
+				throw new IllegalArgumentException("userKey is null");
+
+			final TextChunkList authorship = TextChunkList.toTextChunkList(getProject().getLocale(), userKey,
+					newRevision.getContent());
 			revisionAuthorshipDao.store(getProject(), newRevision, authorship);
 			return authorship;
 		}
@@ -319,10 +310,11 @@ public class RevisionAuthorshipCalculator {
 
 		final Revision oldRevision = pageContext.queryRevision(oldRevisionId);
 		final Revision newRevision = pageContext.queryRevision(newRevisionId);
+		final UserKey newUserKey = newRevision.getUserKey();
 
 		log.info("Get authorwhip for " + toString(newRevision) + ": calculate basing on difference with "
 				+ toString(oldRevision));
-		TextChunkList newAuthorship = TextChunkList.toTextChunkList(getProject().getLocale(), newRevision.getUser(),
+		TextChunkList newAuthorship = TextChunkList.toTextChunkList(getProject().getLocale(), newUserKey,
 				newRevision.getContent());
 		newAuthorship = join(oldAuthorship, newAuthorship);
 		revisionAuthorshipDao.store(getProject(), newRevision, newAuthorship);
@@ -342,7 +334,7 @@ public class RevisionAuthorshipCalculator {
 		try {
 			final RevisionAuthorship stored = revisionAuthorshipDao.findByRevision(getProject(), newRevisionId);
 			if (stored != null && stored.getData() != null && stored.getData().length != 0) {
-				TextChunkList restored = TextChunkList.fromBinary(getProject().getLocale(), contentF.call(),
+				TextChunkList restored = TextChunkHelper.fromBinary(getProject().getLocale(), contentF.call(),
 						stored.getData());
 				if (restored != null) {
 					log.debug("Get authorwhip for rev#" + newRevisionId + ": found in DB");
@@ -404,8 +396,8 @@ public class RevisionAuthorshipCalculator {
 
 			if (!missingLengths.isEmpty()) {
 				for (Revision revision : wikiCache.queryRevisions(missingLengths)) {
-					final TextChunkList chunks = TextChunkList.toTextChunkList(getProject().getLocale(), "127.0.0.1",
-							revision.getContent());
+					final TextChunkList chunks = TextChunkList.toTextChunkList(getProject().getLocale(),
+							UserKey.LOCALHOST, revision.getContent());
 
 					chunkLengths.put(revision.getId(), chunks.length());
 
@@ -472,7 +464,7 @@ public class RevisionAuthorshipCalculator {
 	private Long getRevisionToCompareWith(PageContext pageContext, Long newRevisionId) {
 
 		if (newRevisionId == null) {
-			throw new NullArgumentException("newRevisionId");
+			throw new IllegalArgumentException("newRevisionId");
 		}
 
 		final int newRevisionLength = pageContext.revisionChunkedLength.get(newRevisionId);
@@ -642,6 +634,33 @@ public class RevisionAuthorshipCalculator {
 		return "rev#" + revision.getId() + " (" + revision.getTimestamp() + "; " + revision.getSize() + ")";
 	}
 
+	String toString(TextChunkList authorship) {
+		LinkedHashMap<UserKey, Double> result = authorship.getAuthorshipProcents();
+
+		StringBuilder stringBuilder = new StringBuilder();
+		for (Map.Entry<UserKey, Double> entry : result.entrySet()) {
+			double procent = entry.getValue().doubleValue();
+			if (procent < .01) {
+				break;
+			}
+
+			final UserKey userKey = entry.getKey();
+			String wikiString;
+			if (userKey.isAnonymous()) {
+				wikiString = userKey.getInetAddress().getHostAddress();
+			} else {
+				wikiString = storedUserDao.getByKey(getProject(), userKey.getUserId()).getName();
+			}
+
+			final String strProcent = new DecimalFormat("###.##", DecimalFormatSymbols.getInstance(Locale.US))
+					.format(procent * 100);
+			stringBuilder.append("{\"" + wikiString + "\"," + strProcent + "},");
+		}
+
+		stringBuilder.setLength(stringBuilder.length() - 1);
+		return stringBuilder.toString();
+	}
+
 	void updateByTemplateIncluded(String groupTitle, final String... templates) {
 
 		final SortedMap<String, TextChunkList> results = Collections
@@ -688,7 +707,7 @@ public class RevisionAuthorshipCalculator {
 	private void write(SortedMap<String, TextChunkList> results, String groupTitle) {
 		StringBuilder result = new StringBuilder("return {\n");
 		for (String key : results.keySet()) {
-			result.append("{title=\"" + key + "\",contrib={" + toString(results.get(key)) + "}},\n");
+			result.append("{title=\"" + key + "\",contrib=" + toString(results.get(key)) + "},\n");
 		}
 		result.append("};\n");
 

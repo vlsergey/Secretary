@@ -2,10 +2,6 @@ package org.wikipedia.vlsergey.secretary.trust;
 
 import gnu.trove.map.hash.TObjectLongHashMap;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,14 +10,12 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.NullArgumentException;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.wikipedia.vlsergey.secretary.jwpf.model.UserKey;
+import org.wikipedia.vlsergey.secretary.trust.ProtobufHolder.Authorship;
 
 public class TextChunkList implements Comparable<TextChunkList> {
 
@@ -108,19 +102,6 @@ public class TextChunkList implements Comparable<TextChunkList> {
 		return result.toString();
 	}
 
-	public static TextChunkList fromBinary(Locale locale, String text, byte[] bs) throws Exception {
-		final ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new ByteArrayInputStream(
-				bs)));
-		try {
-			String[] authors = (String[]) objectInputStream.readObject();
-			int[] authorship = (int[]) objectInputStream.readObject();
-
-			return toTextChunkList(locale, authors, authorship, text);
-		} finally {
-			objectInputStream.close();
-		}
-	}
-
 	public static int lcp(TextChunkList s, TextChunkList t) {
 		int N = Math.min(s.size(), t.size());
 		for (int i = 0; i < N; i++)
@@ -205,42 +186,17 @@ public class TextChunkList implements Comparable<TextChunkList> {
 		return result;
 	}
 
-	public static TextChunkList toTextChunkList(Locale locale, String user, String text) {
-		text = text.toLowerCase(locale);
-		text = text.replaceAll("<\\s?\\/?[a-zA-Z ]+>", "");
-		text = text.replace('ё', 'е');
-		text = StringUtils.join(StringUtils.split(text, "(){}[]<>«»:;,.?!\'\"\\/ \t\r\n—|=_~#$%^&*+~`"), ' ');
+	public static TextChunkList toTextChunkList(Locale locale, UserKey userKey, String text) {
+		if (userKey == null)
+			throw new IllegalArgumentException("userKey is null");
 
+		String[] splitted = TextChunkHelper.split(locale, text);
 		List<TextChunk> chunks = new ArrayList<TextChunk>();
-		for (String word : text.split(" ")) {
-			if (!StopWords.RUSSIAN.contains(word)) {
-				chunks.add(new TextChunk(user, word.intern()));
-			}
-		}
-		return new TextChunkList(chunks);
-	}
-
-	private static TextChunkList toTextChunkList(Locale locale, String[] authors, int[] authorship, String text) {
-		text = text.toLowerCase(locale);
-		text = text.replaceAll("<\\s?\\/?[a-zA-Z ]+>", "");
-		text = text.replace('ё', 'е');
-		text = StringUtils.join(StringUtils.split(text, "(){}[]<>«»:;,.?!\'\"\\/ \t\r\n—|=_~#$%^&*+~`"), ' ');
-
-		List<TextChunk> chunks = new ArrayList<TextChunk>();
-		final String[] splitted = text.split(" ");
-
-		int counter = 0;
 		for (String word : splitted) {
 			if (!StopWords.RUSSIAN.contains(word)) {
-				chunks.add(new TextChunk(authors[authorship[counter]], word.intern()));
-				counter++;
+				chunks.add(new TextChunk(userKey, word.intern()));
 			}
 		}
-
-		if (counter != authorship.length) {
-			throw new RuntimeException("Bad binary");
-		}
-
 		return new TextChunkList(chunks);
 	}
 
@@ -256,7 +212,7 @@ public class TextChunkList implements Comparable<TextChunkList> {
 
 	public TextChunkList(final List<TextChunk> textChunks) {
 		if (textChunks == null) {
-			throw new NullArgumentException("textChunks");
+			throw new IllegalArgumentException("textChunks");
 		}
 
 		this.textChunks = textChunks;
@@ -289,29 +245,28 @@ public class TextChunkList implements Comparable<TextChunkList> {
 		return textChunks.get(i);
 	}
 
-	public LinkedHashMap<String, Double> getAuthorshipProcents() {
-		final TObjectLongHashMap<String> byUsername = new TObjectLongHashMap<String>(16, 1, 0);
+	public LinkedHashMap<UserKey, Double> getAuthorshipProcents() {
+		final TObjectLongHashMap<UserKey> byUsername = new TObjectLongHashMap<UserKey>(16, 1, 0);
 
 		long sum = 0;
 		for (TextChunk textChunk : textChunks) {
 			final int value = textChunk.text.length();
-			byUsername.put(textChunk.user, byUsername.get(textChunk.user) + value);
+			byUsername.put(textChunk.userKey, byUsername.get(textChunk.userKey) + value);
 			sum += value;
 		}
 
-		List<String> userNames = new ArrayList<String>(byUsername.keySet());
-		Collections.sort(userNames, new Comparator<String>() {
+		List<UserKey> userKeys = new ArrayList<UserKey>(byUsername.keySet());
+		Collections.sort(userKeys, new Comparator<UserKey>() {
 			@Override
-			public int compare(String o1, String o2) {
+			public int compare(UserKey o1, UserKey o2) {
 				Long l1 = byUsername.get(o1);
 				Long l2 = byUsername.get(o2);
 				return l2.compareTo(l1);
 			}
 		});
 
-		LinkedHashMap<String, Double> result = new LinkedHashMap<String, Double>();
-
-		for (String userName : userNames) {
+		LinkedHashMap<UserKey, Double> result = new LinkedHashMap<UserKey, Double>();
+		for (UserKey userName : userKeys) {
 			long value = byUsername.get(userName);
 			double procent = ((double) value) / sum;
 			result.put(userName, Double.valueOf(procent));
@@ -431,31 +386,16 @@ public class TextChunkList implements Comparable<TextChunkList> {
 		 * we assume that text of any revision is not changing, so it can be
 		 * restored from binary using provided original text... if needed
 		 */
-		SortedSet<String> authorsSet = new TreeSet<String>();
-		for (TextChunk textChunk : textChunks) {
-			authorsSet.add(textChunk.user);
-		}
-		String[] authors = authorsSet.toArray(new String[authorsSet.size()]);
+		List<UserKey> userKeys = this.textChunks.stream().map(x -> x.userKey).collect(Collectors.toList());
+		Pair<List<UserKey>, List<Integer>> dictAndIndexes = TextChunkHelper.toDictionaryAndIndexes(userKeys);
 
-		int[] authorship = new int[textChunks.size()];
-		for (int i = 0; i < textChunks.size(); i++) {
-			TextChunk textChunk = textChunks.get(i);
-			int authorIndex = Arrays.binarySearch(authors, textChunk.user);
-			if (authorIndex < 0) {
-				throw new AssertionError();
-			}
-			authorship[i] = authorIndex;
+		Authorship.Builder authorshipBuilder = Authorship.newBuilder();
+		for (UserKey userKey : dictAndIndexes.getLeft()) {
+			Authorship.UserKey.Builder aUserKeyBuilder = TextChunkHelper.toProto(userKey);
+			authorshipBuilder.addUserKeys(aUserKeyBuilder);
 		}
-
-		final ByteArrayOutputStream result = new ByteArrayOutputStream();
-		ObjectOutputStream stream = new ObjectOutputStream(new GZIPOutputStream(result));
-		try {
-			stream.writeObject(authors);
-			stream.writeObject(authorship);
-		} finally {
-			stream.close();
-		}
-		return result.toByteArray();
+		authorshipBuilder.addAllIndexes(dictAndIndexes.getRight());
+		return authorshipBuilder.build().toByteArray();
 	}
 
 	@Override

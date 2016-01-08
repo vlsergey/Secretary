@@ -1,6 +1,6 @@
 package org.wikipedia.vlsergey.secretary;
 
-import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
@@ -9,13 +9,8 @@ import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
 import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
-import org.wikipedia.vlsergey.secretary.wikidata.ChangeQualifierType;
-import org.wikipedia.vlsergey.secretary.wikidata.ConstrainCheckerPeriod;
-import org.wikipedia.vlsergey.secretary.wikidata.ConstrainCheckerQualifiers;
-import org.wikipedia.vlsergey.secretary.wikidata.DictinaryFlagsUpdate;
+import org.wikipedia.vlsergey.secretary.wikidata.CompareWithWikidata;
 import org.wikipedia.vlsergey.secretary.wikidata.DictinaryUpdate;
-import org.wikipedia.vlsergey.secretary.wikidata.EnumerateProperties;
-import org.wikipedia.vlsergey.secretary.wikidata.MoveDataToWikidata;
 
 public class Secretary {
 
@@ -33,20 +28,31 @@ public class Secretary {
 		// runOfType(appContext, ImportLinksFromRuWikisourceTask.class);
 		// runOfType(appContext, CountBooks.class);
 
+		// scheduleWithFixedDelayOfType(appContext, ChangeQualifierType.class,
+		// DateUtils.MILLIS_PER_DAY);
+		// scheduleWithFixedDelayOfType(appContext,
+		// ConstrainCheckerPeriod.class, DateUtils.MILLIS_PER_HOUR * 12);
+		// scheduleWithFixedDelayOfType(appContext,
+		// ConstrainCheckerQualifiers.class, DateUtils.MILLIS_PER_HOUR * 12);
+		// scheduleWithFixedDelayOfType(appContext, DictinaryFlagsUpdate.class,
+		// DateUtils.MILLIS_PER_HOUR);
+		// scheduleWithFixedDelayOfType(appContext, EnumerateProperties.class,
+		// DateUtils.MILLIS_PER_HOUR);
+		// scheduleWithFixedDelayOfType(appContext, MoveDataToWikidata.class,
+		// DateUtils.MILLIS_PER_HOUR * 12);
+
 		scheduleWithFixedDelayOfType(appContext, BuildUnreviewedLists.class, DateUtils.MILLIS_PER_HOUR);
-		scheduleWithFixedDelayOfType(appContext, ChangeQualifierType.class, DateUtils.MILLIS_PER_DAY);
-		scheduleWithFixedDelayOfType(appContext, ConstrainCheckerPeriod.class, DateUtils.MILLIS_PER_HOUR * 12);
-		scheduleWithFixedDelayOfType(appContext, ConstrainCheckerQualifiers.class, DateUtils.MILLIS_PER_HOUR * 12);
+		scheduleWithFixedDelayOfType(appContext, CompareWithWikidata.class, DateUtils.MILLIS_PER_DAY);
 		scheduleWithFixedDelayOfType(appContext, CountBooks.class, DateUtils.MILLIS_PER_DAY);
-		scheduleWithFixedDelayOfType(appContext, DictinaryFlagsUpdate.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, DictinaryUpdate.class, DateUtils.MILLIS_PER_HOUR);
-		scheduleWithFixedDelayOfType(appContext, EnumerateProperties.class, DateUtils.MILLIS_PER_HOUR);
-		scheduleWithFixedDelayOfType(appContext, MoveDataToWikidata.class, DateUtils.MILLIS_PER_HOUR * 12);
 		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 
 		// ((WikiCache) appContext.getBean("wikidataCache")).clear();
+		// ((WikiCache) appContext.getBean("ruWikipediaCache")).clear();
+
+		// runOfType(appContext, UndoVlsergeyBotWork.class);
 
 		// runOfType(appContext, ChangeQualifierType.class);
 		// runOfType(appContext, DictinaryUpdate.class);

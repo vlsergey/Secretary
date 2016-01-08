@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.cache;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
@@ -7,7 +8,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Repository
 public class StoredPageDao {
@@ -59,7 +59,7 @@ public class StoredPageDao {
 		return newValue != null && !newValue.equals(oldValue);
 	}
 
-	private boolean updateRequired(final Integer newValue, final Integer oldValue) {
+	private boolean updateRequired(final Number newValue, final Number oldValue) {
 		return newValue != null && !newValue.equals(oldValue);
 	}
 

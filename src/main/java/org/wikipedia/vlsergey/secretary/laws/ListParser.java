@@ -1,5 +1,6 @@
 package org.wikipedia.vlsergey.secretary.laws;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.params.ClientPNames;
 import org.apache.http.client.params.CookiePolicy;
@@ -7,7 +8,6 @@ import org.apache.http.impl.client.AbstractHttpClient;
 import org.wikipedia.vlsergey.secretary.http.BasicResponseHandler;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class ListParser {
 	public static void main(String[] args) throws Exception {

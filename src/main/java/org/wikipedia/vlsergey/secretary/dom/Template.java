@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class Template extends AbstractContainer {
 

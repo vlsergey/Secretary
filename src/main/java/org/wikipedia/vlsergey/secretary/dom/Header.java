@@ -3,7 +3,7 @@ package org.wikipedia.vlsergey.secretary.dom;
 import java.util.Collections;
 import java.util.List;
 
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class Header extends AbstractContainer {
 

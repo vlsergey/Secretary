@@ -1,6 +1,5 @@
 package org.wikipedia.vlsergey.secretary.jwpf;
 
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -13,8 +12,8 @@ import java.util.Map;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.DateUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,12 +53,12 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedUser;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RecentChange;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.model.TokenType;
-import org.wikipedia.vlsergey.secretary.jwpf.model.User;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserContributionItem;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserContributionProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserProperty;
@@ -68,8 +67,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
 @Transactional(propagation = Propagation.NEVER)
 public class MediaWikiBot extends HttpBot {
-	public static final Charset CHARSET = Charset.forName("utf-8");
-	public static final String ENCODING = "utf-8";
 
 	private static final Log log = LogFactory.getLog(MediaWikiBot.class);
 
@@ -134,6 +131,8 @@ public class MediaWikiBot extends HttpBot {
 	private List<Long> writeActions = new LinkedList<>();
 
 	private XmlParser xmlParser;
+
+	public static final String ENCODING = "utf-8";
 
 	public MediaWikiBot() {
 	}
@@ -208,8 +207,9 @@ public class MediaWikiBot extends HttpBot {
 			return false;
 		}
 
-		return stored.hasContent() && StringUtils.isNotEmpty(stored.getUser()) && stored.getTimestamp() != null
-				&& stored.getTimestamp().getTime() != 0 && stored.getSize() != null && stored.getSize().longValue() > 0;
+		return stored.hasContent() && StringUtils.isNotEmpty(stored.getUser()) && stored.getUserId() != null
+				&& stored.getTimestamp() != null && stored.getTimestamp().getTime() != 0 && stored.getSize() != null
+				&& stored.getSize().longValue() > 0;
 	}
 
 	public boolean isLoggedIn() {
@@ -370,7 +370,7 @@ public class MediaWikiBot extends HttpBot {
 		return new MultiActionResultIterable<R>(initialAction);
 	}
 
-	public Iterable<User> queryAllusersByGroup(String groupname, UserProperty... properties) {
+	public Iterable<ParsedUser> queryAllusersByGroup(String groupname, UserProperty... properties) {
 		log.info("queryAllusersByGroup(" + groupname + ")");
 
 		QueryAllusers queryAllusers = new QueryAllusers(isBot(), null, null, null, null,
@@ -446,9 +446,10 @@ public class MediaWikiBot extends HttpBot {
 	}
 
 	public Iterable<ParsedPage> queryPagesWithRevisionByBacklinks(Long pageId, Namespace[] namespaces,
-			RevisionPropery[] properties) throws ActionException, ProcessException {
+			FilterRedirects filterRedirects, RevisionPropery[] properties) throws ActionException, ProcessException {
 
-		QueryRevisionsByBacklinks query = new QueryRevisionsByBacklinks(isBot(), pageId, namespaces, properties);
+		QueryRevisionsByBacklinks query = new QueryRevisionsByBacklinks(isBot(), pageId, namespaces, filterRedirects,
+				properties);
 		return performMultiAction(query);
 	}
 

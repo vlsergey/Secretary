@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
@@ -32,11 +33,12 @@ import org.wikipedia.vlsergey.secretary.dom.Text;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	private static class ReplaceByISBN {
+
+		private final String том;
 
 		private final boolean addAuthorPlaceholder;
 
@@ -47,8 +49,6 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 		private final int pages;
 
 		private final String templateName;
-
-		private final String том;
 
 		public ReplaceByISBN(String templateName, String edition, boolean addAuthorPlaceholder, int pages, String том,
 				String isbn) {
@@ -291,6 +291,140 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	private WikiCache wikiCache;
 
+	private void добавитьПараметрИздания(Template шаблон, String параметрИздания) {
+		шаблон.getParameters().add(new TemplatePart(null, new Text(параметрИздания)));
+	}
+
+	private void добавитьЧастьИСтраницы(Template template, boolean addAuthorParameterPlace, String part, String link,
+			String pages, String том) {
+		if (addAuthorParameterPlace && (part != null || link != null || pages != null)) {
+			template.getParameters().add(new TemplatePart(null, new Text("")));
+		}
+
+		if (part != null) {
+			template.setParameterValue("часть", new Text(part));
+		}
+
+		if (link != null) {
+			template.setParameterValue("ссылка", new Text(link));
+		}
+
+		if (pages != null) {
+			template.setParameterValue("страницы", new Text(pages));
+		}
+
+		if (том != null) {
+			template.setParameterValue("том", new Text(том));
+		}
+
+	}
+
+	private void заменитьНаИсточникЧерезЗаглавиеИГод(Template шаблон, String title, String year, String part,
+			String link, String pages) {
+
+		title = title.toLowerCase();
+		title = title.replace(".", " ").trim();
+		while (title.contains("  "))
+			title = title.replace("  ", " ");
+
+		if ((title.equals("государственный эрмитаж западноевропейская живопись каталог") && year.equals("1981"))
+				|| (title.equals("государственный эрмитаж западноевропейская живопись") && year.equals("1981"))) {
+			шаблон.setTitle(new Text("Книга:Государственный Эрмитаж. Западноевропейская живопись"));
+			шаблон.getParameters().clear();
+			добавитьПараметрИздания(шаблон, "1981");
+			добавитьЧастьИСтраницы(шаблон, false, part, link, pages, null);
+		}
+	}
+
+	private void заменитьНаИсточникЧерезISBN(Template шаблон, String isbn, String part, String link, String pages) {
+
+		for (ReplaceByISBN replace : replaceByISBN) {
+			if (StringUtils.equalsIgnoreCase(replace.isbn, isbn)) {
+
+				if (StringUtils.equalsIgnoreCase(pages, "" + replace.pages)) {
+					pages = null;
+				}
+
+				if (link != null && link.contains("books.ru"))
+					link = null;
+
+				шаблон.setTitle(new Text(replace.templateName));
+
+				шаблон.getParameters().clear();
+				if (replace.edition != null)
+					добавитьПараметрИздания(шаблон, replace.edition);
+
+				добавитьЧастьИСтраницы(шаблон, replace.addAuthorPlaceholder, part, link, pages, replace.том);
+			}
+		}
+
+	}
+
+	private void заменитьНаИсточникШаблонКнига(Template шаблон) {
+
+		String pages = StringUtils.trimToNull(шаблон.getParameterValue("страницы") != null ? шаблон.getParameterValue(
+				"страницы").toWiki(true) : null);
+
+		String part = StringUtils.trimToNull(шаблон.getParameterValue("часть") != null ? шаблон.getParameterValue(
+				"часть").toWiki(true) : null);
+
+		String link = StringUtils.trimToNull(шаблон.getParameterValue("ссылка") != null ? шаблон.getParameterValue(
+				"ссылка").toWiki(true) : null);
+
+		{
+			Content parameterISBN = шаблон.getParameterValue("isbn");
+			if (parameterISBN != null && parameterISBN.toWiki(true).trim().length() != 0) {
+				String isbn = parameterISBN.toWiki(true).trim();
+
+				заменитьНаИсточникЧерезISBN(шаблон, isbn, part, link, pages);
+			}
+		}
+
+		{
+			Content paramTitle = шаблон.getParameterValue("заглавие");
+			Content paramYear = шаблон.getParameterValue("год");
+			if (paramTitle != null && paramTitle.toWiki(true).trim().length() != 0 && paramYear != null
+					&& paramYear.toWiki(true).trim().length() != 0) {
+
+				String title = paramTitle.toWiki(true).trim();
+				String year = paramYear.toWiki(true).trim();
+
+				заменитьНаИсточникЧерезЗаглавиеИГод(шаблон, title, year, part, link, pages);
+			}
+		}
+	}
+
+	private void заменитьНаИсточникШаблонCiteBook(Template шаблон) {
+		String isbn1 = StringUtils.trimToEmpty(шаблон.getParameterValue("id") != null ? шаблон.getParameterValue("id")
+				.toWiki(true) : null);
+		if (isbn1 != null && isbn1.toLowerCase().startsWith("isbn"))
+			isbn1 = StringUtils.trimToEmpty(isbn1.substring(4));
+
+		String isbn2 = StringUtils.trimToEmpty(шаблон.getParameterValue("isbn") != null ? шаблон.getParameterValue(
+				"isbn").toWiki(true) : null);
+		if (isbn2 != null && isbn2.toLowerCase().startsWith("isbn"))
+			isbn2 = StringUtils.trimToEmpty(isbn2.substring(4));
+
+		String isbn = StringUtils.trimToNull(isbn1 + isbn2);
+
+		if (isbn == null)
+			return;
+
+		String pages1 = StringUtils.trimToEmpty(шаблон.getParameterValue("pages") != null ? шаблон.getParameterValue(
+				"pages").toWiki(true) : null);
+		String pages2 = StringUtils.trimToEmpty(шаблон.getParameterValue("страницы") != null ? шаблон
+				.getParameterValue("страницы").toWiki(true) : null);
+		String pages = StringUtils.trimToNull(pages1 + pages2);
+
+		String part1 = StringUtils.trimToEmpty(шаблон.getParameterValue("chapter") != null ? шаблон.getParameterValue(
+				"chapter").toWiki(true) : null);
+		String part2 = StringUtils.trimToEmpty(шаблон.getParameterValue("часть") != null ? шаблон.getParameterValue(
+				"часть").toWiki(true) : null);
+		String part = StringUtils.trimToNull(part1 + part2);
+
+		заменитьНаИсточникЧерезISBN(шаблон, isbn, part, null, pages);
+	}
+
 	public MediaWikiBot getMediaWikiBot() {
 		return mediaWikiBot;
 	}
@@ -348,139 +482,5 @@ public class ReplaceCiteBookWithSpecificTemplate implements Runnable {
 
 	public void setWikiCache(WikiCache wikiCache) {
 		this.wikiCache = wikiCache;
-	}
-
-	private void добавитьПараметрИздания(Template шаблон, String параметрИздания) {
-		шаблон.getParameters().add(new TemplatePart(null, new Text(параметрИздания)));
-	}
-
-	private void добавитьЧастьИСтраницы(Template template, boolean addAuthorParameterPlace, String part, String link,
-			String pages, String том) {
-		if (addAuthorParameterPlace && (part != null || link != null || pages != null)) {
-			template.getParameters().add(new TemplatePart(null, new Text("")));
-		}
-
-		if (part != null) {
-			template.setParameterValue("часть", new Text(part));
-		}
-
-		if (link != null) {
-			template.setParameterValue("ссылка", new Text(link));
-		}
-
-		if (pages != null) {
-			template.setParameterValue("страницы", new Text(pages));
-		}
-
-		if (том != null) {
-			template.setParameterValue("том", new Text(том));
-		}
-
-	}
-
-	private void заменитьНаИсточникЧерезISBN(Template шаблон, String isbn, String part, String link, String pages) {
-
-		for (ReplaceByISBN replace : replaceByISBN) {
-			if (StringUtils.equalsIgnoreCase(replace.isbn, isbn)) {
-
-				if (StringUtils.equalsIgnoreCase(pages, "" + replace.pages)) {
-					pages = null;
-				}
-
-				if (link != null && link.contains("books.ru"))
-					link = null;
-
-				шаблон.setTitle(new Text(replace.templateName));
-
-				шаблон.getParameters().clear();
-				if (replace.edition != null)
-					добавитьПараметрИздания(шаблон, replace.edition);
-
-				добавитьЧастьИСтраницы(шаблон, replace.addAuthorPlaceholder, part, link, pages, replace.том);
-			}
-		}
-
-	}
-
-	private void заменитьНаИсточникЧерезЗаглавиеИГод(Template шаблон, String title, String year, String part,
-			String link, String pages) {
-
-		title = title.toLowerCase();
-		title = title.replace(".", " ").trim();
-		while (title.contains("  "))
-			title = title.replace("  ", " ");
-
-		if ((title.equals("государственный эрмитаж западноевропейская живопись каталог") && year.equals("1981"))
-				|| (title.equals("государственный эрмитаж западноевропейская живопись") && year.equals("1981"))) {
-			шаблон.setTitle(new Text("Книга:Государственный Эрмитаж. Западноевропейская живопись"));
-			шаблон.getParameters().clear();
-			добавитьПараметрИздания(шаблон, "1981");
-			добавитьЧастьИСтраницы(шаблон, false, part, link, pages, null);
-		}
-	}
-
-	private void заменитьНаИсточникШаблонCiteBook(Template шаблон) {
-		String isbn1 = StringUtils.trimToEmpty(шаблон.getParameterValue("id") != null ? шаблон.getParameterValue("id")
-				.toWiki(true) : null);
-		if (isbn1 != null && isbn1.toLowerCase().startsWith("isbn"))
-			isbn1 = StringUtils.trimToEmpty(isbn1.substring(4));
-
-		String isbn2 = StringUtils.trimToEmpty(шаблон.getParameterValue("isbn") != null ? шаблон.getParameterValue(
-				"isbn").toWiki(true) : null);
-		if (isbn2 != null && isbn2.toLowerCase().startsWith("isbn"))
-			isbn2 = StringUtils.trimToEmpty(isbn2.substring(4));
-
-		String isbn = StringUtils.trimToNull(isbn1 + isbn2);
-
-		if (isbn == null)
-			return;
-
-		String pages1 = StringUtils.trimToEmpty(шаблон.getParameterValue("pages") != null ? шаблон.getParameterValue(
-				"pages").toWiki(true) : null);
-		String pages2 = StringUtils.trimToEmpty(шаблон.getParameterValue("страницы") != null ? шаблон
-				.getParameterValue("страницы").toWiki(true) : null);
-		String pages = StringUtils.trimToNull(pages1 + pages2);
-
-		String part1 = StringUtils.trimToEmpty(шаблон.getParameterValue("chapter") != null ? шаблон.getParameterValue(
-				"chapter").toWiki(true) : null);
-		String part2 = StringUtils.trimToEmpty(шаблон.getParameterValue("часть") != null ? шаблон.getParameterValue(
-				"часть").toWiki(true) : null);
-		String part = StringUtils.trimToNull(part1 + part2);
-
-		заменитьНаИсточникЧерезISBN(шаблон, isbn, part, null, pages);
-	}
-
-	private void заменитьНаИсточникШаблонКнига(Template шаблон) {
-
-		String pages = StringUtils.trimToNull(шаблон.getParameterValue("страницы") != null ? шаблон.getParameterValue(
-				"страницы").toWiki(true) : null);
-
-		String part = StringUtils.trimToNull(шаблон.getParameterValue("часть") != null ? шаблон.getParameterValue(
-				"часть").toWiki(true) : null);
-
-		String link = StringUtils.trimToNull(шаблон.getParameterValue("ссылка") != null ? шаблон.getParameterValue(
-				"ссылка").toWiki(true) : null);
-
-		{
-			Content parameterISBN = шаблон.getParameterValue("isbn");
-			if (parameterISBN != null && parameterISBN.toWiki(true).trim().length() != 0) {
-				String isbn = parameterISBN.toWiki(true).trim();
-
-				заменитьНаИсточникЧерезISBN(шаблон, isbn, part, link, pages);
-			}
-		}
-
-		{
-			Content paramTitle = шаблон.getParameterValue("заглавие");
-			Content paramYear = шаблон.getParameterValue("год");
-			if (paramTitle != null && paramTitle.toWiki(true).trim().length() != 0 && paramYear != null
-					&& paramYear.toWiki(true).trim().length() != 0) {
-
-				String title = paramTitle.toWiki(true).trim();
-				String year = paramYear.toWiki(true).trim();
-
-				заменитьНаИсточникЧерезЗаглавиеИГод(шаблон, title, year, part, link, pages);
-			}
-		}
 	};
 }

@@ -13,7 +13,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
-import org.wikipedia.vlsergey.secretary.jwpf.model.User;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedUser;
 
 @Component
 public class Autopatrol implements Runnable {
@@ -37,7 +37,7 @@ public class Autopatrol implements Runnable {
 		// trustedUsers.add(user.getName());
 		// for (User user : mediaWikiBot.queryAllusersByGroup("autoeditor"))
 		// trustedUsers.add(user.getName());
-		for (User user : mediaWikiBot.queryAllusersByGroup("bot"))
+		for (ParsedUser user : mediaWikiBot.queryAllusersByGroup("bot"))
 			trustedUsers.add(user.getName());
 
 		trustedUsers.add("Al Silonov");

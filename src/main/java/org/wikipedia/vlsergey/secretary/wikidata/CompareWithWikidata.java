@@ -12,7 +12,7 @@ import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 
 @Component
-public class MoveDataToWikidata implements Runnable {
+public class CompareWithWikidata implements Runnable {
 
 	@Autowired
 	private CommonsCategoryHelper commonsCategoryHelper;
@@ -37,26 +37,7 @@ public class MoveDataToWikidata implements Runnable {
 	WikiCache wikidataCache;
 
 	@Autowired
-	private MoveDataToWikidataWorker worker;
-
-	{
-		// parametersToMove.add(new PropertyDescriptor("Флаг", 41));
-		// parametersToMove.add(new PropertyDescriptor("Герб", 94));
-		// parametersToMove.add(new PropertyDescriptor("Категория в Commons",
-		// 373));
-		// parametersToMove.add(new PropertyDescriptor("Телефонный код", 473));
-		// parametersToMove.add(new PropertyDescriptor("ncbi", 685));
-		// parametersToMove.add(new PropertyDescriptor("ОКАТО", 721));
-		// parametersToMove.add(new PropertyDescriptor("ОКТМО", 764));
-		// parametersToMove.add(new PropertyDescriptor("itis", 815));
-		// parametersToMove.add(new PropertyDescriptor("eol", 830));
-		// parametersToMove.add(new PropertyDescriptor("Сайт", 856));
-		// parametersToMove.add(new PropertyDescriptor("ipni", 961, x ->
-		// x.contains("-") ? x : x + "-1"));
-		// parametersToMove.add(new PropertyDescriptor("tpl", 1070));
-		// parametersToMove.add(new PropertyDescriptor("tpl", 1070));
-
-	}
+	private CompareWithWikidataWorker worker;
 
 	@Override
 	public void run() {

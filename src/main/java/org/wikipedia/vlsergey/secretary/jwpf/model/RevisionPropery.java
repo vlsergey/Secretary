@@ -20,7 +20,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.model;
 public enum RevisionPropery {
 
 	COMMENT("comment"), CONTENT("content"), FLAGGED("flagged"), FLAGS("flags"), IDS("ids"), SIZE("size"), TIMESTAMP(
-			"timestamp"), USER("user");
+			"timestamp"), USER("user"), USERID("userid");
 
 	private String queryString;
 

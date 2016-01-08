@@ -9,6 +9,7 @@ import java.util.zip.GZIPInputStream;
 
 import javax.annotation.PostConstruct;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
@@ -17,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class ExternalIpChecker {
 

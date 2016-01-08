@@ -2,6 +2,7 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -9,8 +10,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -26,7 +28,6 @@ import org.wikipedia.vlsergey.secretary.jwpf.actions.AbstractApiXmlAction.ListAd
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.CookieException;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public abstract class AbstractApiAction implements ContentProcessable {
 
@@ -39,10 +40,10 @@ public abstract class AbstractApiAction implements ContentProcessable {
 
 	protected static String encode(String string) {
 		try {
-			String result = URLEncoder.encode(string, MediaWikiBot.CHARSET.name());
+			String result = URLEncoder.encode(string, StandardCharsets.UTF_8.name());
 			return result;
 		} catch (UnsupportedEncodingException e) {
-			throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
+			throw new Error("MediaWiki '" + StandardCharsets.UTF_8.name() + "' charset not supported by Java VM");
 		}
 
 	}
@@ -82,7 +83,7 @@ public abstract class AbstractApiAction implements ContentProcessable {
 	protected static void setParameter(MultipartEntity multipartEntity, String name, Date value) {
 		if (value != null) {
 			try {
-				multipartEntity.addPart(name, new StringBody(format(value), MediaWikiBot.CHARSET));
+				multipartEntity.addPart(name, new StringBody(format(value), StandardCharsets.UTF_8));
 			} catch (UnsupportedEncodingException e) {
 				throw new Error("MediaWiki '" + MediaWikiBot.ENCODING + "' charset not supported by Java VM");
 			}
@@ -130,9 +131,9 @@ public abstract class AbstractApiAction implements ContentProcessable {
 	protected static void setParameter(MultipartEntity multipartEntity, String name, String value) {
 		if (value != null) {
 			try {
-				multipartEntity.addPart(name, new StringBody(value, MediaWikiBot.CHARSET));
+				multipartEntity.addPart(name, new StringBody(value, StandardCharsets.UTF_8));
 			} catch (UnsupportedEncodingException e) {
-				throw new Error("MediaWiki '" + MediaWikiBot.CHARSET.name() + "' charset not supported by Java VM");
+				throw new Error("MediaWiki '" + StandardCharsets.UTF_8.name() + "' charset not supported by Java VM");
 			}
 		}
 	}
@@ -200,11 +201,12 @@ public abstract class AbstractApiAction implements ContentProcessable {
 	protected void appendParameters(StringBuilder stringBuilder, Iterable<? extends Object> parameters) {
 		try {
 			String params = toStringParameters(parameters);
-			params = URLEncoder.encode(params, MediaWikiBot.CHARSET.name());
+			params = URLEncoder.encode(params, StandardCharsets.UTF_8.name());
 
 			stringBuilder.append(params);
 		} catch (UnsupportedEncodingException exc) {
-			log.error("MediaWiki encoding not supported: '" + MediaWikiBot.CHARSET + "': " + exc.getMessage(), exc);
+			log.error("MediaWiki encoding not supported: '" + StandardCharsets.UTF_8.name() + "': " + exc.getMessage(),
+					exc);
 			throw new Error(exc.getMessage(), exc);
 		}
 	}

@@ -2,6 +2,8 @@ package org.wikipedia.vlsergey.secretary.trust;
 
 import java.io.Serializable;
 
+import org.wikipedia.vlsergey.secretary.jwpf.model.UserKey;
+
 public class TextChunk implements Comparable<TextChunk>, Serializable {
 
 	private static final long serialVersionUID = 1L;
@@ -10,10 +12,13 @@ public class TextChunk implements Comparable<TextChunk>, Serializable {
 
 	public final String text;
 
-	public final String user;
+	public final UserKey userKey;
 
-	public TextChunk(String user, String text) {
-		this.user = user;
+	public TextChunk(final UserKey userKey, String text) {
+		if (userKey == null)
+			throw new IllegalArgumentException();
+
+		this.userKey = userKey;
 		this.text = text;
 		this.hashCode = text.hashCode();
 	}
@@ -39,7 +44,6 @@ public class TextChunk implements Comparable<TextChunk>, Serializable {
 
 	@Override
 	public String toString() {
-		return "{" + user + "}" + text;
+		return "{" + userKey + "}" + text;
 	}
-
 }

@@ -16,9 +16,9 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.NullArgumentException;
-import org.apache.commons.lang.builder.ToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
@@ -36,21 +36,18 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ProjectType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.DataType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Sitelink;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.StringValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikibaseEntityIdValue;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.WikidataBot;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 @Component
 public class ImportLinksFromRuWikisourceTask implements Runnable {
@@ -63,7 +60,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		public boolean addLink(Link link) {
 			if (link == null)
-				throw new NullArgumentException("link");
+				throw new IllegalArgumentException("link");
 
 			final Dictionary dictionary = link.dictionary;
 			if (!links.containsKey(dictionary)) {
@@ -185,11 +182,11 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 				final Function<String, String> wikidataTitleF, final Function<String, String> wikidataDescriptionF) {
 
 			if (project == null)
-				throw new NullArgumentException("project");
+				throw new IllegalArgumentException("project");
 			if (wikidataTitleF == null)
-				throw new NullArgumentException("wikidataTitleF");
+				throw new IllegalArgumentException("wikidataTitleF");
 			if (wikidataDescriptionF == null)
-				throw new NullArgumentException("wikidataDescriptionF");
+				throw new IllegalArgumentException("wikidataDescriptionF");
 
 			this.project = project;
 			this.prefix = prefix;
@@ -240,11 +237,11 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 		private Link(final Dictionary dictionary, final String pageTitle, final String articleName) {
 			if (dictionary == null)
-				throw new NullArgumentException("dictionary");
+				throw new IllegalArgumentException("dictionary");
 			if (pageTitle == null)
-				throw new NullArgumentException("pageTitle");
+				throw new IllegalArgumentException("pageTitle");
 			if (articleName == null)
-				throw new NullArgumentException("articleName");
+				throw new IllegalArgumentException("articleName");
 
 			this.dictionary = dictionary;
 			this.pageTitle = pageTitle;
@@ -339,7 +336,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private boolean collectFromPage(List<Circle> circles, Link link) throws Exception {
 		if (link == null)
-			throw new NullArgumentException("link");
+			throw new IllegalArgumentException("link");
 
 		Revision latestRevision = link.latestRevision;
 		if (latestRevision == null) {
@@ -363,7 +360,7 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 
 	private boolean collectFromPage(List<Circle> circles, final Link link, Revision revision) throws Exception {
 		if (link == null)
-			throw new NullArgumentException("link");
+			throw new IllegalArgumentException("link");
 
 		boolean hasChanges = false;
 
@@ -692,21 +689,18 @@ public class ImportLinksFromRuWikisourceTask implements Runnable {
 				Link wikipediaLink = circle.links.get(Dictionary.ВИКИПЕДИЯ) != null ? circle.links.get(
 						Dictionary.ВИКИПЕДИЯ).first() : null;
 				if (wikipediaLink != null && wikipediaLink.entityId != null) {
-					Entity.putProperty(newData,
-							Statement.newStatement(Properties.MAIN_TOPIC, wikipediaLink.entityId));
+					Entity.putProperty(newData, Statement.newStatement(Properties.MAIN_TOPIC, wikipediaLink.entityId));
 				}
 			}
 
 			if (!apiEntity.hasClaims(Properties.PART_OF)) {
 				if (link.dictionary.wikidataId != null) {
-					Entity.putProperty(newData,
-							Statement.newStatement(Properties.PART_OF, link.dictionary.wikidataId));
+					Entity.putProperty(newData, Statement.newStatement(Properties.PART_OF, link.dictionary.wikidataId));
 				}
 			}
 
 			if (!apiEntity.hasClaims(Properties.INSTANCE_OF)) {
-				Entity.putProperty(newData,
-						Statement.newStatement(Properties.INSTANCE_OF, ITEM_encyclopedic_article));
+				Entity.putProperty(newData, Statement.newStatement(Properties.INSTANCE_OF, ITEM_encyclopedic_article));
 			}
 
 			if (!apiEntity.hasClaims(Properties.TITLE)) {

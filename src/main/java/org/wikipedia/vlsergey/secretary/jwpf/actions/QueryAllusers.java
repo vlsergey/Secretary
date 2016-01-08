@@ -9,11 +9,11 @@ import java.util.List;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.w3c.dom.Element;
-import org.wikipedia.vlsergey.secretary.jwpf.model.User;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedUser;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserProperty;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
-public class QueryAllusers extends AbstractQueryAction implements MultiAction<User> {
+public class QueryAllusers extends AbstractQueryAction implements MultiAction<ParsedUser> {
 
 	public static final int MAX_FOR_BOTS = 5000;
 
@@ -30,7 +30,7 @@ public class QueryAllusers extends AbstractQueryAction implements MultiAction<Us
 	private final String auto;
 	private final Boolean auwitheditsonly;
 	private String nextAufrom = null;
-	private List<User> result;
+	private List<ParsedUser> result;
 
 	public QueryAllusers(boolean bot, String aufrom, String auto, String auprefix, String audir,
 			Collection<String> augroup, Collection<String> auexcludegroup, Collection<String> aurights,
@@ -94,7 +94,7 @@ public class QueryAllusers extends AbstractQueryAction implements MultiAction<Us
 	}
 
 	@Override
-	public MultiAction<User> getNextAction() {
+	public MultiAction<ParsedUser> getNextAction() {
 
 		if (nextAufrom == null) {
 			return null;
@@ -105,26 +105,26 @@ public class QueryAllusers extends AbstractQueryAction implements MultiAction<Us
 	}
 
 	@Override
-	public Collection<User> getResults() {
+	public Collection<ParsedUser> getResults() {
 		return result;
 	}
 
 	@Override
 	protected void parseQueryElement(Element queryElement) throws ProcessException, ParseException {
 		final ListAdapter<Element> uElements = new ListAdapter<Element>(queryElement.getElementsByTagName("u"));
-		final List<User> result = new ArrayList<User>(uElements.size());
+		final List<ParsedUser> result = new ArrayList<ParsedUser>(uElements.size());
 
 		for (Element uElement : uElements) {
-			User user = parseUser(uElement);
+			ParsedUser user = parseUser(uElement);
 			result.add(user);
 		}
 
 		this.result = result;
 	}
 
-	private User parseUser(Element uElement) {
+	private ParsedUser parseUser(Element uElement) {
 
-		User user = new User();
+		ParsedUser user = new ParsedUser();
 
 		if (uElement.hasAttribute("userid")) {
 			try {

@@ -1,0 +1,16 @@
+package trust;
+
+option java_package = "org.wikipedia.vlsergey.secretary.trust";
+option java_outer_classname = "ProtobufHolder";
+
+message Authorship {
+
+	message UserKey {
+		optional uint64 userId = 1;
+		optional bytes inetAddress = 2;
+	}
+
+	repeated UserKey userKeys = 1;
+	repeated uint32 indexes = 2 [packed=true];
+
+}

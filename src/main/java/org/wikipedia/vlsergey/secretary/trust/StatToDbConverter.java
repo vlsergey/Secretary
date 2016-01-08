@@ -24,7 +24,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class StatToDbConverter {
 

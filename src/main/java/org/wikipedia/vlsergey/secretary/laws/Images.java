@@ -11,6 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
@@ -20,7 +21,6 @@ import org.apache.http.client.params.CookiePolicy;
 import org.apache.http.impl.client.AbstractHttpClient;
 import org.wikipedia.vlsergey.secretary.http.HttpManager;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
 public class Images {
 

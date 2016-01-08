@@ -20,13 +20,14 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Element;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
@@ -41,7 +42,7 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 	public static final int MAX_FOR_NON_BOTS = 500;
 
-	private List<ParsedPage> pages;
+	private List<ParsedPage> pages = Collections.emptyList();
 
 	protected final List<RevisionPropery> properties;
 
@@ -155,6 +156,10 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 
 		if (properties.contains(RevisionPropery.USER)) {
 			revisionImpl.setUser(revisionElement.getAttribute("user"));
+		}
+
+		if (properties.contains(RevisionPropery.USERID)) {
+			revisionImpl.setUserId(new Long(revisionElement.getAttribute("userid")));
 		}
 
 		if (properties.contains(RevisionPropery.FLAGGED)) {

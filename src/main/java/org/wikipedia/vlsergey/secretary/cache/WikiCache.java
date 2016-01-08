@@ -7,20 +7,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.NullArgumentException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.wikipedia.vlsergey.secretary.cache.users.StoredUserDao;
 import org.wikipedia.vlsergey.secretary.functions.MultiresultFunction;
 import org.wikipedia.vlsergey.secretary.jwpf.MediaWikiBot;
 import org.wikipedia.vlsergey.secretary.jwpf.actions.QueryRevisionsByCategoryMembers.CmType;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Direction;
+import org.wikipedia.vlsergey.secretary.jwpf.model.FilterRedirects;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedRevision;
+import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedUser;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
@@ -32,17 +35,20 @@ import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 public class WikiCache {
 
 	public static final RevisionPropery[] CACHED = { RevisionPropery.IDS, RevisionPropery.TIMESTAMP,
-			RevisionPropery.CONTENT, RevisionPropery.USER, RevisionPropery.SIZE };
+			RevisionPropery.COMMENT, RevisionPropery.CONTENT, RevisionPropery.USER, RevisionPropery.USERID,
+			RevisionPropery.SIZE };
 
-	public static final RevisionPropery[] FAST = { RevisionPropery.IDS, RevisionPropery.TIMESTAMP,
-			RevisionPropery.USER, RevisionPropery.SIZE };
+	public static final RevisionPropery[] IDS = { RevisionPropery.IDS };
 
 	private static final Logger log = LoggerFactory.getLogger(WikiCache.class);
 
 	private MediaWikiBot mediaWikiBot;
 
 	@Autowired
-	private StoredRevisionDao storedRevisionDao;
+	private StoredRevisionDaoLock storedRevisionDao;
+
+	@Autowired
+	private StoredUserDao storedUserDao;
 
 	public void clear() {
 		int cleared = storedRevisionDao.clear(getProject());
@@ -67,28 +73,29 @@ public class WikiCache {
 	}
 
 	public Iterable<Revision> queryByAllPages(Namespace namespace) {
-		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByAllPages(namespace,
-				new RevisionPropery[] { RevisionPropery.IDS }));
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByAllPages(namespace, IDS));
+	}
+
+	public Iterable<Revision> queryByBacklinks(Long pageId, FilterRedirects filterRedirects, Namespace... namespaces) {
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByBacklinks(pageId, namespaces,
+				filterRedirects, IDS));
 	}
 
 	public Iterable<Revision> queryByBacklinks(Long pageId, Namespace... namespaces) {
-		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByBacklinks(pageId, namespaces,
-				new RevisionPropery[] { RevisionPropery.IDS }));
+		return this.queryByBacklinks(pageId, FilterRedirects.NONREDIRECTS, namespaces);
 	}
 
 	public Iterable<Revision> queryByCaterogyMembers(String title, Namespace[] namespaces, CmType type) {
 		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByCategoryMembers(title, namespaces, type,
-				new RevisionPropery[] { RevisionPropery.IDS }));
+				IDS));
 	}
 
 	public Iterable<Revision> queryByEmbeddedIn(String title, Namespace... namespaces) {
-		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByEmbeddedIn(title, namespaces,
-				new RevisionPropery[] { RevisionPropery.IDS }));
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByEmbeddedIn(title, namespaces, IDS));
 	}
 
 	public Iterable<Revision> queryByLinks(Long pageId, Namespace... namespaces) {
-		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByLinks(pageId, namespaces,
-				new RevisionPropery[] { RevisionPropery.IDS }));
+		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByLinks(pageId, namespaces, IDS));
 	}
 
 	private Iterable<Revision> queryByPagesAndRevisions(Iterable<ParsedPage> pagesWithLatestsRevisions)
@@ -120,7 +127,7 @@ public class WikiCache {
 				for (Long pageId : pageIdToLatestRevision.keySet()) {
 					Long latestRevisionId = pageIdToLatestRevision.get(pageId);
 
-					Revision stored = storedRevisionDao.getRevisionById(getProject(), latestRevisionId);
+					StoredRevision stored = storedRevisionDao.getRevisionById(getProject(), latestRevisionId);
 					if (isCacheRecordValid(stored)) {
 						resultMap.put(latestRevisionId, stored);
 					} else {
@@ -128,10 +135,12 @@ public class WikiCache {
 					}
 				}
 
-				for (Revision revision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED).apply(toLoad)) {
+				for (ParsedRevision parsedRevision : mediaWikiBot.queryRevisionsByRevisionIdsF(true, CACHED).apply(
+						toLoad)) {
 					// update cache
-					revision = storedRevisionDao.getOrCreate(getProject(), revision);
-					resultMap.put(revision.getId(), revision);
+					StoredRevision storedRevision = storedRevisionDao.getOrCreate(getProject(), parsedRevision);
+					resultMap.put(storedRevision.getId(), storedRevision);
+					updateUserCache(storedRevision);
 				}
 
 				List<Revision> result = new ArrayList<Revision>();
@@ -155,22 +164,21 @@ public class WikiCache {
 
 	public Iterable<Revision> queryByRecentChanges(Direction direction, Date start) {
 		return queryByPagesAndRevisions(mediaWikiBot.queryPagesWithRevisionByRecentChanges(direction, start,
-				"edit|new", true, new RevisionPropery[] { RevisionPropery.IDS }));
+				"edit|new", true, IDS));
 	}
 
 	public Iterable<Revision> queryLatestByPageIds(Iterable<Long> pageIds) {
-		return queryByPagesAndRevisions(mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, FAST));
+		return queryByPagesAndRevisions(mediaWikiBot.queryLatestRevisionsByPageIds(pageIds, IDS));
 	}
 
 	public Iterable<Revision> queryLatestByPageTitles(Iterable<String> pageTitles, boolean followRedirects)
 			throws ActionException, ProcessException {
-		return queryByPagesAndRevisions(mediaWikiBot
-				.queryLatestRevisionsByPageTitles(pageTitles, followRedirects, FAST));
+		return queryByPagesAndRevisions(mediaWikiBot.queryLatestRevisionsByPageTitles(pageTitles, followRedirects, IDS));
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(Long pageId) {
-		Revision latest = mediaWikiBot.queryLatestRevision(pageId, FAST);
+		Revision latest = mediaWikiBot.queryLatestRevision(pageId, IDS);
 		if (latest == null)
 			return null;
 		return queryRevision(latest);
@@ -178,7 +186,7 @@ public class WikiCache {
 
 	@Transactional(propagation = Propagation.NEVER)
 	public Revision queryLatestRevision(String pageTitle) {
-		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, false, FAST);
+		Revision latest = mediaWikiBot.queryLatestRevision(pageTitle, false, IDS);
 		if (latest == null)
 			return null;
 		return queryRevision(latest);
@@ -199,13 +207,14 @@ public class WikiCache {
 			return null;
 
 		StoredRevision revision = storedRevisionDao.getOrCreate(getProject(), withContent);
+		updateUserCache(revision);
 		return revision;
 	}
 
 	@Transactional(propagation = Propagation.NEVER)
 	public StoredRevision queryRevision(Revision revision) {
 		if (revision == null) {
-			throw new NullArgumentException("revision");
+			throw new IllegalArgumentException("revision");
 		}
 		if (revision instanceof StoredRevision) {
 			return ((StoredRevision) revision);
@@ -238,6 +247,7 @@ public class WikiCache {
 				// update cache
 				for (Revision revision : storedRevisionDao.getOrCreate(getProject(), revisionsWithContent)) {
 					resultMap.put(revision.getId(), revision);
+					updateUserCache(revision);
 				}
 
 				List<Revision> result = new ArrayList<Revision>();
@@ -263,6 +273,17 @@ public class WikiCache {
 
 	public void setMediaWikiBot(MediaWikiBot mediaWikiBot) {
 		this.mediaWikiBot = mediaWikiBot;
+	}
+
+	protected void updateUserCache(Revision revision) {
+		// update user cache as well
+		if (revision.getUserId() != null && revision.getUserId().longValue() != 0
+				&& StringUtils.isNotEmpty(revision.getUser())) {
+			ParsedUser parsedUser = new ParsedUser();
+			parsedUser.setUserId(revision.getUserId());
+			parsedUser.setName(revision.getUser());
+			storedUserDao.getOrCreate(getProject(), parsedUser);
+		}
 	}
 
 }

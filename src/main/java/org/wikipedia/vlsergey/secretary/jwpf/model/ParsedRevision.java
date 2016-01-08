@@ -23,10 +23,10 @@ import java.util.List;
 
 import javax.persistence.Transient;
 
+import org.apache.commons.lang3.StringUtils;
 import org.wikipedia.vlsergey.secretary.utils.IoUtils;
-import org.wikipedia.vlsergey.secretary.utils.StringUtils;
 
-public class ParsedRevision implements Revision {
+public class ParsedRevision extends AbstractRevision {
 
 	private Boolean anon;
 
@@ -51,6 +51,8 @@ public class ParsedRevision implements Revision {
 	private Date timestamp = null;
 
 	private String user = null;
+
+	private Long userId = null;
 
 	public ParsedRevision(Page page) {
 		this.page = page;
@@ -120,6 +122,11 @@ public class ParsedRevision implements Revision {
 	}
 
 	@Override
+	public Long getUserId() {
+		return userId;
+	}
+
+	@Override
 	public String getXml() {
 		return IoUtils.stringFromBinary(getBinaryXml(), true);
 	}
@@ -181,6 +188,10 @@ public class ParsedRevision implements Revision {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public void setUserId(Long userid) {
+		this.userId = userid;
 	}
 
 	@Transient

@@ -20,7 +20,7 @@ package org.wikipedia.vlsergey.secretary.dom;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public class Comment extends AbstractContainer {
 

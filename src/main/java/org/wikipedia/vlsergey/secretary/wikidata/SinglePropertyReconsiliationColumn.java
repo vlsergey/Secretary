@@ -1,6 +1,7 @@
 package org.wikipedia.vlsergey.secretary.wikidata;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -17,6 +18,12 @@ class SinglePropertyReconsiliationColumn extends ReconsiliationColumn {
 	public SinglePropertyReconsiliationColumn(List<String> templateParameters, DataType dataType, EntityId property,
 			Function<String, List<ValueWithQualifiers>> parseF) {
 		super(templateParameters, dataType, new EntityId[] { property }, parseF);
+		this.property = property;
+	}
+
+	public SinglePropertyReconsiliationColumn(String templateParameter, DataType dataType, EntityId property,
+			Function<String, List<ValueWithQualifiers>> parseF) {
+		super(Collections.singletonList(templateParameter), dataType, new EntityId[] { property }, parseF);
 		this.property = property;
 	}
 

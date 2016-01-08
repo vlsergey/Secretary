@@ -13,7 +13,9 @@ import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -23,10 +25,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Namespace;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Page;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
-import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Entity;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.EntityId;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Properties;
+import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Snak;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.SnakType;
 import org.wikipedia.vlsergey.secretary.jwpf.wikidata.Statement;
 
@@ -44,7 +45,9 @@ public class PlacesHelper extends AbstractHelper implements DictionaryUpdateList
 	private static final EntityId ENTITY_sovereign_state = EntityId.item(3624078);
 	private static final EntityId ENTITY_state = EntityId.item(7275);
 	private static final EntityId ENTITY_un_member = EntityId.item(160016);
-	private static final EntityId ENTITY_usa_unincorporated_territory = EntityId.item(2107324);
+	private static final EntityId ENTITY_usa_unincorporated_territory = EntityId.item(783733);
+
+	private static final Log log = LogFactory.getLog(PlacesHelper.class);
 
 	private static Map<String, String> REPLACED_LABELS = new HashMap<>();
 
@@ -71,8 +74,10 @@ public class PlacesHelper extends AbstractHelper implements DictionaryUpdateList
 		REPLACED_LABELS.put("МССР", "Молдавская Советская Социалистическая Республика");
 		REPLACED_LABELS.put("Нью-Йорк (штат)", "Нью-Йорк");
 		REPLACED_LABELS.put("Российская Федерация", "Россия");
-		REPLACED_LABELS.put("РСФСР", "Российская Советская Федеративная Социалистическая Республика");
-		REPLACED_LABELS.put("СССР", "Союз Советских Социалистических Республик");
+		// REPLACED_LABELS.put("РСФСР",
+		// "Российская Советская Федеративная Социалистическая Республика");
+		// REPLACED_LABELS.put("СССР",
+		// "Союз Советских Социалистических Республик");
 		REPLACED_LABELS.put("США", "Соединённые Штаты Америки");
 		REPLACED_LABELS.put("Таджикская ССР", "Таджикская Советская Социалистическая Республика");
 		REPLACED_LABELS.put("Татарская АССР", "Татарская Автономная Советская Социалистическая Республика");
@@ -151,6 +156,9 @@ public class PlacesHelper extends AbstractHelper implements DictionaryUpdateList
 		Set<EntityId> countries = new HashSet<>();
 		for (EntityId toCheck : TOCHECK) {
 			final Revision stateTypeItemRev = wikidataCache.queryLatestRevision(toCheck.toString().toUpperCase());
+			if (stateTypeItemRev == null) {
+				log.error("Unknown entity ID: " + toCheck);
+			}
 			final Page stateTypeItemPage = stateTypeItemRev.getPage();
 
 			for (Revision revision : wikidataCache.queryByBacklinks(stateTypeItemPage.getId(), Namespace.MAIN)) {

@@ -19,10 +19,8 @@ package org.wikipedia.vlsergey.secretary.jwpf.actions;
 
 import java.text.ParseException;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 import org.wikipedia.vlsergey.secretary.jwpf.model.ParsedPage;
 import org.wikipedia.vlsergey.secretary.jwpf.utils.ProcessException;
 
@@ -34,21 +32,14 @@ public abstract class AbstractQueryAction extends AbstractApiXmlAction {
 
 	@Override
 	protected void parseAPI(final Element root) throws ProcessException, ParseException {
-		final ListAdapter<Element> queryContinueElements = new ListAdapter<Element>(
-				root.getElementsByTagName("query-continue"));
-		if (queryContinueElements.size() > 1)
-			throw new IllegalArgumentException("Too many query-continue elements: " + queryContinueElements.size());
-		else if (queryContinueElements.size() == 1)
-			parseQueryContinue(queryContinueElements.get(0));
+		Optional<Element> queryContinueElement = findAnyChildElementNode(root, "query-continue");
+		if (queryContinueElement.isPresent())
+			parseQueryContinue(queryContinueElement.get());
 
-		final NodeList childNodes = root.getChildNodes();
-		Optional<Element> queryElement = IntStream.range(0, childNodes.getLength()).mapToObj(childNodes::item)
-				.filter(x -> "query".equals(x.getNodeName())).map(x -> (Element) x).findAny();
-
-		if (!queryElement.isPresent()) {
-			throw new IllegalArgumentException("No query elements");
+		Optional<Element> queryElement = findAnyChildElementNode(root, "query");
+		if (queryElement.isPresent()) {
+			parseQueryElement(queryElement.get());
 		}
-		parseQueryElement(queryElement.get());
 	}
 
 	protected ParsedPage parsePage(Element pageElement) throws ProcessException {

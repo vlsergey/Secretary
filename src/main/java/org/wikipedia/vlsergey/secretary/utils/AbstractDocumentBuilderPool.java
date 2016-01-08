@@ -24,8 +24,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.commons.lang.NullArgumentException;
-import org.apache.commons.lang.exception.NestableError;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.pool.PoolableObjectFactory;
@@ -74,7 +72,7 @@ public abstract class AbstractDocumentBuilderPool extends AbstractDelegatedGener
 			throw exc;
 		} catch (Exception exc) {
 			log.error(exc.getMessage(), exc);
-			throw new NestableError(exc);
+			throw new Error(exc);
 		}
 	}
 
@@ -152,7 +150,7 @@ public abstract class AbstractDocumentBuilderPool extends AbstractDelegatedGener
 
 	public Document read(File file) throws ParserConfigurationException, SAXException, IOException {
 		if (file == null)
-			throw new NullArgumentException("file");
+			throw new IllegalArgumentException("file");
 
 		DocumentBuilder builder = borrow();
 		try {
@@ -169,7 +167,7 @@ public abstract class AbstractDocumentBuilderPool extends AbstractDelegatedGener
 			throw exc;
 		} catch (Exception exc) {
 			log.error(exc.getMessage(), exc);
-			throw new NestableError(exc);
+			throw new Error(exc);
 		}
 	}
 

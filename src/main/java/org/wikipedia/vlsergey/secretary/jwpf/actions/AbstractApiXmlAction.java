@@ -21,6 +21,8 @@ import java.io.StringReader;
 import java.text.ParseException;
 import java.util.AbstractList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -58,6 +60,13 @@ public abstract class AbstractApiXmlAction extends AbstractApiAction {
 			return nodeList.getLength();
 		}
 
+	}
+
+	protected static Optional<Element> findAnyChildElementNode(final Element root, final String childName) {
+		final NodeList childNodes = root.getChildNodes();
+		Optional<Element> queryElement = IntStream.range(0, childNodes.getLength()).mapToObj(childNodes::item)
+				.filter(x -> childName.equals(x.getNodeName())).map(x -> (Element) x).findAny();
+		return queryElement;
 	}
 
 	public AbstractApiXmlAction(boolean bot) {

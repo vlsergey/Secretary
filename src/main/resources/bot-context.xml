@@ -14,6 +14,10 @@
 		class="org.wikipedia.vlsergey.secretary.cache.StoredRevisionDao"
 		p:sessionFactory-ref="sessionFactory" />
 
+	<bean id="storedUserDao"
+		class="org.wikipedia.vlsergey.secretary.cache.users.StoredUserDao"
+		p:sessionFactory-ref="sessionFactory" />
+
 	<bean id="storedSitelinksDao"
 		class="org.wikipedia.vlsergey.secretary.cache.wikidata.StoredSitelinksDao"
 		p:sessionFactory-ref="sessionFactory" />

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.wikipedia.vlsergey.secretary.cache.StoredRevision;
 import org.wikipedia.vlsergey.secretary.cache.WikiCache;
