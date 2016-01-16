@@ -25,8 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.output.FileWriterWithEncoding;
 import org.slf4j.Logger;
@@ -44,8 +42,9 @@ import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
 import org.wikipedia.vlsergey.secretary.jwpf.model.RevisionPropery;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserKey;
 import org.wikipedia.vlsergey.secretary.utils.LastUserHashMap;
+import org.wikipedia.vlsergey.secretary.utils.SegmentedLockHolder;
 
-public class RevisionAuthorshipCalculator {
+public class RevisionAuthorshipCalculator extends SegmentedLockHolder {
 
 	private class PageContext {
 
@@ -197,13 +196,11 @@ public class RevisionAuthorshipCalculator {
 
 	}
 
-	private static final int CONTEXT_CACHES_SIZE = 5000;
+	private static final int CONTEXT_CACHES_SIZE = 1000;
 
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipCalculator.class);
 
 	public static final int PRELOAD_BATCH = 50;
-
-	public static final int SEGMENTS = 256;
 
 	public static String concatenate(Iterable<TextChunk> chunks, String delimeter) {
 		StringBuilder result = new StringBuilder();
@@ -222,8 +219,6 @@ public class RevisionAuthorshipCalculator {
 		}
 		return result.toString();
 	}
-
-	private final Lock[] articleLocks;
 
 	@Autowired
 	private PageRevisionChunksLengthDao chunksLengthDao;
@@ -244,13 +239,6 @@ public class RevisionAuthorshipCalculator {
 
 	private WikiCache wikiCache;
 
-	public RevisionAuthorshipCalculator() {
-		articleLocks = new Lock[SEGMENTS];
-		for (int i = 0; i < articleLocks.length; i++) {
-			articleLocks[i] = new ReentrantLock();
-		}
-	}
-
 	private long calculateDifference(PageContext pageContext, Long oldRevisionId, Long newRevisionId) {
 		TextChunkList chunks1 = pageContext.getAnonymChunks(oldRevisionId);
 		TextChunkList chunks2 = pageContext.getAnonymChunks(newRevisionId);
@@ -263,15 +251,7 @@ public class RevisionAuthorshipCalculator {
 
 	public TextChunkList getAuthorship(Page page, Revision latestRevisionInfo, final Date lastPossibleEditTimestamp)
 			throws Exception {
-
-		final int lockIndex = (int) ((page.getId().longValue() % SEGMENTS + SEGMENTS) % SEGMENTS);
-		final Lock lock = articleLocks[lockIndex];
-		lock.lock();
-		try {
-			return getAuthorshipImpl(page, latestRevisionInfo);
-		} finally {
-			lock.unlock();
-		}
+		return withLock(page.getId().longValue(), () -> getAuthorshipImpl(page, latestRevisionInfo));
 	}
 
 	private TextChunkList getAuthorship(PageContext pageContext, Long newRevisionId) throws Exception {

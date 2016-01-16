@@ -4,13 +4,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public abstract class AbstractDaoLock {
+public abstract class SegmentedLockHolder {
 
 	private static final int SEGMENTS = 128;
 
 	private final Lock[] locks = new Lock[SEGMENTS];
 
-	protected AbstractDaoLock() {
+	protected SegmentedLockHolder() {
 		for (int i = 0; i < SEGMENTS; i++) {
 			locks[i] = new ReentrantLock();
 		}

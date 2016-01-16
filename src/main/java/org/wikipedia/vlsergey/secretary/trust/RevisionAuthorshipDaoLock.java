@@ -4,10 +4,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
-import org.wikipedia.vlsergey.secretary.utils.AbstractDaoLock;
+import org.wikipedia.vlsergey.secretary.utils.SegmentedLockHolder;
 
 @Component
-public class RevisionAuthorshipDaoLock extends AbstractDaoLock {
+public class RevisionAuthorshipDaoLock extends SegmentedLockHolder {
 
 	@Autowired
 	private RevisionAuthorshipDao revisionAuthorshipDao;
