@@ -197,11 +197,11 @@ public class RevisionAuthorshipCalculator {
 
 	}
 
-	private static final int CONTEXT_CACHES_SIZE = 1000;
+	private static final int CONTEXT_CACHES_SIZE = 5000;
 
 	private static final Logger log = LoggerFactory.getLogger(RevisionAuthorshipCalculator.class);
 
-	public static final int PRELOAD_BATCH = 25;
+	public static final int PRELOAD_BATCH = 50;
 
 	public static final int SEGMENTS = 256;
 
@@ -237,7 +237,7 @@ public class RevisionAuthorshipCalculator {
 	private Project project;
 
 	@Autowired
-	private RevisionAuthorshipDao revisionAuthorshipDao;
+	private RevisionAuthorshipDaoLock revisionAuthorshipDao;
 
 	@Autowired
 	private StoredUserDao storedUserDao;
@@ -279,7 +279,8 @@ public class RevisionAuthorshipCalculator {
 			throw new IllegalArgumentException("newRevisionId");
 		}
 
-		log.info("Get authorwhip for rev#" + newRevisionId);
+		if (log.isDebugEnabled())
+			log.debug("Get authorwhip for rev#" + newRevisionId);
 
 		TextChunkList chunks = getAuthorshipFromDatabase(pageContext, newRevisionId);
 		if (chunks != null) {
@@ -292,8 +293,6 @@ public class RevisionAuthorshipCalculator {
 		if (oldRevisionId == null) {
 			// this is the first
 			final Revision newRevision = pageContext.queryRevision(newRevisionId);
-			assert newRevision.getUser() != null;
-			assert newRevision.getUserId() != null;
 
 			final UserKey userKey = newRevision.getUserKey();
 			if (userKey == null)
@@ -311,9 +310,13 @@ public class RevisionAuthorshipCalculator {
 		final Revision oldRevision = pageContext.queryRevision(oldRevisionId);
 		final Revision newRevision = pageContext.queryRevision(newRevisionId);
 		final UserKey newUserKey = newRevision.getUserKey();
+		if (newUserKey == null)
+			throw new RuntimeException("UserKey for " + newRevision + " is null");
 
-		log.info("Get authorwhip for " + toString(newRevision) + ": calculate basing on difference with "
-				+ toString(oldRevision));
+		if (log.isDebugEnabled())
+			log.debug("Get authorwhip for " + toString(newRevision) + ": calculate basing on difference with "
+					+ toString(oldRevision));
+
 		TextChunkList newAuthorship = TextChunkList.toTextChunkList(getProject().getLocale(), newUserKey,
 				newRevision.getContent());
 		newAuthorship = join(oldAuthorship, newAuthorship);
@@ -469,7 +472,8 @@ public class RevisionAuthorshipCalculator {
 
 		final int newRevisionLength = pageContext.revisionChunkedLength.get(newRevisionId);
 		final Revision newRevision = pageContext.queryRevision(newRevisionId);
-		log.info("Searching through history for best compare candidate for " + toString(newRevision));
+		if (log.isDebugEnabled())
+			log.debug("Searching through history for best compare candidate for " + toString(newRevision));
 
 		Revision candidate = null;
 		long minDiffrence = Integer.MAX_VALUE;
@@ -491,8 +495,9 @@ public class RevisionAuthorshipCalculator {
 				continue;
 			}
 
-			log.debug("Searching through history for best compare candidate for " + toString(newRevision)
-					+ ": compare with " + toString(oldRevision));
+			if (log.isDebugEnabled())
+				log.debug("Searching through history for best compare candidate for " + toString(newRevision)
+						+ ": compare with " + toString(oldRevision));
 
 			pageContext.queryRevisionWithPreload(oldRevision.getId(), Direction.OLDER, PRELOAD_BATCH);
 
@@ -502,13 +507,15 @@ public class RevisionAuthorshipCalculator {
 				minDiffrence = difference;
 				candidate = oldRevision;
 
-				log.debug("Searching through history for best compare candidate for " + toString(newRevision)
-						+ ": minimal difference changed to " + minDiffrence);
+				if (log.isDebugEnabled())
+					log.debug("Searching through history for best compare candidate for " + toString(newRevision)
+							+ ": minimal difference changed to " + minDiffrence);
 			}
 		}
 
-		log.info("Searching through history for best compare candidate for " + toString(newRevision)
-				+ ": best candidate is " + candidate);
+		if (log.isDebugEnabled())
+			log.debug("Searching through history for best compare candidate for " + toString(newRevision)
+					+ ": best candidate is " + candidate);
 
 		return candidate == null ? null : candidate.getId();
 	}
@@ -647,7 +654,11 @@ public class RevisionAuthorshipCalculator {
 			final UserKey userKey = entry.getKey();
 			String wikiString;
 			if (userKey.isAnonymous()) {
-				wikiString = userKey.getInetAddress().getHostAddress();
+				if (userKey.equals(UserKey.HIDDEN)) {
+					wikiString = "(deleted)";
+				} else {
+					wikiString = userKey.getInetAddress().getHostAddress();
+				}
 			} else {
 				wikiString = storedUserDao.getByKey(getProject(), userKey.getUserId()).getName();
 			}

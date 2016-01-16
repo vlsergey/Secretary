@@ -52,6 +52,8 @@ public class ParsedRevision extends AbstractRevision {
 
 	private String user = null;
 
+	private Boolean userHidden;
+
 	private Long userId = null;
 
 	public ParsedRevision(Page page) {
@@ -121,6 +123,10 @@ public class ParsedRevision extends AbstractRevision {
 		return user;
 	}
 
+	public Boolean getUserHidden() {
+		return userHidden;
+	}
+
 	@Override
 	public Long getUserId() {
 		return userId;
@@ -188,6 +194,10 @@ public class ParsedRevision extends AbstractRevision {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public void setUserHidden(Boolean userHidden) {
+		this.userHidden = userHidden;
 	}
 
 	public void setUserId(Long userid) {

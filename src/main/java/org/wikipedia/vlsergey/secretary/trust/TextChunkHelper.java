@@ -20,6 +20,9 @@ import com.google.protobuf.ByteString;
 public class TextChunkHelper {
 
 	public static TextChunkList fromBinary(Locale locale, String text, byte[] bs) throws Exception {
+		if (StringUtils.isBlank(text))
+			return TextChunkList.EMPTY;
+
 		final String[] splitted = split(locale, text);
 
 		Authorship authorship = Authorship.parseFrom(bs);

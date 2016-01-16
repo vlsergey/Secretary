@@ -55,6 +55,8 @@ public class StoredRevision extends AbstractRevision {
 
 	private String user = null;
 
+	private Boolean userHidden;
+
 	private Long userId = null;
 
 	private byte[] xml = null;
@@ -133,6 +135,11 @@ public class StoredRevision extends AbstractRevision {
 	}
 
 	@Override
+	public Boolean getUserHidden() {
+		return this.userHidden;
+	}
+
+	@Override
 	public Long getUserId() {
 		return userId;
 	}
@@ -201,6 +208,10 @@ public class StoredRevision extends AbstractRevision {
 
 	public void setUser(String user) {
 		this.user = user;
+	}
+
+	public void setUserHidden(Boolean userHidden) {
+		this.userHidden = userHidden;
 	}
 
 	public void setUserId(Long userId) {

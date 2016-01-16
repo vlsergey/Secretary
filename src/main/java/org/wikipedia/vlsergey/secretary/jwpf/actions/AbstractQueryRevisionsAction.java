@@ -154,12 +154,16 @@ public abstract class AbstractQueryRevisionsAction extends AbstractQueryAction {
 			}
 		}
 
-		if (properties.contains(RevisionPropery.USER)) {
+		if (properties.contains(RevisionPropery.USER) && revisionElement.hasAttribute("user")) {
 			revisionImpl.setUser(revisionElement.getAttribute("user"));
 		}
 
-		if (properties.contains(RevisionPropery.USERID)) {
+		if (properties.contains(RevisionPropery.USERID) && revisionElement.hasAttribute("userid")) {
 			revisionImpl.setUserId(new Long(revisionElement.getAttribute("userid")));
+		}
+
+		if (revisionElement.hasAttribute("userhidden")) {
+			revisionImpl.setUserHidden(revisionElement.hasAttribute("userhidden"));
 		}
 
 		if (properties.contains(RevisionPropery.FLAGGED)) {

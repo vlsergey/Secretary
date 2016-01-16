@@ -96,6 +96,9 @@ public class StoredRevisionDao {
 		if (updateRequired(withContent.getUserId(), revisionImpl.getUserId())) {
 			revisionImpl.setUserId(withContent.getUserId());
 		}
+		if (updateRequired(withContent.getUserHidden(), revisionImpl.getUserHidden())) {
+			revisionImpl.setUserHidden(withContent.getUserHidden());
+		}
 		if (withContent.getXml() != null && updateRequired(withContent.getXml(), revisionImpl.getXml())) {
 			revisionImpl.setXml(withContent.getXml());
 		}

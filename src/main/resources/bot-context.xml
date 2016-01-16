@@ -31,8 +31,8 @@
 		<property name="sessionFactory" ref="sessionFactory" />
 	</bean>
 
-	<bean id="dataSource"
-		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource"
+		destroy-method="close">
 		<property name="driverClassName" value="org.apache.derby.jdbc.EmbeddedDriver" />
 		<property name="url" value="jdbc:derby:secretarydb;create=true" />
 	</bean>
@@ -47,8 +47,8 @@
 			<props>
 				<prop key="hibernate.cache.provider_class">org.hibernate.cache.NoCacheProvider</prop>
 				<prop key="hibernate.current_session_context_class">thread</prop>
-				<prop key="hibernate.connection.pool_size">1</prop>
-				<prop key="hibernate.dialect">org.wikipedia.vlsergey.secretary.utils.ExtendedDerbyDialect</prop>
+				<prop key="hibernate.dialect">org.wikipedia.vlsergey.secretary.utils.ExtendedDerbyDialect
+				</prop>
 				<prop key="hibernate.show_sql">false</prop>
 				<prop key="hibernate.generate_statistics">false</prop>
 			</props>

@@ -24,6 +24,8 @@ public interface Revision {
 
 	String getUser();
 
+	Boolean getUserHidden();
+
 	Long getUserId();
 
 	UserKey getUserKey();
@@ -33,4 +35,6 @@ public interface Revision {
 	boolean hasContent();
 
 	boolean hasXml();
+
+	boolean isUserHidden();
 }

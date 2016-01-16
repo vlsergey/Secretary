@@ -6,7 +6,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.scheduling.TaskScheduler;
 import org.wikipedia.vlsergey.secretary.books.CountBooks;
 import org.wikipedia.vlsergey.secretary.patrollists.BuildUnreviewedLists;
-import org.wikipedia.vlsergey.secretary.trust.UpdateFeaturedArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateGoodArticlesTask;
 import org.wikipedia.vlsergey.secretary.trust.UpdateQualityArticlesTask;
 import org.wikipedia.vlsergey.secretary.wikidata.CompareWithWikidata;
@@ -47,7 +46,8 @@ public class Secretary {
 		scheduleWithFixedDelayOfType(appContext, DictinaryUpdate.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateQualityArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 		scheduleWithFixedDelayOfType(appContext, UpdateGoodArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
-		scheduleWithFixedDelayOfType(appContext, UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
+		// scheduleWithFixedDelayOfType(appContext,
+		// UpdateFeaturedArticlesTask.class, DateUtils.MILLIS_PER_HOUR);
 
 		// ((WikiCache) appContext.getBean("wikidataCache")).clear();
 		// ((WikiCache) appContext.getBean("ruWikipediaCache")).clear();

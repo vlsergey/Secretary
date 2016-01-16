@@ -61,7 +61,7 @@ public class RevisionAuthorshipDao {
 	}
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
-	public synchronized void store(Project project, Revision revision, TextChunkList authorship) throws Exception {
+	public RevisionAuthorship store(Project project, Revision revision, TextChunkList authorship) throws Exception {
 
 		final byte[] data = authorship.toBinary();
 		log.debug("Store " + data.length + " bytes of authorship info for rev#" + revision);
@@ -71,11 +71,13 @@ public class RevisionAuthorshipDao {
 		if (already != null) {
 			already.setData(data);
 			template.save(already);
+			return already;
 		} else {
 			RevisionAuthorship revisionAuthorship = new RevisionAuthorship();
 			revisionAuthorship.setData(data);
 			revisionAuthorship.setKey(key);
 			template.save(revisionAuthorship);
+			return revisionAuthorship;
 		}
 	}
 

@@ -3,14 +3,11 @@ package org.wikipedia.vlsergey.secretary.trust;
 import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
+import java.util.Arrays;
+import java.util.List;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +16,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
+import org.wikipedia.vlsergey.secretary.trust.ProtobufHolder.PageRevisionChunksLength.Builder;
 
 @Repository
 @Transactional(readOnly = false)
@@ -51,22 +49,23 @@ public class PageRevisionChunksLengthDao {
 		}
 
 		try {
-			ObjectInputStream objectInputStream = new ObjectInputStream(new GZIPInputStream(new ByteArrayInputStream(
-					data)));
-			try {
-				long[] revisionIds = (long[]) objectInputStream.readObject();
-				int[] lengths = (int[]) objectInputStream.readObject();
+			org.wikipedia.vlsergey.secretary.trust.ProtobufHolder.PageRevisionChunksLength proto = org.wikipedia.vlsergey.secretary.trust.ProtobufHolder.PageRevisionChunksLength
+					.parseFrom(data);
+			final List<Long> revisionIdsList = proto.getRevisionIdsList();
+			final List<Integer> lengthsList = proto.getLengthsList();
 
-				final TLongIntHashMap result = new TLongIntHashMap(revisionIds.length);
-				for (int i = 0; i < revisionIds.length; i++) {
-					long revisionId = revisionIds[i];
-					int length = lengths[i];
-					result.put(revisionId, length);
-				}
-				return result;
-			} finally {
-				objectInputStream.close();
+			if (revisionIdsList.size() != lengthsList.size()) {
+				log.warn("Unable to restore page {" + project + "}" + pageId + " arrays lengths are not equals: "
+						+ revisionIdsList.size() + " != " + lengthsList.size());
+				return new TLongIntHashMap();
 			}
+
+			final TLongIntHashMap result = new TLongIntHashMap(revisionIdsList.size());
+			for (int i = 0; i < revisionIdsList.size(); i++) {
+				result.put(revisionIdsList.get(i), lengthsList.get(i));
+			}
+			return result;
+
 		} catch (Exception exc) {
 			log.warn("Unable to restore page {" + project + "}" + pageId + " revisions chunks lengths: " + exc, exc);
 			return new TLongIntHashMap();
@@ -98,19 +97,14 @@ public class PageRevisionChunksLengthDao {
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRED)
 	public void store(Project project, Long pageId, TLongIntMap result) throws IOException {
-		long[] revisionIds = result.keys(new long[result.size()]);
-		int[] lengths = result.values(new int[result.size()]);
+		List<Long> revisionIds = Arrays.asList(ArrayUtils.toObject(result.keys(new long[result.size()])));
+		List<Integer> lengths = Arrays.asList(ArrayUtils.toObject(result.values(new int[result.size()])));
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream(result.size() * 12 + 100);
-		ObjectOutputStream objectOutputStream = new ObjectOutputStream(new GZIPOutputStream(baos));
-		try {
-			objectOutputStream.writeObject(revisionIds);
-			objectOutputStream.writeObject(lengths);
-		} finally {
-			objectOutputStream.close();
-		}
+		final Builder proto = ProtobufHolder.PageRevisionChunksLength.newBuilder();
+		proto.addAllRevisionIds(revisionIds);
+		proto.addAllLengths(lengths);
 
-		byte[] data = baos.toByteArray();
+		byte[] data = proto.build().toByteArray();
 		store(project, pageId, data);
 	}
 }

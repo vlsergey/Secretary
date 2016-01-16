@@ -7,9 +7,17 @@ import com.google.common.primitives.UnsignedBytes;
 
 public class UserKey implements Comparable<UserKey> {
 
-	private static final InetAddress INETADDRESS_LOCALHOST = InetAddresses.forString("127.0.0.1");
+	private static final InetAddress _INETADDRESS_HIDDEN = InetAddresses.forString("127.0.0.1");
 
-	public static final UserKey LOCALHOST = new UserKey(INETADDRESS_LOCALHOST);
+	private static final InetAddress _INETADDRESS_LOCALHOST = InetAddresses.forString("127.0.0.1");
+
+	private static final InetAddress _INETADDRESS_UNKNOWN = InetAddresses.forString("127.0.0.2");
+
+	public static final UserKey HIDDEN = new UserKey(_INETADDRESS_HIDDEN);
+
+	public static final UserKey LOCALHOST = new UserKey(_INETADDRESS_LOCALHOST);
+
+	public static final UserKey UNKNOWN = new UserKey(_INETADDRESS_UNKNOWN);
 
 	private final InetAddress inetAddress;
 

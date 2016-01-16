@@ -3,30 +3,18 @@ package org.wikipedia.vlsergey.secretary.cache;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Project;
 import org.wikipedia.vlsergey.secretary.jwpf.model.Revision;
+import org.wikipedia.vlsergey.secretary.utils.AbstractDaoLock;
 
 @Component
-public class StoredRevisionDaoLock {
-
-	private static final int SEGMENTS = 64;
-
-	private final Lock[] locks = new Lock[SEGMENTS];
+public class StoredRevisionDaoLock extends AbstractDaoLock {
 
 	@Autowired
 	private StoredRevisionDao storedRevisionDao;
-
-	public StoredRevisionDaoLock() {
-		for (int i = 0; i < SEGMENTS; i++) {
-			locks[i] = new ReentrantLock();
-		}
-	}
 
 	public int clear(Project project) {
 		return storedRevisionDao.clear(project);
@@ -54,21 +42,6 @@ public class StoredRevisionDaoLock {
 
 	public int removePageRevisionsExcept(Project project, Long pageId, Set<Long> preserveRevisionIds) {
 		return storedRevisionDao.removePageRevisionsExcept(project, pageId, preserveRevisionIds);
-	}
-
-	public <T> T withLock(long id, Callable<T> action) {
-		final int segmentIndex = (int) (id % SEGMENTS);
-		final Lock lock = locks[segmentIndex];
-		lock.lock();
-		try {
-			return action.call();
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		} finally {
-			lock.unlock();
-		}
 	}
 
 }

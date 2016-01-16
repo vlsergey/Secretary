@@ -13,6 +13,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.wikipedia.vlsergey.secretary.jwpf.model.UserKey;
 import org.wikipedia.vlsergey.secretary.trust.ProtobufHolder.Authorship;
@@ -189,6 +190,8 @@ public class TextChunkList implements Comparable<TextChunkList> {
 	public static TextChunkList toTextChunkList(Locale locale, UserKey userKey, String text) {
 		if (userKey == null)
 			throw new IllegalArgumentException("userKey is null");
+		if (StringUtils.isBlank(text))
+			return TextChunkList.EMPTY;
 
 		String[] splitted = TextChunkHelper.split(locale, text);
 		List<TextChunk> chunks = new ArrayList<TextChunk>();
@@ -206,7 +209,7 @@ public class TextChunkList implements Comparable<TextChunkList> {
 
 	private String sortedHash = null;
 
-	private transient TextChunkList[] suffixArray;
+	private volatile transient TextChunkList[] suffixArray;
 
 	private final List<TextChunk> textChunks;
 
@@ -287,12 +290,16 @@ public class TextChunkList implements Comparable<TextChunkList> {
 		return sortedHash;
 	}
 
-	public synchronized TextChunkList[] getSuffixArray() {
+	public TextChunkList[] getSuffixArray() {
 		if (suffixArray == null) {
-			suffixArray = new TextChunkList[size()];
-			for (int i = 0; i < size(); i++)
-				suffixArray[i] = this.subList(i);
-			Arrays.parallelSort(suffixArray, null);
+			synchronized (this) {
+				if (suffixArray == null) {
+					suffixArray = new TextChunkList[size()];
+					for (int i = 0; i < size(); i++)
+						suffixArray[i] = this.subList(i);
+					Arrays.parallelSort(suffixArray, null);
+				}
+			}
 		}
 		return suffixArray;
 	}

@@ -29,7 +29,7 @@ public class StoredUserDao {
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED, readOnly = false)
-	public StoredUser getOrCreate(Project project, ParsedUser withContent) {
+	public synchronized StoredUser getOrCreate(Project project, ParsedUser withContent) {
 
 		final Long userId = withContent.getUserId();
 		if (userId == null)
